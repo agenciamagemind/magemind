@@ -305,6 +305,13 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .pix-preview{font:500 11px 'Manrope',sans-serif;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .payout-actions{display:flex;gap:6px;flex-wrap:wrap}
 .secure-note{display:flex;gap:9px;padding:11px 13px;border-radius:10px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);color:var(--text2);font-size:11px;line-height:1.5}
+#pg-sales.affiliate-finance{overflow-y:auto;padding-bottom:22px}
+#pg-sales.affiliate-finance .wallet-shell{margin-top:14px}
+#pg-sales.affiliate-finance #sales-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px!important}
+#pg-sales.affiliate-finance #affiliate-withdrawal-history{margin-top:12px}
+#pg-sales.affiliate-finance>.table-wrap{flex:0 0 auto;padding-top:12px!important;padding-bottom:0}
+#pg-sales.affiliate-finance>.table-wrap .tbl-container{max-height:330px;overflow:auto}
+#pg-sales.affiliate-finance #sales-period-filter{padding:10px 16px}
 @media(max-width:760px){
   .overlay{align-items:flex-end}
   .modal.modal-lg{width:100%;max-width:100vw;max-height:96vh;border-radius:18px 18px 0 0}
@@ -321,6 +328,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   .wallet-shell .btn{grid-column:1/-1;width:100%}
   .payout-section{margin:14px 14px 0}
   .payout-section .tbl-container{overflow-x:auto}
+  #pg-sales.affiliate-finance #sales-stats{grid-template-columns:1fr}
 }
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
 .profile-av-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
@@ -504,7 +512,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="table-wrap" style="padding-top:12px">
           <div class="tbl-container">
             <table>
-              <thead><tr><th>Cliente</th><th>Serviços</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Afiliado</th><th>Cadastro</th><th>Ações</th></tr></thead>
+              <thead><tr id="clients-table-head"><th>Cliente</th><th>Serviços</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Afiliado</th><th>Cadastro</th><th>Ações</th></tr></thead>
               <tbody id="clients-body"></tbody>
             </table>
           </div>
@@ -554,8 +562,8 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       <div class="page" id="pg-sales">
         <div class="ph">
           <div class="ph-info">
-            <div class="ph-title">Vendas</div>
-            <div class="ph-sub">Pipeline e histórico</div>
+            <div class="ph-title" id="sales-page-title">Vendas</div>
+            <div class="ph-sub" id="sales-page-subtitle">Pipeline e histórico</div>
           </div>
           <div class="ph-actions"></div>
         </div>
@@ -592,7 +600,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
                   <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 12px" onclick="clearCustomSalesPeriod()">Limpar</button>
                 </div>
               </div>
-              <thead><tr><th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th></tr></thead>
+              <thead><tr id="sales-table-head"><th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th></tr></thead>
               <tbody id="sales-body"></tbody>
             </table>
           </div>
@@ -1089,7 +1097,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   <div class="modal" style="width:470px">
     <div class="m-head"><div><div class="m-title">Solicitar saque</div><div class="m-sub">O valor ficará reservado enquanto estiver em análise</div></div><div class="m-close" onclick="closeModal('modal-withdrawal-request')">✕</div></div>
     <div class="m-body">
-      <div class="secure-note"><span>✓</span><span>O saldo é conferido novamente pelo servidor no instante da solicitação. Sua chave PIX será visível somente para você, CEO e Gerente.</span></div>
+      <div class="secure-note"><span>✓</span><span>Sua solicitação de saque será analisada e aprovada em até 2 dias úteis.</span></div>
       <div class="fg"><label class="fl">Valor do saque *</label><input class="fi" id="wd-amount" type="number" min="1" step="0.01" inputmode="decimal" placeholder="0,00"><div style="font-size:11px;color:var(--text3)">Disponível: <strong id="wd-available" style="color:var(--emerald)">R$ 0,00</strong></div></div>
       <div class="fg"><label class="fl">Tipo de chave PIX *</label><select class="fi" id="wd-pix-type"><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="phone">Telefone</option><option value="random">Chave aleatória</option></select></div>
       <div class="fg"><label class="fl">Chave PIX *</label><input class="fi" id="wd-pix-key" autocomplete="off" placeholder="Digite a chave para recebimento"></div>
@@ -1830,24 +1838,29 @@ async function loadAllData(){
         .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,50).map(mapNotif);
 
     } else if(role==='affiliate'){
-      // ── AFILIADO: clientes indicados por ele + vendas desses clientes (comissão calculada no front) ──
-      const {data:clients} = await supa.from('clients').select('*, plans(name)').eq('affiliate_id', DB.me.id).order('created_at',{ascending:false});
-      DB.clients = (clients||[]).map(mapClient);
-      const clientIds = DB.clients.map(c=>c.id);
+      // ── AFILIADO: recebe somente os campos e agregados necessários ao seu painel ──
+      const {data:clientMetrics,error:clientMetricsErr} = await supa.rpc('get_my_affiliate_client_metrics');
+      if(clientMetricsErr) console.error('[Magemind] Falha ao carregar métricas dos clientes:',clientMetricsErr);
+      DB.clients = (clientMetrics||[]).map(c=>({
+        id:c.client_id,name:c.client_name,status:c.client_status||'Ativo',createdAt:c.registered_at||null,
+        customerSince:null,demandCount:Number(c.demand_count||0),commissionTotal:Number(c.commission_total||0),
+        email:'',phone:'',type:'',since:'',notes:'',plan:'',planIds:[],affiliateId:DB.me.id
+      }));
 
-      if(clientIds.length){
-        const {data:sales} = await supa.from('sales')
-          .select('*, clients(name), plans(name)').in('client_id', clientIds).order('created_at',{ascending:false});
-        DB.sales = (sales||[]).map(mapSale);
-      } else { DB.sales = []; }
+      const {data:commissionSales,error:commissionSalesErr} = await supa.rpc('get_my_affiliate_commission_sales');
+      if(commissionSalesErr) console.error('[Magemind] Falha ao carregar comissões:',commissionSalesErr);
+      DB.sales = (commissionSales||[]).map(s=>({
+        id:s.sale_id,client:s.client_id,clientName:s.client_name||'',service:'',
+        value:Number(s.commission_value||0),desc:'',assignee:s.assignee||'',
+        status:s.sale_status||'Pendente',date:s.sale_date||'',createdAt:null,isCommissionValue:true
+      }));
       DB.demands = []; // afiliado não acessa demandas
 
       const {data:docs} = await supa.from('docs')
         .select('*').in('visibility',['affiliate','public']).order('created_at',{ascending:false});
       DB.docs = (docs||[]).map(mapDoc);
 
-      const {data:commissions} = await supa.from('affiliate_commissions').select('*').eq('affiliate_id', DB.me.id);
-      DB.commissions = commissions||[];
+      DB.commissions = [];
 
       const {data:withdrawals, error:withdrawalsErr} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
       if(withdrawalsErr) console.error('[Magemind] Falha ao carregar seus saques:',withdrawalsErr);
@@ -1939,6 +1952,7 @@ supa.auth.onAuthStateChange((event, session)=>{
    cleanupRealtimeSubscriptions() SEMPRE roda antes de criar canais novos
    (no login) e também no logout, para nunca deixar canal órfão inscrito. */
 let realtimeChannels = [];
+let affiliateFinanceReloadTimer = null;
 
 function cleanupRealtimeSubscriptions(){
   realtimeChannels.forEach(ch=>{
@@ -1970,6 +1984,18 @@ function setupRealtime(){
         refreshWithdrawalData().catch(e=>console.error('[Magemind] Falha no realtime de saques:',e));
       }).subscribe();
     realtimeChannels.push(withdrawalsChannel);
+  }
+
+  if(isAffiliate()){
+    const scheduleFinanceReload=()=>{
+      clearTimeout(affiliateFinanceReloadTimer);
+      affiliateFinanceReloadTimer=setTimeout(()=>reloadAffiliateFinance().catch(e=>console.error('[Magemind] Falha ao atualizar Finanças:',e)),300);
+    };
+    const financeChannel=supa.channel(`affiliate-finance-${DB.me.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'sales'},scheduleFinanceReload)
+      .on('postgres_changes',{event:'*',schema:'public',table:'affiliate_commissions'},scheduleFinanceReload)
+      .subscribe();
+    realtimeChannels.push(financeChannel);
   }
 
   // Afiliado não acessa demandas — não precisa assinar realtime de demandas
@@ -2116,7 +2142,7 @@ function buildNav(){
   const affiliateItems = [
     {id:'dashboard', icon:ico('home'),   label:'Dashboard'},
     {id:'clients',   icon:ico('users'),  label:'Meus Clientes'},
-    {id:'sales',     icon:ico('dollar'), label:'Minhas Comissões'},
+    {id:'sales',     icon:ico('dollar'), label:'Finanças'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
   ];
   const clientItems = [
@@ -2152,8 +2178,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Dashboard',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Minhas Comissões':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
-  const S = {dashboard:'Visão geral da agência',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Comissões sobre vendas indicadas':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
+  const T = {dashboard:'Dashboard',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
+  const S = {dashboard:'Visão geral da agência',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2285,18 +2311,15 @@ function loadDashAffiliate(){
   document.getElementById('dash-revenue-title').textContent = 'Minha comissão';
   const myClients = DB.clients; // já filtrado em loadAllData
   const mySalesClosed = DB.sales.filter(s=>s.status==='Fechado');
-  const revenue = mySalesClosed.reduce((a,b)=>a+b.value,0);
-  const rate = DB.me.commissionRate||0;
-  const myCommissionClosed = revenue * rate / 100;
+  const commissionFromRows = mySalesClosed.reduce((a,b)=>a+b.value,0);
   const wallet=DB.wallet||{};
   const pend=Number(wallet.pending_commission||0);
   const available=Number(wallet.available||0);
   const review=Number(wallet.under_review||0);
   const paid=Number(wallet.withdrawn||0);
-  const totalComm=Number(wallet.gross_earned||0)||myCommissionClosed;
+  const totalComm=Number(wallet.gross_earned||0)||commissionFromRows;
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat"><div class="stat-label">Clientes indicados</div><div class="stat-val" style="color:var(--violet2)">${myClients.length}</div></div>
-    <div class="stat"><div class="stat-label">Vendas geradas (bruto)</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(revenue)}</div></div>
     <div class="stat"><div class="stat-label">Saldo disponível</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(available)}</div></div>
     <div class="stat"><div class="stat-label">Saques em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(review)}</div></div>`;
   document.getElementById('dash-clients-list').innerHTML = myClients.slice(0,6).map(c=>`
@@ -2404,7 +2427,8 @@ function loadDashFull(){
 /* ═══ CLIENTS ═══ */
 function loadClients(){
   const types = ['Todos','Mensal','Avulso','Mentorado','Equipe','Ativo','Pausado'];
-  document.getElementById('client-filters').innerHTML = types.map((t,i)=>`<div class="chip${i===0?' on':''}" onclick="filterClients(this,'${t}')">${t}</div>`).join('');
+  document.getElementById('client-filters').innerHTML = isAffiliate() ? '' : types.map((t,i)=>`<div class="chip${i===0?' on':''}" onclick="filterClients(this,'${t}')">${t}</div>`).join('');
+  if(isAffiliate()) currentClientFilter='Todos';
   renderClients();
 }
 let currentClientFilter = 'Todos';
@@ -2442,6 +2466,21 @@ function renderClients(filter){
   if(sort==='recent') list = [...list].sort((a,b)=>clientSortTs(b)-clientSortTs(a));
   else if(sort==='oldest') list = [...list].sort((a,b)=>clientSortTs(a)-clientSortTs(b));
   else if(sort==='az') list = [...list].sort((a,b)=>a.name.localeCompare(b.name));
+  const searchInput=document.getElementById('client-search');
+  if(searchInput) searchInput.placeholder=isAffiliate()?'Buscar cliente por nome...':'Buscar por nome, email ou WhatsApp...';
+  if(isAffiliate()){
+    document.getElementById('clients-count-sub').textContent=`${DB.clients.length} clientes indicados`;
+    document.getElementById('clients-table-head').innerHTML='<th>Nome</th><th>Demandas</th><th>Minha comissão</th><th>Status</th><th>Cadastro</th>';
+    document.getElementById('clients-body').innerHTML=list.length?list.map(c=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:11px">${escapeHTML(avatarInitials(c.name))}</div><div style="font-weight:600">${escapeHTML(c.name)}</div></div></td>
+      <td><span style="font-weight:700;color:var(--violet2)">${Number(c.demandCount||0)}</span></td>
+      <td><span class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(Number(c.commissionTotal||0))}</span></td>
+      <td>${c.status==='Ativo'?'<span class="badge b-emerald"><span class="dot-badge" style="background:var(--emerald)"></span>Ativo</span>':c.status==='Pausado'?'<span class="badge b-amber">Pausado</span>':'<span class="badge b-muted">Inativo</span>'}</td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap">${clientDisplayDate(c)}</td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente indicado</td></tr>';
+    return;
+  }
+  document.getElementById('clients-table-head').innerHTML='<th>Cliente</th><th>Serviços</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Afiliado</th><th>Cadastro</th><th>Ações</th>';
   document.getElementById('clients-count-sub').textContent = `${DB.clients.length} clientes cadastrados`;
   const typeBadge = {Mensal:'b-violet',Avulso:'b-cyan',Mentorado:'b-pink',Equipe:'b-emerald'};
   const getPlanName = pid=>{ const p=DB.plans.find(x=>x.id===pid); return p?p.name:null; };
@@ -2952,6 +2991,31 @@ function withdrawalDate(value){
   if(!value) return '—';
   return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));
 }
+async function reloadAffiliateFinance(){
+  if(!isAffiliate()) return;
+  const [clientResult,salesResult,walletResult]=await Promise.all([
+    supa.rpc('get_my_affiliate_client_metrics'),
+    supa.rpc('get_my_affiliate_commission_sales'),
+    supa.rpc('get_affiliate_wallet')
+  ]);
+  if(clientResult.error) throw clientResult.error;
+  if(salesResult.error) throw salesResult.error;
+  if(walletResult.error) throw walletResult.error;
+  DB.clients=(clientResult.data||[]).map(c=>({
+    id:c.client_id,name:c.client_name,status:c.client_status||'Ativo',createdAt:c.registered_at||null,
+    customerSince:null,demandCount:Number(c.demand_count||0),commissionTotal:Number(c.commission_total||0),
+    email:'',phone:'',type:'',since:'',notes:'',plan:'',planIds:[],affiliateId:DB.me.id
+  }));
+  DB.sales=(salesResult.data||[]).map(s=>({
+    id:s.sale_id,client:s.client_id,clientName:s.client_name||'',service:'',value:Number(s.commission_value||0),
+    desc:'',assignee:s.assignee||'',status:s.sale_status||'Pendente',date:s.sale_date||'',createdAt:null,isCommissionValue:true
+  }));
+  DB.wallet=walletResult.data?.[0]||null;
+  buildNav();
+  if(document.getElementById('pg-sales')?.classList.contains('active')) loadSales();
+  if(document.getElementById('pg-clients')?.classList.contains('active')) renderClients();
+  if(document.getElementById('pg-dashboard')?.classList.contains('active')) loadDashAffiliate();
+}
 async function refreshWithdrawalData(){
   const {data:withdrawals,error} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
   if(error) throw error;
@@ -3405,20 +3469,25 @@ function getSalesFiltered(){
   return list;
 }
 function loadSales(){
+  const salesPage=document.getElementById('pg-sales');
+  salesPage?.classList.toggle('affiliate-finance',isAffiliate());
+  const salesTitle=document.getElementById('sales-page-title');
+  const salesSubtitle=document.getElementById('sales-page-subtitle');
+  if(salesTitle) salesTitle.textContent=isAffiliate()?'Finanças':'Vendas';
+  if(salesSubtitle) salesSubtitle.textContent=isAffiliate()?'Saldo, comissões e saques':'Pipeline e histórico';
   renderAffiliateWallet();
   const allSales = getSalesFiltered();
   const closed   = allSales.filter(s=>s.status==='Fechado');
   const pending  = allSales.filter(s=>s.status==='Pendente');
   const rate = isAffiliate() ? (DB.me.commissionRate||0) : 100;
-  const revC = closed.reduce((a,b)=>a+b.value,0) * rate/100;
-  const revP = pending.reduce((a,b)=>a+b.value,0) * rate/100;
+  const revC = closed.reduce((a,b)=>a+b.value,0);
+  const revP = pending.reduce((a,b)=>a+b.value,0);
   if(isAffiliate()){
     const wallet=DB.wallet||{};
     document.getElementById('sales-stats').innerHTML=`
       <div class="stat"><div class="stat-label">Comissões geradas</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(Number(wallet.gross_earned||revC))}</div><div class="stat-delta delta-up">${closed.length} vendas fechadas</div></div>
       <div class="stat"><div class="stat-label">Em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(Number(wallet.under_review||0))}</div><div class="stat-delta delta-neutral">saques reservados</div></div>
-      <div class="stat"><div class="stat-label">Minha taxa</div><div class="stat-val" style="color:var(--cyan)">${rate}%</div></div>
-      <div class="stat"><div class="stat-label">Vendas geradas (bruto)</div><div class="stat-val" style="color:var(--violet2)">${formatCurrencyBRL(closed.reduce((a,b)=>a+b.value,0)+pending.reduce((a,b)=>a+b.value,0))}</div><div class="stat-delta delta-neutral">Referência</div></div>`;
+      <div class="stat"><div class="stat-label">Minha taxa</div><div class="stat-val" style="color:var(--cyan)">${rate}%</div></div>`;
   } else {
     document.getElementById('sales-stats').innerHTML=`
       <div class="stat"><div class="stat-label">Receita fechada</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(revC)}</div><div class="stat-delta delta-up">${closed.length} vendas</div></div>
@@ -3430,6 +3499,18 @@ function loadSales(){
   if(valueLabelEl) valueLabelEl.textContent = isAffiliate() ? 'Minha comissão' : 'Valor';
   const canEditS = hasPermission('sales.edit');
   const canDelS  = hasPermission('sales.delete');
+  if(isAffiliate()){
+    document.getElementById('sales-table-head').innerHTML='<th>Minha comissão</th><th>Cliente</th><th>Status</th><th>Data</th><th>Responsável</th>';
+    document.getElementById('sales-body').innerHTML=allSales.length?allSales.map(s=>`<tr>
+      <td class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(s.value)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(cn(s.client)))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
+      <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
+      <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
+      <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee||'—')}</td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhuma comissão neste período</td></tr>';
+    return;
+  }
+  document.getElementById('sales-table-head').innerHTML='<th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th>';
   document.getElementById('sales-body').innerHTML = allSales.length ? allSales.map(s=>`
     <tr>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(cn(s.client)))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
