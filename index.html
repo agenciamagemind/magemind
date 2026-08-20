@@ -282,6 +282,29 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .rich-text a{color:var(--cyan);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(6,182,212,.35);transition:color .15s,border-color .15s}
 .rich-text a:hover{color:#67e8f9;border-color:#67e8f9}
 .detail-danger-zone{padding-top:14px;margin-top:16px;border-top:1px solid var(--border)}
+.wallet-shell{margin:16px 24px 0;padding:22px;border:1px solid var(--violetborder);border-radius:18px;background:radial-gradient(circle at 88% 0,rgba(168,85,247,.18),transparent 42%),linear-gradient(135deg,rgba(124,58,237,.14),rgba(17,17,31,.96));display:none;gap:20px;align-items:center}
+.wallet-shell.visible{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(140px,.55fr)) auto}
+.wallet-kicker{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--violet3);margin-bottom:7px}
+.wallet-balance{font:700 30px/1.1 'Poppins',sans-serif;letter-spacing:-1px;color:#fff}
+.wallet-caption{font-size:11px;color:var(--text3);margin-top:7px;line-height:1.5}
+.wallet-metric{padding-left:18px;border-left:1px solid var(--border2)}
+.wallet-metric-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.wallet-metric-value{font:600 17px 'Poppins',sans-serif;color:var(--text)}
+.payout-section{margin:18px 24px 0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden}
+.payout-section-head{padding:17px 19px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.payout-section .tbl-container{max-height:290px;overflow:auto}
+.payout-section-title{font:600 14px 'Poppins',sans-serif}
+.payout-section-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.payout-empty{padding:30px 18px;text-align:center;color:var(--text3);font-size:12px}
+.payout-person{display:flex;align-items:center;gap:9px;min-width:170px}
+.payout-status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
+.payout-status.pending{color:var(--amber);background:var(--amberbg);border:1px solid rgba(245,158,11,.22)}
+.payout-status.approved{color:var(--cyan);background:rgba(6,182,212,.09);border:1px solid rgba(6,182,212,.22)}
+.payout-status.paid{color:var(--emerald);background:var(--emeraldbg);border:1px solid rgba(16,185,129,.22)}
+.payout-status.rejected,.payout-status.cancelled{color:var(--rose);background:var(--rosebg);border:1px solid rgba(244,63,94,.2)}
+.pix-preview{font:500 11px 'Manrope',sans-serif;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.payout-actions{display:flex;gap:6px;flex-wrap:wrap}
+.secure-note{display:flex;gap:9px;padding:11px 13px;border-radius:10px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);color:var(--text2);font-size:11px;line-height:1.5}
 @media(max-width:760px){
   .overlay{align-items:flex-end}
   .modal.modal-lg{width:100%;max-width:100vw;max-height:96vh;border-radius:18px 18px 0 0}
@@ -291,6 +314,13 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   .detail-status-grid{grid-template-columns:1fr}
   .detail-status-grid .btn{font-size:11px}
   .m-head{padding:18px 20px 15px}
+  .wallet-shell{margin:12px 14px 0;padding:18px}
+  .wallet-shell.visible{grid-template-columns:1fr 1fr}
+  .wallet-shell .wallet-primary{grid-column:1/-1}
+  .wallet-metric{padding-left:0;border-left:0}
+  .wallet-shell .btn{grid-column:1/-1;width:100%}
+  .payout-section{margin:14px 14px 0}
+  .payout-section .tbl-container{overflow-x:auto}
 }
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
 .profile-av-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
@@ -529,7 +559,21 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           </div>
           <div class="ph-actions"></div>
         </div>
+        <div class="wallet-shell" id="affiliate-wallet">
+          <div class="wallet-primary">
+            <div class="wallet-kicker">Saldo disponível</div>
+            <div class="wallet-balance" id="wallet-available">R$ 0,00</div>
+            <div class="wallet-caption">Valor liberado para solicitar via PIX</div>
+          </div>
+          <div class="wallet-metric"><div class="wallet-metric-label">Em análise</div><div class="wallet-metric-value" id="wallet-review">R$ 0,00</div></div>
+          <div class="wallet-metric"><div class="wallet-metric-label">Total recebido</div><div class="wallet-metric-value" id="wallet-paid">R$ 0,00</div></div>
+          <button class="btn btn-primary" id="wallet-request-btn" onclick="openWithdrawalRequest()">Solicitar saque</button>
+        </div>
         <div class="stats stats-4" style="margin:16px 24px 0" id="sales-stats"></div>
+        <div class="payout-section" id="affiliate-withdrawal-history" style="display:none">
+          <div class="payout-section-head"><div><div class="payout-section-title">Meus saques</div><div class="payout-section-sub">Acompanhe cada solicitação e o histórico de pagamentos</div></div></div>
+          <div class="tbl-container"><table><thead><tr><th>Solicitado em</th><th>Valor</th><th>Chave PIX</th><th>Status</th><th>Ação</th></tr></thead><tbody id="affiliate-withdrawals-body"></tbody></table></div>
+        </div>
         <div class="table-wrap" style="padding-top:16px">
           <div class="tbl-container">
             <table>
@@ -594,10 +638,15 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
             <div class="ph-sub">Parceiros, indicações e comissões</div>
           </div>
         </div>
+        <div class="stats stats-4" style="margin:16px 24px 0" id="payout-admin-stats"></div>
+        <div class="payout-section">
+          <div class="payout-section-head"><div><div class="payout-section-title">Aprovação de saques</div><div class="payout-section-sub">Fila financeira visível exclusivamente para CEO e Gerente</div></div><span class="payout-status pending" id="payout-queue-count">0 em análise</span></div>
+          <div class="tbl-container"><table><thead><tr><th>Afiliado</th><th>Valor</th><th>PIX</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="payout-approval-body"></tbody></table></div>
+        </div>
         <div class="table-wrap">
           <div class="tbl-container">
             <table>
-              <thead><tr><th>Afiliado</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Comissão pendente</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Afiliado</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Ações</th></tr></thead>
               <tbody id="affiliates-body"></tbody>
             </table>
           </div>
@@ -1035,6 +1084,33 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   </div>
 </div>
 
+<!-- MODAL: Solicitar saque -->
+<div class="overlay" id="modal-withdrawal-request" onclick="if(event.target===this)closeModal('modal-withdrawal-request')">
+  <div class="modal" style="width:470px">
+    <div class="m-head"><div><div class="m-title">Solicitar saque</div><div class="m-sub">O valor ficará reservado enquanto estiver em análise</div></div><div class="m-close" onclick="closeModal('modal-withdrawal-request')">✕</div></div>
+    <div class="m-body">
+      <div class="secure-note"><span>✓</span><span>O saldo é conferido novamente pelo servidor no instante da solicitação. Sua chave PIX será visível somente para você, CEO e Gerente.</span></div>
+      <div class="fg"><label class="fl">Valor do saque *</label><input class="fi" id="wd-amount" type="number" min="1" step="0.01" inputmode="decimal" placeholder="0,00"><div style="font-size:11px;color:var(--text3)">Disponível: <strong id="wd-available" style="color:var(--emerald)">R$ 0,00</strong></div></div>
+      <div class="fg"><label class="fl">Tipo de chave PIX *</label><select class="fi" id="wd-pix-type"><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="phone">Telefone</option><option value="random">Chave aleatória</option></select></div>
+      <div class="fg"><label class="fl">Chave PIX *</label><input class="fi" id="wd-pix-key" autocomplete="off" placeholder="Digite a chave para recebimento"></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-ghost" onclick="closeModal('modal-withdrawal-request')">Cancelar</button><button class="btn btn-primary" id="wd-submit" onclick="submitWithdrawalRequest()">Enviar para análise</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Analisar saque -->
+<div class="overlay" id="modal-withdrawal-review" onclick="if(event.target===this)closeModal('modal-withdrawal-review')">
+  <div class="modal" style="width:500px">
+    <div class="m-head"><div><div class="m-title">Analisar saque</div><div class="m-sub" id="wr-subtitle"></div></div><div class="m-close" onclick="closeModal('modal-withdrawal-review')">✕</div></div>
+    <div class="m-body">
+      <div id="wr-summary" class="detail-section-card"></div>
+      <div class="fg"><label class="fl">Observação / motivo da recusa</label><textarea class="fi" id="wr-note" maxlength="500" placeholder="Obrigatório apenas para recusar"></textarea></div>
+      <div class="secure-note"><span>i</span><span>Aprovar confirma a conferência. Marcar como pago deve ser feito somente depois da transferência PIX.</span></div>
+    </div>
+    <div class="m-foot" id="wr-actions"></div>
+  </div>
+</div>
+
 <div class="install-guide" id="install-guide" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="install-title">
   <div class="install-sheet">
     <div class="install-handle" aria-hidden="true"></div>
@@ -1076,6 +1152,9 @@ const DB = {
   plans: [],
   notifications: [],
   commissions: [],
+  withdrawals: [],
+  wallet: null,
+  affiliateWallets: {},
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1630,6 +1709,7 @@ async function loadAllData(){
   showGlobalLoader(true);
   try {
     const role = getRole();
+    DB.withdrawals = []; DB.wallet = null; DB.affiliateWallets = {};
 
     // Planos contêm preços e dados comerciais. Gestor e Editor não recebem
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
@@ -1689,6 +1769,16 @@ async function loadAllData(){
 
       const {data:commissions} = await supa.from('affiliate_commissions').select('*');
       DB.commissions = commissions||[];
+      const {data:withdrawals, error:withdrawalsErr} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
+      if(withdrawalsErr) console.error('[Magemind] Falha ao carregar saques:',withdrawalsErr);
+      DB.withdrawals = withdrawals||[];
+      const affiliateIds = DB.users.filter(u=>u.role==='affiliate').map(u=>u.id);
+      const walletRows = await Promise.all(affiliateIds.map(async id=>{
+        const {data,error} = await supa.rpc('get_affiliate_wallet',{p_affiliate_id:id});
+        if(error){ console.error('[Magemind] Falha ao carregar carteira:',error); return null; }
+        return data?.[0]||null;
+      }));
+      walletRows.filter(Boolean).forEach(w=>{ DB.affiliateWallets[w.affiliate_id]=w; });
 
     } else if(role==='gestor' || role==='editor'){
       // ── GESTOR / EDITOR: veem TODAS as demandas (com filtro "Minhas" no front),
@@ -1758,6 +1848,13 @@ async function loadAllData(){
 
       const {data:commissions} = await supa.from('affiliate_commissions').select('*').eq('affiliate_id', DB.me.id);
       DB.commissions = commissions||[];
+
+      const {data:withdrawals, error:withdrawalsErr} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
+      if(withdrawalsErr) console.error('[Magemind] Falha ao carregar seus saques:',withdrawalsErr);
+      DB.withdrawals = withdrawals||[];
+      const {data:walletRows, error:walletErr} = await supa.rpc('get_affiliate_wallet');
+      if(walletErr) console.error('[Magemind] Falha ao carregar carteira:',walletErr);
+      DB.wallet = walletRows?.[0]||null;
 
       const {data:profRow} = await supa.from('profiles').select('commission_rate').eq('id',DB.me.id).maybeSingle();
       DB.me.commissionRate = profRow?.commission_rate||0;
@@ -1864,6 +1961,16 @@ function setupRealtime(){
       })
     .subscribe();
   realtimeChannels.push(notifChannel);
+
+  // Carteiras e fila de aprovação são atualizadas imediatamente para afiliado,
+  // CEO e Gerente, sem precisar recarregar a página.
+  if(isAffiliate() || isAdmin()){
+    const withdrawalsChannel = supa.channel(`withdrawals-${DB.me.id}-${getRole()}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'affiliate_withdrawals'},()=>{
+        refreshWithdrawalData().catch(e=>console.error('[Magemind] Falha no realtime de saques:',e));
+      }).subscribe();
+    realtimeChannels.push(withdrawalsChannel);
+  }
 
   // Afiliado não acessa demandas — não precisa assinar realtime de demandas
   if(isAffiliate()) return;
@@ -2181,23 +2288,24 @@ function loadDashAffiliate(){
   const revenue = mySalesClosed.reduce((a,b)=>a+b.value,0);
   const rate = DB.me.commissionRate||0;
   const myCommissionClosed = revenue * rate / 100;
-  const commissions = DB.commissions||[];
-  const pend = commissions.filter(c=>c.status==='pendente').reduce((a,b)=>a+parseFloat(b.commission_value||0),0);
-  const appr = commissions.filter(c=>c.status==='aprovada').reduce((a,b)=>a+parseFloat(b.commission_value||0),0);
-  const paid = commissions.filter(c=>c.status==='paga').reduce((a,b)=>a+parseFloat(b.commission_value||0),0);
-  const totalComm = (pend+appr+paid) || myCommissionClosed;
+  const wallet=DB.wallet||{};
+  const pend=Number(wallet.pending_commission||0);
+  const available=Number(wallet.available||0);
+  const review=Number(wallet.under_review||0);
+  const paid=Number(wallet.withdrawn||0);
+  const totalComm=Number(wallet.gross_earned||0)||myCommissionClosed;
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat"><div class="stat-label">Clientes indicados</div><div class="stat-val" style="color:var(--violet2)">${myClients.length}</div></div>
     <div class="stat"><div class="stat-label">Vendas geradas (bruto)</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(revenue)}</div></div>
-    <div class="stat"><div class="stat-label">Minha comissão (${rate}%)</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(totalComm)}</div></div>
-    <div class="stat"><div class="stat-label">Comissão pendente</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(pend)}</div></div>`;
+    <div class="stat"><div class="stat-label">Saldo disponível</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(available)}</div></div>
+    <div class="stat"><div class="stat-label">Saques em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(review)}</div></div>`;
   document.getElementById('dash-clients-list').innerHTML = myClients.slice(0,6).map(c=>`
     <div style="padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px" onclick="goTo('clients')">
       <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(c.name))}</div>
       <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${escapeHTML(c.name)}</div></div>
     </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente indicado ainda</div>';
   document.getElementById('dash-rev-total').textContent = formatCurrencyBRL(totalComm);
-  document.getElementById('dash-rev-sub').textContent = `Pendente ${formatCurrencyBRL(pend)} · Aprovada ${formatCurrencyBRL(appr)} · Paga ${formatCurrencyBRL(paid)}`;
+  document.getElementById('dash-rev-sub').textContent = `Disponível ${formatCurrencyBRL(available)} · Em análise ${formatCurrencyBRL(review)} · Recebido ${formatCurrencyBRL(paid)}${pend?` · Pendente ${formatCurrencyBRL(pend)}`:''}`;
   document.getElementById('rev-chart').innerHTML = '';
   document.getElementById('dash-activity').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Comissões e indicações atualizam aqui</div>';
 }
@@ -2828,11 +2936,145 @@ async function confirmConvertTeamToClient(){
 /* ═══════════════════════════════════════════════════════════════
    AFILIADOS — visão de indicações e comissões (CEO/Gerente gerenciam)
    ═══════════════════════════════════════════════════════════════ */
+const WITHDRAWAL_STATUS = {
+  pending:['Em análise','pending'], approved:['Aprovado','approved'], paid:['Pago','paid'],
+  rejected:['Recusado','rejected'], cancelled:['Cancelado','cancelled']
+};
+const PIX_TYPE_LABEL = {cpf:'CPF',cnpj:'CNPJ',email:'E-mail',phone:'Telefone',random:'Aleatória'};
+let withdrawalRequestKey = null;
+let currentWithdrawalReviewId = null;
+
+function withdrawalStatusBadge(status){
+  const meta=WITHDRAWAL_STATUS[status]||[status,'cancelled'];
+  return `<span class="payout-status ${meta[1]}">${escapeHTML(meta[0])}</span>`;
+}
+function withdrawalDate(value){
+  if(!value) return '—';
+  return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));
+}
+async function refreshWithdrawalData(){
+  const {data:withdrawals,error} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
+  if(error) throw error;
+  DB.withdrawals=withdrawals||[];
+  if(isAffiliate()){
+    const {data,error:walletError}=await supa.rpc('get_affiliate_wallet');
+    if(walletError) throw walletError;
+    DB.wallet=data?.[0]||null;
+    renderAffiliateWallet();
+  } else if(isAdmin()){
+    const affiliateIds=DB.users.filter(u=>u.role==='affiliate').map(u=>u.id);
+    const rows=await Promise.all(affiliateIds.map(async id=>{
+      const {data,error:walletError}=await supa.rpc('get_affiliate_wallet',{p_affiliate_id:id});
+      if(walletError) throw walletError;
+      return data?.[0]||null;
+    }));
+    DB.affiliateWallets={}; rows.filter(Boolean).forEach(w=>DB.affiliateWallets[w.affiliate_id]=w);
+    renderAffiliates();
+  }
+}
+function renderAffiliateWallet(){
+  const shell=document.getElementById('affiliate-wallet');
+  const history=document.getElementById('affiliate-withdrawal-history');
+  if(!shell||!history) return;
+  shell.classList.toggle('visible',isAffiliate());
+  history.style.display=isAffiliate()?'block':'none';
+  if(!isAffiliate()) return;
+  const w=DB.wallet||{};
+  const available=Number(w.available||0);
+  document.getElementById('wallet-available').textContent=formatCurrencyBRL(available);
+  document.getElementById('wallet-review').textContent=formatCurrencyBRL(Number(w.under_review||0));
+  document.getElementById('wallet-paid').textContent=formatCurrencyBRL(Number(w.withdrawn||0));
+  const requestBtn=document.getElementById('wallet-request-btn');
+  requestBtn.disabled=available<1;
+  requestBtn.title=available<1?'Você ainda não possui saldo disponível':'';
+  const body=document.getElementById('affiliate-withdrawals-body');
+  body.innerHTML=DB.withdrawals.length?DB.withdrawals.map(row=>`<tr>
+    <td>${withdrawalDate(row.requested_at)}</td>
+    <td class="financial-value" style="font-weight:700;color:var(--text)">${formatCurrencyBRL(row.amount)}</td>
+    <td><div style="font-size:10px;color:var(--text3)">${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div class="pix-preview">${escapeHTML(row.pix_key)}</div></td>
+    <td>${withdrawalStatusBadge(row.status)}${row.rejection_reason?`<div style="font-size:10px;color:var(--rose);margin-top:5px;max-width:220px">${escapeHTML(row.rejection_reason)}</div>`:''}</td>
+    <td>${row.status==='pending'?`<button class="btn btn-ghost btn-xs" onclick="cancelWithdrawal('${row.id}')">Cancelar</button>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+  </tr>`).join(''):'<tr><td colspan="5" class="payout-empty">Nenhum saque solicitado ainda</td></tr>';
+}
+function openWithdrawalRequest(){
+  const available=Number(DB.wallet?.available||0);
+  if(available<1){ toast('Você ainda não possui saldo disponível','err'); return; }
+  withdrawalRequestKey=crypto.randomUUID();
+  document.getElementById('wd-amount').value=available.toFixed(2);
+  document.getElementById('wd-amount').max=available.toFixed(2);
+  document.getElementById('wd-available').textContent=formatCurrencyBRL(available);
+  document.getElementById('wd-pix-key').value='';
+  openModal('modal-withdrawal-request');
+}
+async function submitWithdrawalRequest(){
+  const amount=Number(document.getElementById('wd-amount').value);
+  const pixType=document.getElementById('wd-pix-type').value;
+  const pixKey=document.getElementById('wd-pix-key').value.trim();
+  if(!Number.isFinite(amount)||amount<1||!pixKey){ toast('Preencha o valor e a chave PIX','err'); return; }
+  const btn=document.getElementById('wd-submit'); btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    const {error}=await supa.rpc('request_affiliate_withdrawal',{p_amount:amount,p_pix_key_type:pixType,p_pix_key:pixKey,p_request_key:withdrawalRequestKey});
+    if(error) throw error;
+    closeModal('modal-withdrawal-request'); withdrawalRequestKey=null;
+    await refreshWithdrawalData();
+    toast('Saque enviado para análise ✓','ok');
+  }catch(e){ toast('Erro: '+(e.message||e),'err'); }
+  finally{btn.disabled=false;btn.textContent='Enviar para análise';}
+}
+async function cancelWithdrawal(id){
+  if(!confirm('Cancelar esta solicitação? O valor voltará ao saldo disponível.')) return;
+  const {error}=await supa.rpc('cancel_affiliate_withdrawal',{p_withdrawal_id:id});
+  if(error){toast('Erro: '+error.message,'err');return;}
+  await refreshWithdrawalData(); toast('Solicitação cancelada','ok');
+}
+function renderWithdrawalApproval(){
+  const stats=document.getElementById('payout-admin-stats'); const body=document.getElementById('payout-approval-body');
+  if(!stats||!body) return;
+  const pending=DB.withdrawals.filter(w=>w.status==='pending');
+  const approved=DB.withdrawals.filter(w=>w.status==='approved');
+  const paid=DB.withdrawals.filter(w=>w.status==='paid');
+  const pendingTotal=pending.reduce((s,w)=>s+Number(w.amount||0),0);
+  const approvedTotal=approved.reduce((s,w)=>s+Number(w.amount||0),0);
+  const paidTotal=paid.reduce((s,w)=>s+Number(w.amount||0),0);
+  stats.innerHTML=`<div class="stat"><div class="stat-label">Em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(pendingTotal)}</div><div class="stat-delta delta-neutral">${pending.length} solicitações</div></div><div class="stat"><div class="stat-label">Aprovado, aguardando PIX</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(approvedTotal)}</div><div class="stat-delta delta-neutral">${approved.length} pagamentos</div></div><div class="stat"><div class="stat-label">Total pago</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(paidTotal)}</div></div><div class="stat"><div class="stat-label">Histórico</div><div class="stat-val" style="color:var(--violet2)">${DB.withdrawals.length}</div><div class="stat-delta delta-neutral">registros auditados</div></div>`;
+  document.getElementById('payout-queue-count').textContent=`${pending.length} em análise`;
+  const ordered=DB.withdrawals.slice().sort((a,b)=>{
+    const rank={pending:0,approved:1,paid:2,rejected:3,cancelled:4};
+    return (rank[a.status]-rank[b.status])||new Date(b.requested_at)-new Date(a.requested_at);
+  });
+  body.innerHTML=ordered.length?ordered.map(row=>`<tr>
+    <td><div class="payout-person"><div class="av av-xs" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:9px">${escapeHTML(avatarInitials(row.affiliate_name_snapshot))}</div><strong>${escapeHTML(row.affiliate_name_snapshot)}</strong></div></td>
+    <td class="financial-value" style="font-weight:700">${formatCurrencyBRL(row.amount)}</td>
+    <td><div style="font-size:10px;color:var(--text3)">${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div class="pix-preview" title="${escapeHTML(row.pix_key)}">${escapeHTML(row.pix_key)}</div></td>
+    <td style="font-size:11px;color:var(--text2)">${withdrawalDate(row.requested_at)}</td><td>${withdrawalStatusBadge(row.status)}</td>
+    <td>${['pending','approved'].includes(row.status)?`<button class="btn btn-ghost btn-xs" onclick="openWithdrawalReview('${row.id}')">Analisar</button>`:'<span style="font-size:11px;color:var(--text3)">Concluído</span>'}</td>
+  </tr>`).join(''):'<tr><td colspan="6" class="payout-empty">Nenhuma solicitação de saque</td></tr>';
+}
+function openWithdrawalReview(id){
+  const row=DB.withdrawals.find(w=>w.id===id); if(!row)return;
+  currentWithdrawalReviewId=id; document.getElementById('wr-note').value='';
+  document.getElementById('wr-subtitle').textContent=`${row.affiliate_name_snapshot} · ${withdrawalDate(row.requested_at)}`;
+  document.getElementById('wr-summary').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><div class="fl">Valor</div><div class="financial-value" style="font-size:22px;font-weight:700;margin-top:5px">${formatCurrencyBRL(row.amount)}</div></div><div><div class="fl">Status</div><div style="margin-top:7px">${withdrawalStatusBadge(row.status)}</div></div></div><div style="margin-top:15px"><div class="fl">Chave PIX — ${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div style="font-size:13px;margin-top:6px;overflow-wrap:anywhere">${escapeHTML(row.pix_key)}</div></div>`;
+  document.getElementById('wr-actions').innerHTML=row.status==='pending'?`<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('approve')">Aprovar saque</button>`:`<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('pay')">Confirmar PIX pago</button>`;
+  openModal('modal-withdrawal-review');
+}
+async function performWithdrawalAction(action){
+  const note=document.getElementById('wr-note').value.trim();
+  if(action==='reject'&&note.length<3){toast('Informe o motivo da recusa','err');return;}
+  if(action==='pay'&&!confirm('Confirma que a transferência PIX já foi realizada?'))return;
+  const buttons=document.querySelectorAll('#wr-actions button');buttons.forEach(b=>b.disabled=true);
+  const {error}=await supa.rpc('review_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_action:action,p_note:note||null});
+  if(error){buttons.forEach(b=>b.disabled=false);toast('Erro: '+error.message,'err');return;}
+  closeModal('modal-withdrawal-review'); currentWithdrawalReviewId=null;
+  await refreshWithdrawalData(); toast(action==='pay'?'Pagamento confirmado ✓':action==='approve'?'Saque aprovado ✓':'Saque recusado','ok');
+}
+
 function loadAffiliates(){
   if(!canAccessPage('affiliates')){ toast('Sem permissão','err'); return; }
   renderAffiliates();
 }
 function renderAffiliates(){
+  renderWithdrawalApproval();
   const affiliates = DB.users.filter(u=>u.role==='affiliate');
   document.getElementById('affiliates-body').innerHTML = affiliates.length ? affiliates.map(a=>{
     const myClients = DB.clients.filter(c=>c.affiliateId===a.id);
@@ -2840,7 +3082,7 @@ function renderAffiliates(){
     const closedSales = DB.sales.filter(s=>clientIds.includes(s.client)&&s.status==='Fechado');
     const revenue = closedSales.reduce((sum,s)=>sum+s.value,0);
     const commissions = (DB.commissions||[]).filter(c=>c.affiliate_id===a.id);
-    const pending = commissions.filter(c=>c.status==='pendente').reduce((s,c)=>s+parseFloat(c.commission_value||0),0);
+    const available = Number(DB.affiliateWallets?.[a.id]?.available||0);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px">
         <div class="av av-sm" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:11px">${escapeHTML(a.av||avatarInitials(a.name))}</div>
@@ -2849,7 +3091,7 @@ function renderAffiliates(){
       <td><input class="fi" style="width:70px;padding:6px 8px" type="number" min="0" max="100" step="0.5" value="${a.commissionRate||0}" onchange="updateAffiliateCommission('${a.id}',this.value)" ${hasPermission('affiliates.manage')?'':'disabled'}></td>
       <td>${myClients.length}</td>
       <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(revenue)}</td>
-      <td class="financial-value" style="color:var(--amber);font-weight:600">${formatCurrencyBRL(pending)}</td>
+      <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(available)}</td>
       <td><button class="btn btn-ghost btn-xs" onclick="goTo('team');openEditTeamMember('${a.id}')">Ver perfil</button></td>
     </tr>`;
   }).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Nenhum afiliado cadastrado</td></tr>';
@@ -3163,6 +3405,7 @@ function getSalesFiltered(){
   return list;
 }
 function loadSales(){
+  renderAffiliateWallet();
   const allSales = getSalesFiltered();
   const closed   = allSales.filter(s=>s.status==='Fechado');
   const pending  = allSales.filter(s=>s.status==='Pendente');
@@ -3170,9 +3413,10 @@ function loadSales(){
   const revC = closed.reduce((a,b)=>a+b.value,0) * rate/100;
   const revP = pending.reduce((a,b)=>a+b.value,0) * rate/100;
   if(isAffiliate()){
+    const wallet=DB.wallet||{};
     document.getElementById('sales-stats').innerHTML=`
-      <div class="stat"><div class="stat-label">Minha comissão (fechadas)</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(revC)}</div><div class="stat-delta delta-up">${closed.length} vendas</div></div>
-      <div class="stat"><div class="stat-label">Comissão em negociação</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(revP)}</div><div class="stat-delta delta-neutral">${pending.length} negócios</div></div>
+      <div class="stat"><div class="stat-label">Comissões geradas</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(Number(wallet.gross_earned||revC))}</div><div class="stat-delta delta-up">${closed.length} vendas fechadas</div></div>
+      <div class="stat"><div class="stat-label">Em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(Number(wallet.under_review||0))}</div><div class="stat-delta delta-neutral">saques reservados</div></div>
       <div class="stat"><div class="stat-label">Minha taxa</div><div class="stat-val" style="color:var(--cyan)">${rate}%</div></div>
       <div class="stat"><div class="stat-label">Vendas geradas (bruto)</div><div class="stat-val" style="color:var(--violet2)">${formatCurrencyBRL(closed.reduce((a,b)=>a+b.value,0)+pending.reduce((a,b)=>a+b.value,0))}</div><div class="stat-delta delta-neutral">Referência</div></div>`;
   } else {
@@ -3910,6 +4154,7 @@ function closeModal(id){
   if(id==='modal-client')  editClientId = null;
   if(id==='modal-sale')    editSaleId = null;
   if(id==='modal-team')    editTeamId = null;
+  if(id==='modal-withdrawal-review') currentWithdrawalReviewId = null;
 }
 
 /* ═══ TOAST ═══ */
@@ -4097,3 +4342,4 @@ async function clearDB(){
 </script>
 </body>
 </html>
+
