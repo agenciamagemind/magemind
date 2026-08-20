@@ -127,6 +127,14 @@ tbody td:first-child{padding-left:20px}
 .k-card-foot{display:flex;align-items:center;gap:6px}
 .k-card-client{font-size:11px;color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .k-card-date{font-size:11px;color:var(--text3)}
+.demand-context-menu{position:fixed;z-index:480;width:190px;padding:6px;background:rgba(23,23,42,.98);border:1px solid var(--border2);border-radius:11px;box-shadow:0 18px 48px rgba(0,0,0,.52);backdrop-filter:blur(14px);display:none}
+.demand-context-menu.open{display:block;animation:contextIn .12s ease-out}
+.demand-context-item{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:var(--text2);font:600 12px 'Manrope',sans-serif;text-align:left;cursor:pointer;transition:background .12s,color .12s}
+.demand-context-item:hover{background:var(--bg5);color:var(--text)}
+.demand-context-item.danger{color:var(--rose)}
+.demand-context-item.danger:hover{background:var(--rosebg)}
+.demand-context-separator{height:1px;background:var(--border);margin:5px 4px}
+@keyframes contextIn{from{opacity:0;transform:translateY(-3px) scale(.98)}to{opacity:1;transform:none}}
 .k-add{display:flex;align-items:center;gap:7px;padding:9px 14px;color:var(--text3);font-size:12px;font-weight:500;cursor:pointer;border-radius:var(--r);margin:6px 10px;transition:all .15s;border:1px dashed transparent}
 .k-add:hover{background:var(--bg3);border-color:var(--border);color:var(--text2)}
 .overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -927,6 +935,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
     </div>
     <div class="dd-grid">
       <div class="dd-main">
+        <div id="det-status-controls"></div>
         <section class="detail-section detail-section-card" id="det-desc-section">
           <div class="detail-section-head">
             <div class="detail-section-title"><span>◫</span> Descrição</div>
@@ -941,7 +950,6 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           </div>
           <div class="rich-text detail-rich-text" id="det-refs"></div>
         </section>
-        <div id="det-status-controls"></div>
         <section class="detail-section" id="det-comments-section">
           <div class="detail-comments-head">
             <div class="detail-section-title"><span>◌</span> Comentários</div>
@@ -965,6 +973,9 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
     </div>
   </div>
 </div>
+
+<!-- MENU DE CONTEXTO: Demandas do Kanban -->
+<div class="demand-context-menu" id="demand-context-menu" role="menu" aria-label="Ações da demanda"></div>
 
 <!-- MODAL: Planos e Pacotes -->
 <div class="overlay" id="modal-plans" onclick="if(event.target===this)closeModal('modal-plans')">
@@ -2867,12 +2878,37 @@ function renderCard(d){
     ondragleave="cardDragLeave(event,'${d.id}')"` : `draggable="false" style="cursor:default"`;
   // Editor não vê dados sensíveis do cliente — mostra só o nome do projeto/cliente, sem contato/valores
   const clientLabel = isEditor() ? (cn(d.client)||'—') : cn(d.client);
-  return `<div class="k-card" id="kc-${d.id}" ${dragAttrs}
+  return `<div class="k-card" id="kc-${d.id}" data-demand-id="${escapeHTML(String(d.id))}" ${dragAttrs}
     onclick="openDetail('${d.id}')">
     <div class="k-card-title">${escapeHTML(d.title)}</div>
     <div class="k-card-tags"><span class="badge ${pr[d.priority]}">${escapeHTML(d.priority)}</span>${d.comments.length?`<span class="badge b-muted">💬 ${d.comments.length}</span>`:''}${!draggable?'<span class="badge b-muted">👁 leitura</span>':''}</div>
     <div class="k-card-foot"><span class="k-card-client">${escapeHTML(clientLabel)}</span><span class="k-card-date">${escapeHTML(fDate(d.date))}</span><div class="av av-xs" style="flex-shrink:0" title="${escapeHTML(d.assignee)}">${avHtml}</div></div>
   </div>`;
+}
+
+function closeDemandContextMenu(){
+  const menu=document.getElementById('demand-context-menu');
+  if(!menu) return;
+  menu.classList.remove('open');
+  menu.innerHTML='';
+}
+
+function openDemandContextMenu(event,id){
+  event.preventDefault();
+  event.stopPropagation();
+  const d=DB.demands.find(x=>x.id===id);
+  const menu=document.getElementById('demand-context-menu');
+  if(!d||!menu||!canViewDemand(d)) return;
+  const actions=[];
+  if(canEditDemand(d)) actions.push(`<button class="demand-context-item" role="menuitem" data-action="open-detail" data-id="${escapeHTML(String(d.id))}"><span>✎</span> Editar</button>`);
+  if(hasPermission('demands.create')) actions.push(`<button class="demand-context-item" role="menuitem" data-action="duplicate-demand" data-id="${escapeHTML(String(d.id))}"><span>⧉</span> Duplicar</button>`);
+  if(canDeleteDemand()) actions.push(`<div class="demand-context-separator"></div><button class="demand-context-item danger" role="menuitem" data-action="delete-demand" data-id="${escapeHTML(String(d.id))}"><span>✕</span> Excluir</button>`);
+  if(!actions.length) return;
+  menu.innerHTML=actions.join('');
+  menu.classList.add('open');
+  const pad=8, width=menu.offsetWidth, height=menu.offsetHeight;
+  menu.style.left=`${Math.max(pad,Math.min(event.clientX,window.innerWidth-width-pad))}px`;
+  menu.style.top=`${Math.max(pad,Math.min(event.clientY,window.innerHeight-height-pad))}px`;
 }
 
 function renderDemandsList(){
@@ -3587,6 +3623,7 @@ async function openDetail(id){
   // Ações do rodapé: Editor também possui autoridade completa sobre demandas.
   if(editable){
     document.getElementById('det-admin-controls').innerHTML = `
+      ${hasPermission('demands.create')?`<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-bottom:10px" data-action="duplicate-demand" data-id="${d.id}" data-open-detail="true">⧉ Duplicar demanda</button>`:''}
       <div class="detail-danger-zone">
         ${canDeleteDemand()?`<button class="btn btn-danger btn-sm" style="width:100%;justify-content:center" data-action="delete-demand" data-id="${d.id}">✕ Excluir demanda</button>`:''}
       </div>`;
@@ -3679,6 +3716,42 @@ async function deleteDemand(){
   DB.demands = DB.demands.filter(x=>x.id!==currentDemandId);
   closeModal('modal-detail'); toast('Demanda excluída','ok');
   buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
+}
+
+let demandDuplicateInFlight=false;
+async function duplicateDemand(id=currentDemandId,openAfter=false){
+  if(demandDuplicateInFlight) return;
+  if(!hasPermission('demands.create')){ toast('Sem permissão para duplicar demandas','err'); return; }
+  const source=DB.demands.find(x=>x.id===id);
+  if(!source||!canViewDemand(source)){ toast('Demanda não encontrada','err'); return; }
+  demandDuplicateInFlight=true;
+  closeDemandContextMenu();
+  try{
+    const title=`cópia-${source.title}`;
+    const {data:nd,error}=await supa.from('demands').insert({
+      title,
+      client_id:source.client||null,
+      assignee_id:source.assigneeId||null,
+      priority:source.priority||'Média',
+      status:source.status||'Não iniciado',
+      due_date:source.date||null,
+      description:source.desc||'',
+      refs:source.refs||'',
+      created_by:DB.me.id,
+      sort_order:0
+    }).select('*').single();
+    if(error){ toast('Erro ao duplicar demanda: '+error.message,'err'); return; }
+    const copied=mapDemand(nd);
+    copied.comments=[];
+    DB.demands.unshift(copied);
+    await supa.from('activity').insert({icon:'⧉',bg:'var(--violetbg)',text:`${DB.me.name} duplicou demanda: ${title}`});
+    if(isStaffRole()) await dbPushNotifToClient(source.client,'📋','var(--violetbg)','Demanda duplicada',`${DB.me.name} criou "${title}".`,nd.id);
+    buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
+    toast('Demanda duplicada! ✓','ok');
+    if(openAfter) await openDetail(nd.id);
+  } finally {
+    demandDuplicateInFlight=false;
+  }
 }
 
 /* ═══ PLANS (configurações) ═══ */
@@ -3890,11 +3963,24 @@ document.addEventListener('click', function(e){
   if(!btn) return;
   const action = btn.dataset.action;
   const id     = btn.dataset.id;
+  closeDemandContextMenu();
   if(action === 'open-detail')   { openDetail(id); }
   if(action === 'edit-demand')   { openEditDemand(id); }
   if(action === 'delete-demand') { currentDemandId = id; deleteDemand(); }
+  if(action === 'duplicate-demand') { duplicateDemand(id,btn.dataset.openDetail==='true'); }
   if(action === 'change-status') { changeStatus(btn.dataset.status); }
 });
+document.addEventListener('contextmenu',function(e){
+  const card=e.target.closest('.k-card[data-demand-id]');
+  if(card) openDemandContextMenu(e,card.dataset.demandId);
+  else closeDemandContextMenu();
+});
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('demand-context-menu');
+  if(menu&&!menu.contains(e.target)) closeDemandContextMenu();
+});
+window.addEventListener('resize',closeDemandContextMenu);
+document.addEventListener('scroll',closeDemandContextMenu,true);
 
 /* ═══ HELPERS ═══ */
 function cn(id){ return DB.clients.find(c=>c.id===id)?.name||'—'; }
