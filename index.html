@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
   <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1163,6 +1163,27 @@ function fmtTime(ts){ return ts ? new Date(ts).toLocaleTimeString('pt-BR',{hour:
 function fmtDate(ts){ return ts ? new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : 'hoje'; }
 function fDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
 
+/* Todo valor vindo do banco ou de um formulário deve passar por estes helpers
+   antes de entrar em HTML dinâmico. O cache continua guardando o texto puro. */
+function escapeHTML(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[ch]);
+}
+function safeImageUrl(value){
+  const url = String(value||'');
+  if(/^https:\/\//i.test(url) || /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) return escapeHTML(url);
+  return '';
+}
+function safeDocumentDataUrl(value){
+  const url = String(value||'');
+  return /^data:(?:application\/pdf|image\/(?:png|jpe?g|gif|webp));base64,/i.test(url) ? url : '';
+}
+function safeThemeColor(value, fallback='var(--violetbg)'){
+  const color = String(value||'');
+  return /^var\(--[a-z0-9-]+\)$/i.test(color) ? color : fallback;
+}
+
 /* ═══ MAPPERS Supabase → cache ═══ */
 function mapClient(c){
   return {
@@ -1200,7 +1221,7 @@ function mapDoc(d){
   return {
     id:d.id, name:d.name, cat:d.category||'Outros',
     icon:d.icon||'📄', client:d.client_id,
-    size:d.file_size||'—', url:d.file_url||null,
+    size:d.file_size||'—', url:d.file_url||null, storagePath:d.storage_path||null,
     fileName:d.file_name||null,
     visibility:d.visibility||'internal', // internal|client|affiliate|public|restricted
     date:d.created_at ? new Date(d.created_at).toLocaleDateString('pt-BR') : ''
@@ -1409,26 +1430,10 @@ async function afterLogin(authUser){
       return;
     }
     if(!prof){
-      // Sem perfil: só ocorre no primeiro login do admin master.
-      // Qualquer outro usuário deve ter sido criado via doRegister() ou pelo admin.
-      const isAdminEmail = authUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-      if(!isAdminEmail){
-        toast('Perfil de usuário não encontrado. Entre em contato com o administrador.','err');
-        await supa.auth.signOut();
-        return;
-      }
-      // Cria perfil admin master automaticamente
-      const av = (authUser.email.split('@')[0].slice(0,2)).toUpperCase();
-      const {error:createErr} = await supa.from('profiles').insert({
-        id:authUser.id, name:'Gabriel Rossi', role:'ceo', av
-      });
-      if(createErr){
-        toast('Erro ao criar perfil admin: '+createErr.message,'err');
-        console.error('afterLogin profile create error:', createErr);
-        return;
-      }
-      toast('Bem-vindo, Admin Master! Recarregando...','ok');
-      setTimeout(()=>location.reload(), 1500);
+      // Perfis privilegiados nunca são criados pelo navegador. Isso evita que
+      // qualquer e-mail especial seja transformado em CEO pelo cliente web.
+      toast('Perfil de usuário não encontrado. Entre em contato com o administrador.','err');
+      await supa.auth.signOut();
       return;
     }
 
@@ -1769,7 +1774,7 @@ function updateSidebarUser(){
   const u = DB.me;
   if(!u) return;
   const avEl = document.getElementById('sb-av');
-  avEl.innerHTML = u.photo ? `<img src="${u.photo}" alt="">` : u.av;
+  avEl.innerHTML = safeImageUrl(u.photo) ? `<img src="${safeImageUrl(u.photo)}" alt="">` : escapeHTML(u.av);
   document.getElementById('sb-name').textContent = u.name;
   if(isClient()){
     const c = DB.clients.find(x=>x.id===u.clientId);
@@ -1795,9 +1800,9 @@ function updateSidebarUser(){
   updateNotifBadge();
   const cmtAv = document.getElementById('det-comment-av');
   if(cmtAv){
-    cmtAv.innerHTML = u.photo
-      ? `<img src="${u.photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      : u.av;
+    cmtAv.innerHTML = safeImageUrl(u.photo)
+      ? `<img src="${safeImageUrl(u.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      : escapeHTML(u.av);
   }
 }
 
@@ -1938,10 +1943,10 @@ function loadDashGestor(){
   document.getElementById('dash-demands-list').innerHTML = all
     .slice().sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')).slice(0,10).map(d=>`
     <tr onclick="openDetail('${d.id}')">
-      <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.title}</td>
-      <td style="color:var(--text2)">${cn(d.client)}</td>
+      <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(d.title)}</td>
+      <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
-      <td style="font-size:12px;color:var(--text2)">${d.assignee||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${escapeHTML(d.assignee||'—')}</td>
     </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Nenhuma demanda</td></tr>';
   const sc = {'Não iniciado':notStarted,'Em andamento':prog,'Concluído':done};
   const total = all.length;
@@ -1970,8 +1975,8 @@ function loadDashEditor(){
     <div class="stat"><div class="stat-label">Atrasadas</div><div class="stat-val" style="color:var(--rose)">${late}</div></div>`;
   document.getElementById('dash-demands-list').innerHTML = mine.slice(0,8).map(d=>`
     <tr onclick="openDetail('${d.id}')">
-      <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.title}</td>
-      <td style="color:var(--text2)">${cn(d.client)}</td>
+      <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(d.title)}</td>
+      <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(d.date)}</td>
     </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Nenhuma demanda atribuída</td></tr>';
@@ -2007,8 +2012,8 @@ function loadDashAffiliate(){
     <div class="stat"><div class="stat-label">Comissão pendente</div><div class="stat-val" style="color:var(--amber)">R$ ${pend.toLocaleString('pt-BR')}</div></div>`;
   document.getElementById('dash-clients-list').innerHTML = myClients.slice(0,6).map(c=>`
     <div style="padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px" onclick="goTo('clients')">
-      <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${avatarInitials(c.name)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${c.name}</div></div>
+      <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(c.name))}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${escapeHTML(c.name)}</div></div>
     </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente indicado ainda</div>';
   document.getElementById('dash-rev-total').textContent = `R$ ${totalComm.toLocaleString('pt-BR')}`;
   document.getElementById('dash-rev-sub').textContent = `Pendente R$ ${pend.toLocaleString('pt-BR')} · Aprovada R$ ${appr.toLocaleString('pt-BR')} · Paga R$ ${paid.toLocaleString('pt-BR')}`;
@@ -2032,7 +2037,7 @@ function loadDashClient(){
     <div class="stat"><div class="stat-label">Documentos</div><div class="stat-val" style="color:var(--violet2)">${DB.docs.length}</div></div>`;
   document.getElementById('dash-demands-list').innerHTML = mine.slice(0,8).map(d=>`
     <tr onclick="openDetail('${d.id}')">
-      <td style="font-weight:500">${d.title}</td><td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
+      <td style="font-weight:500">${escapeHTML(d.title)}</td><td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(d.date)}</td>
     </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Nenhuma demanda</td></tr>';
   document.getElementById('dash-activity').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Últimos comentários e atualizações aparecem aqui</div>';
@@ -2059,18 +2064,18 @@ function loadDashFull(){
 
   document.getElementById('dash-demands-list').innerHTML = DB.demands.slice(0,5).map(d=>`
     <tr onclick="openDetail('${d.id}')">
-      <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.title}</td>
-      <td style="color:var(--text2)">${cn(d.client)}</td>
+      <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(d.title)}</td>
+      <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${avatarInitials(d.assignee)}</div><span style="font-size:12px;color:var(--text2)">${d.assignee.split(' ')[0]}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${escapeHTML(avatarInitials(d.assignee))}</div><span style="font-size:12px;color:var(--text2)">${escapeHTML(d.assignee.split(' ')[0])}</span></div></td>
     </tr>`).join('');
 
   const actClients = DB.clients.filter(c=>c.status==='Ativo').slice(0,6);
   document.getElementById('dash-clients-list').innerHTML = actClients.length
     ? actClients.map(c=>`
       <div style="padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'" onclick="goTo('clients')">
-        <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${avatarInitials(c.name)}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.type}</div></div>
+        <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(c.name))}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(c.name)}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(c.type)}</div></div>
         <div style="font-size:12px;font-weight:600;color:var(--emerald)">R$ ${(DB.sales.filter(s=>s.client===c.id&&s.status==='Fechado').reduce((a,b)=>a+b.value,0)/1000).toFixed(1)}k</div>
       </div>`).join('')
     : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente ativo</div>';
@@ -2103,8 +2108,8 @@ function loadDashFull(){
     </div>`).join('');
 
   document.getElementById('dash-activity').innerHTML = DB.activity.slice(0,5).map(a=>`
-    <div class="act-item"><div class="act-icon" style="background:${a.bg}">${a.icon}</div>
-    <div><div class="act-text">${a.text}</div><div class="act-time">${a.time}</div></div></div>`).join('')
+    <div class="act-item"><div class="act-icon" style="background:${safeThemeColor(a.bg)}">${escapeHTML(a.icon)}</div>
+    <div><div class="act-text">${escapeHTML(a.text)}</div><div class="act-time">${escapeHTML(a.time)}</div></div></div>`).join('')
     || '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Sem atividade recente</div>';
 }
 
@@ -2159,19 +2164,19 @@ function renderClients(filter){
   document.getElementById('clients-body').innerHTML = list.length ? list.map(c=>`
     <tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:11px">${avatarInitials(c.name)}</div>
-        <div><div style="font-weight:600">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.email}</div></div>
+        <div class="av av-sm" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:11px">${escapeHTML(avatarInitials(c.name))}</div>
+        <div><div style="font-weight:600">${escapeHTML(c.name)}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(c.email)}</div></div>
       </div></td>
-      <td><div style="font-size:12px;color:var(--text2)">${c.notes||'—'}</div></td>
+      <td><div style="font-size:12px;color:var(--text2)">${escapeHTML(c.notes||'—')}</div></td>
       <td><span style="font-weight:700;color:var(--violet2)">${DB.demands.filter(d=>d.client===c.id).length}</span></td>
       <td><span style="font-weight:600;color:var(--emerald)">R$ ${(isAffiliate()
             ? DB.sales.filter(s=>s.client===c.id&&s.status==='Fechado').reduce((a,b)=>a+b.value,0) * (DB.me.commissionRate||0) / 100
             : DB.sales.filter(s=>s.client===c.id&&s.status==='Fechado').reduce((a,b)=>a+b.value,0)
           ).toLocaleString('pt-BR')}</span></td>
       <td>${c.status==='Ativo'?'<span class="badge b-emerald"><span class="dot-badge" style="background:var(--emerald)"></span>Ativo</span>':c.status==='Pausado'?'<span class="badge b-amber">Pausado</span>':'<span class="badge b-muted">Inativo</span>'}</td>
-      <td><span style="font-size:12px;color:var(--cyan)">${c.phone||'—'}</span></td>
-      <td><div style="display:flex;flex-wrap:wrap;gap:4px">${(c.planIds&&c.planIds.length?c.planIds:[]).map(pid=>{const pn=getPlanName(pid);return pn?`<span class="badge b-violet" style="font-size:10px">${pn}</span>`:'';}).join('') || '<span class="badge b-muted" style="font-size:10px">Sem plano</span>'}</div></td>
-      <td>${(()=>{const af=DB.users.find(u=>u.id===c.affiliateId);return af?`<span class="badge b-cyan" style="font-size:10px">👤 ${af.name}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>'})()}</td>
+      <td><span style="font-size:12px;color:var(--cyan)">${escapeHTML(c.phone||'—')}</span></td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:4px">${(c.planIds&&c.planIds.length?c.planIds:[]).map(pid=>{const pn=getPlanName(pid);return pn?`<span class="badge b-violet" style="font-size:10px">${escapeHTML(pn)}</span>`:'';}).join('') || '<span class="badge b-muted" style="font-size:10px">Sem plano</span>'}</div></td>
+      <td>${(()=>{const af=DB.users.find(u=>u.id===c.affiliateId);return af?`<span class="badge b-cyan" style="font-size:10px">👤 ${escapeHTML(af.name)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>'})()}</td>
       <td style="font-size:11px;color:var(--text3);white-space:nowrap">${clientDisplayDate(c)}</td>
       <td><div style="display:flex;gap:6px">
         ${canEditC?`<button class="btn btn-ghost btn-xs" onclick="openEditClient('${c.id}')">✎ Editar</button>`:''}
@@ -2394,7 +2399,7 @@ function loadDemands(){
   if(isAdmin()||isGestor()||isEditor()){
     dd.style.display='block';
     dd.innerHTML='<option value="">Todos os clientes</option>'+
-      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   } else { dd.style.display='none'; }
   mineWrap.style.display = (isGestor()||isEditor()) ? 'flex' : 'none';
   document.getElementById('demands-sub').textContent = (isAdmin()||isGestor()||isEditor()) ? 'Kanban de tarefas e projetos' : 'Suas demandas ativas';
@@ -2415,11 +2420,11 @@ function renderTeam(){
     const canManage = canEditTeamMember(u);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--violet),var(--pink));font-size:11px">${u.av||avatarInitials(u.name)}</div>
-        <div><div style="font-weight:600">${u.name}${isProtected?' <span class="badge b-violet" style="font-size:9px">PROTEGIDO</span>':''}</div><div style="font-size:11px;color:var(--text3)">${u.email||''}</div></div>
+        <div class="av av-sm" style="background:linear-gradient(135deg,var(--violet),var(--pink));font-size:11px">${escapeHTML(u.av||avatarInitials(u.name))}</div>
+        <div><div style="font-weight:600">${escapeHTML(u.name)}${isProtected?' <span class="badge b-violet" style="font-size:9px">PROTEGIDO</span>':''}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div>
       </div></td>
-      <td><span style="font-size:12px;color:var(--cyan)">${u.phone||'—'}</span></td>
-      <td><span class="badge ${u.role==='ceo'?'b-pink':u.role==='manager'?'b-violet':u.role==='gestor'?'b-cyan':u.role==='editor'?'b-cyan':'b-amber'}">${ROLE_LABELS[u.role]||u.role}</span>${u.role==='affiliate'?` <span class="badge b-emerald" style="font-size:10px">${u.commissionRate||0}% comissão</span>`:''}</td>
+      <td><span style="font-size:12px;color:var(--cyan)">${escapeHTML(u.phone||'—')}</span></td>
+      <td><span class="badge ${u.role==='ceo'?'b-pink':u.role==='manager'?'b-violet':u.role==='gestor'?'b-cyan':u.role==='editor'?'b-cyan':'b-amber'}">${escapeHTML(ROLE_LABELS[u.role]||u.role)}</span>${u.role==='affiliate'?` <span class="badge b-emerald" style="font-size:10px">${Number(u.commissionRate)||0}% comissão</span>`:''}</td>
       <td>${u.active!==false?'<span class="badge b-emerald">Ativo</span>':'<span class="badge b-muted">Inativo</span>'}</td>
       <td><div style="display:flex;gap:6px">
         ${canManage?`<button class="btn btn-ghost btn-xs" onclick="openEditTeamMember('${u.id}')">✎ Editar</button>
@@ -2658,8 +2663,8 @@ function renderAffiliates(){
     const pending = commissions.filter(c=>c.status==='pendente').reduce((s,c)=>s+parseFloat(c.commission_value||0),0);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:11px">${a.av||avatarInitials(a.name)}</div>
-        <div style="font-weight:600">${a.name}</div>
+        <div class="av av-sm" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:11px">${escapeHTML(a.av||avatarInitials(a.name))}</div>
+        <div style="font-weight:600">${escapeHTML(a.name)}</div>
       </div></td>
       <td><input class="fi" style="width:70px;padding:6px 8px" type="number" min="0" max="100" step="0.5" value="${a.commissionRate||0}" onchange="updateAffiliateCommission('${a.id}',this.value)" ${hasPermission('affiliates.manage')?'':'disabled'}></td>
       <td>${myClients.length}</td>
@@ -2728,9 +2733,9 @@ function renderKanban(){
 
 function renderCard(d){
   const pr = {Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'};
-  const avHtml = d.assigneePhoto
-    ? `<img src="${d.assigneePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-    : (d.assigneeAv||avatarInitials(d.assignee));
+  const avHtml = safeImageUrl(d.assigneePhoto)
+    ? `<img src="${safeImageUrl(d.assigneePhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+    : escapeHTML(d.assigneeAv||avatarInitials(d.assignee));
   const draggable = canMoveDemand(d); // afiliado não acessa demandas; editor só arrasta se tiver permissão de mover
   const dragAttrs = draggable ? `draggable="true"
     ondragstart="dragStart(event,'${d.id}')"
@@ -2741,9 +2746,9 @@ function renderCard(d){
   const clientLabel = isEditor() ? (cn(d.client)||'—') : cn(d.client);
   return `<div class="k-card" id="kc-${d.id}" ${dragAttrs}
     onclick="openDetail('${d.id}')">
-    <div class="k-card-title">${d.title}</div>
-    <div class="k-card-tags"><span class="badge ${pr[d.priority]}">${d.priority}</span>${d.comments.length?`<span class="badge b-muted">💬 ${d.comments.length}</span>`:''}${!draggable?'<span class="badge b-muted">👁 leitura</span>':''}</div>
-    <div class="k-card-foot"><span class="k-card-client">${clientLabel}</span><span class="k-card-date">${fDate(d.date)}</span><div class="av av-xs" style="flex-shrink:0" title="${d.assignee}">${avHtml}</div></div>
+    <div class="k-card-title">${escapeHTML(d.title)}</div>
+    <div class="k-card-tags"><span class="badge ${pr[d.priority]}">${escapeHTML(d.priority)}</span>${d.comments.length?`<span class="badge b-muted">💬 ${d.comments.length}</span>`:''}${!draggable?'<span class="badge b-muted">👁 leitura</span>':''}</div>
+    <div class="k-card-foot"><span class="k-card-client">${escapeHTML(clientLabel)}</span><span class="k-card-date">${escapeHTML(fDate(d.date))}</span><div class="av av-xs" style="flex-shrink:0" title="${escapeHTML(d.assignee)}">${avHtml}</div></div>
   </div>`;
 }
 
@@ -2751,11 +2756,11 @@ function renderDemandsList(){
   const demands = getMyDemands();
   document.getElementById('demands-list-body').innerHTML = demands.map(d=>`
     <tr onclick="openDetail('${d.id}')">
-      <td style="font-weight:500">${d.title}</td>
-      <td style="color:var(--text2)">${cn(d.client)}</td>
+      <td style="font-weight:500">${escapeHTML(d.title)}</td>
+      <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td>
       <td>${prBadge(d.priority)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${d.assigneePhoto?`<img src="${d.assigneePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:avatarInitials(d.assignee)}</div><span style="font-size:12px">${d.assignee}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${safeImageUrl(d.assigneePhoto)?`<img src="${safeImageUrl(d.assigneePhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escapeHTML(avatarInitials(d.assignee))}</div><span style="font-size:12px">${escapeHTML(d.assignee)}</span></div></td>
       <td style="font-size:12px;color:var(--text2)">${fDate(d.date)}</td>
     </tr>`).join('');
 }
@@ -2810,7 +2815,7 @@ function openNewDemand(status){
   document.getElementById('md-btn-label').textContent = 'Criar demanda';
   const dc = document.getElementById('d-client');
   if(isAdmin()||isGestor()){
-    dc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    dc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
     document.getElementById('d-client-wrap').style.display='flex';
     document.getElementById('d-assignee-wrap').style.display= canChangeDemandAssignee() ? 'flex' : 'none';
   } else {
@@ -2820,7 +2825,7 @@ function openNewDemand(status){
   }
   document.getElementById('d-status').value = status||'Não iniciado';
   const dAssign = document.getElementById('d-assignee');
-  if(dAssign) dAssign.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  if(dAssign) dAssign.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
   document.getElementById('d-title').value = '';
   document.getElementById('d-desc').value  = '';
   const td = new Date(); td.setDate(td.getDate()+7);
@@ -2875,7 +2880,7 @@ async function saveDemand(){
       const mapped = mapDemand(nd);
       mapped.comments = [];
       DB.demands.unshift(mapped);
-      await supa.from('activity').insert({icon:'➕',bg:'var(--cyanbg)',text:`<strong>${DB.me.name}</strong> criou demanda <em>${title}</em>`});
+      await supa.from('activity').insert({icon:'➕',bg:'var(--cyanbg)',text:`${DB.me.name} criou demanda: ${title}`});
       if(isStaffRole()){
         await dbPushNotifToClient(clientId,'📋','var(--cyanbg)','Nova demanda criada',`${DB.me.name} criou "${title}" para você.`,nd.id);
       } else {
@@ -2978,12 +2983,12 @@ function loadSales(){
   const canDelS  = hasPermission('sales.delete');
   document.getElementById('sales-body').innerHTML = allSales.length ? allSales.map(s=>`
     <tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${avatarInitials(cn(s.client))}</div><span style="font-weight:500">${cn(s.client)}</span></div></td>
-      <td style="color:var(--text2)">${s.service}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(cn(s.client)))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
+      <td style="color:var(--text2)">${escapeHTML(s.service)}</td>
       <td style="font-weight:700;color:var(--emerald)">R$ ${(isAffiliate() ? s.value*(DB.me.commissionRate||0)/100 : s.value).toLocaleString('pt-BR')}</td>
       <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
-      <td style="font-size:12px;color:var(--text2)">${s.assignee}</td>
+      <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee)}</td>
       <td><div style="display:flex;gap:6px">
         ${canEditS?`<button class="btn btn-ghost btn-xs" onclick="openEditSale('${s.id}')">✎</button>`:''}
         ${canDelS?`<button class="btn btn-danger btn-xs" onclick="removeSale('${s.id}')">✕</button>`:''}
@@ -2995,12 +3000,12 @@ function loadSales(){
 
 function populateSaleAssignee(){
   const sel = document.getElementById('s-assignee'); if(!sel) return;
-  sel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+  sel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${escapeHTML(u.name)}">${escapeHTML(u.name)}</option>`).join('');
 }
 function populateSalePlans(){
   const sel = document.getElementById('s-plan');
   sel.innerHTML = '<option value="">Selecionar pacote...</option>'+
-    DB.plans.filter(p=>p.active).map(p=>`<option value="${p.id}" data-price="${p.price}">${p.name} — R$ ${p.price.toLocaleString('pt-BR')}</option>`).join('');
+    DB.plans.filter(p=>p.active).map(p=>`<option value="${p.id}" data-price="${Number(p.price)||0}">${escapeHTML(p.name)} — R$ ${p.price.toLocaleString('pt-BR')}</option>`).join('');
 }
 function updateSaleValue(){
   const sel=document.getElementById('s-plan'); const opt=sel.options[sel.selectedIndex];
@@ -3011,7 +3016,7 @@ function updateSaleDemands(){
   const demandsEl = document.getElementById('s-demand');
   const clientDemands = DB.demands.filter(d=>d.client===cid);
   demandsEl.innerHTML = '<option value="">Nenhuma demanda vinculada</option>'+
-    clientDemands.map(d=>`<option value="${d.id}">${d.title}</option>`).join('');
+    clientDemands.map(d=>`<option value="${d.id}">${escapeHTML(d.title)}</option>`).join('');
 }
 function populateClientPlanSelect(selectedIds){
   const box = document.getElementById('c-plans-box'); if(!box) return;
@@ -3019,7 +3024,7 @@ function populateClientPlanSelect(selectedIds){
   const active = DB.plans.filter(p=>p.active);
   box.innerHTML = active.length ? active.map(p=>`
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:var(--bg2);padding:6px 10px;border-radius:6px;cursor:pointer;user-select:none">
-      <input type="checkbox" value="${p.id}" class="c-plan-chk" ${selected.has(p.id)?'checked':''}> ${p.name}
+      <input type="checkbox" value="${p.id}" class="c-plan-chk" ${selected.has(p.id)?'checked':''}> ${escapeHTML(p.name)}
     </label>`).join('') : '<div style="font-size:12px;color:var(--text3)">Nenhum plano cadastrado ainda</div>';
 }
 function getCheckedPlanIds(){
@@ -3029,7 +3034,7 @@ function getCheckedPlanIds(){
 function populateClientAffiliateSelect(){
   const sel = document.getElementById('c-affiliate'); if(!sel) return;
   const affiliates = DB.users.filter(u=>u.role==='affiliate');
-  sel.innerHTML = '<option value="">Nenhum</option>'+affiliates.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  sel.innerHTML = '<option value="">Nenhum</option>'+affiliates.map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
   sel.closest('.fg').style.display = hasPermission('affiliates.manage')||isManager() ? 'flex' : 'none';
 }
 
@@ -3058,7 +3063,7 @@ async function openNewSale(){
 
   const sc = document.getElementById('s-client');
   sc.innerHTML = DB.clients.length
-    ? DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
+    ? DB.clients.map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('')
     : '<option value="">Nenhum cliente cadastrado</option>';
 
   populateSaleAssignee(); populateSalePlans(); updateSaleDemands();
@@ -3073,7 +3078,7 @@ function openEditSale(id){
   document.getElementById('ms-title').textContent = 'Editar venda';
   document.getElementById('ms-btn-label').textContent = 'Salvar alterações';
   const sc = document.getElementById('s-client');
-  sc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  sc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   sc.value = s.client;
   populateSaleAssignee(); populateSalePlans(); updateSaleDemands();
   setTimeout(()=>{document.getElementById('s-plan').value=s.plan||'';document.getElementById('s-demand').value=s.demand||'';},0);
@@ -3158,62 +3163,60 @@ function renderDocs(list){
   const canDel = hasPermission('docs.delete');
   if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:32px;opacity:.3;margin-bottom:10px">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2)">Nenhum documento</div></div>'; return; }
   grid.innerHTML = list.map(d=>`
-    <div class="doc-card" onclick="openDoc('${d.id}')">
-      <span class="doc-icon">${d.icon||'📄'}</span>
-      <div class="doc-name">${d.name}</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${d.cat}</span></div>
-      <div class="doc-meta">${d.size||''} ${d.date?'· '+d.date:''}</div>
-      ${d.client?`<div class="doc-meta">📎 ${cn(d.client)}</div>`:'<div class="doc-meta">📁 Interno</div>'}
+    <div class="doc-card" onclick="openDoc('${escapeHTML(d.id)}')">
+      <span class="doc-icon">${escapeHTML(d.icon||'📄')}</span>
+      <div class="doc-name">${escapeHTML(d.name)}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${escapeHTML(d.cat)}</span></div>
+      <div class="doc-meta">${escapeHTML(d.size||'')} ${d.date?'· '+escapeHTML(d.date):''}</div>
+      ${d.client?`<div class="doc-meta">📎 ${escapeHTML(cn(d.client))}</div>`:'<div class="doc-meta">📁 Interno</div>'}
       ${canDel?`<button class="btn btn-danger btn-xs" style="margin-top:4px" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}
     </div>`).join('');
 }
-function openDoc(id){
+async function openDoc(id){
   const d = DB.docs.find(x=>x.id===id); if(!d) return;
-  if(d.url){ const w=window.open(); if(w){w.document.write(`<html><body style="margin:0;background:#111"><img src="${d.url}" style="max-width:100%" onerror="this.style.display='none'"><iframe src="${d.url}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);w.document.close();} }
-  else { toast(`${d.name} — sem arquivo anexado`,'ok'); }
+  let url = '';
+  if(d.storagePath){
+    const {data,error} = await supa.storage.from('magemind-docs').createSignedUrl(d.storagePath,60);
+    if(error){ toast('Sem permissão para abrir este documento','err'); return; }
+    url = data?.signedUrl||'';
+  } else {
+    url = safeDocumentDataUrl(d.url);
+  }
+  if(!url){ toast(`${d.name} — sem arquivo anexado`,'ok'); return; }
+  const link=document.createElement('a');
+  link.href=url; link.target='_blank'; link.rel='noopener noreferrer';
+  document.body.appendChild(link); link.click(); link.remove();
 }
-function dataURLtoBlob(dataURL){
-  const arr=dataURL.split(','), mime=arr[0].match(/:(.*?);/)[1];
-  const bstr=atob(arr[1]); let n=bstr.length; const u8=new Uint8Array(n);
-  while(n--) u8[n]=bstr.charCodeAt(n);
-  return new Blob([u8],{type:mime});
-}
-function saveDoc(){
+async function saveDoc(){
   const fileInput = document.getElementById('doc-file');
   const name = document.getElementById('doc-name').value.trim();
   if(!name){ toast('Digite um nome para o documento','err'); return; }
-  if(fileInput&&fileInput.files&&fileInput.files[0]){
-    const file = fileInput.files[0];
-    if(file.size>5*1024*1024){ toast('Arquivo muito grande (máx. 5MB)','err'); return; }
-    const reader = new FileReader();
-    reader.onload = e=>_saveDocWithUrl(name,e.target.result,file.name,file.size);
-    reader.readAsDataURL(file);
-    return;
-  }
-  _saveDocWithUrl(name,null,null,0);
+  const file = fileInput?.files?.[0]||null;
+  if(file && file.size>5*1024*1024){ toast('Arquivo muito grande (máx. 5MB)','err'); return; }
+  await _saveDocWithFile(name,file);
 }
-async function _saveDocWithUrl(name,url,fileName,fileSize){
+async function _saveDocWithFile(name,file){
   const catIcons={Roteiro:'📝',Copy:'✍️',Prospecção:'📊',Briefing:'📋',Relatório:'📈',Jurídico:'📄',Design:'🎨',Outros:'📁'};
   const cat = document.getElementById('doc-cat').value;
   const clientId = document.getElementById('doc-client').value||null;
   const visibility = document.getElementById('doc-visibility')?.value||'internal';
-  const sizeLabel = fileSize>0 ? `${(fileSize/1024).toFixed(0)} KB` : '—';
-  let storageUrl = url||null;
-  if(url&&url.startsWith('data:')){
-    const blob = dataURLtoBlob(url);
-    const ext  = fileName ? '.'+fileName.split('.').pop() : '';
-    const path = `docs/${DB.me.id}_${Date.now()}${ext}`;
-    const {data:stored,error:stErr} = await supa.storage.from('magemind-docs').upload(path,blob,{upsert:true});
-    if(!stErr&&stored){
-      const {data:{publicUrl}} = supa.storage.from('magemind-docs').getPublicUrl(path);
-      storageUrl = publicUrl;
-    }
+  const sizeLabel = file ? `${(file.size/1024).toFixed(0)} KB` : '—';
+  let storagePath = null;
+  if(file){
+    const ext = (file.name.split('.').pop()||'bin').replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,10);
+    storagePath = `docs/${DB.me.id}_${Date.now()}_${crypto.randomUUID()}.${ext}`;
+    const {error:storageError} = await supa.storage.from('magemind-docs').upload(storagePath,file,{upsert:false,contentType:file.type||undefined});
+    if(storageError){ toast('Erro no upload: '+storageError.message,'err'); return; }
   }
   const {data:docRow,error} = await supa.from('docs').insert({
     name, category:cat, icon:catIcons[cat]||'📄',
-    client_id:clientId, file_size:sizeLabel, file_url:storageUrl, file_name:fileName, visibility
+    client_id:clientId, file_size:sizeLabel, file_url:null, storage_path:storagePath,
+    file_name:file?.name||null, visibility
   }).select().single();
-  if(error){ toast('Erro ao salvar: '+error.message,'err'); return; }
+  if(error){
+    if(storagePath) await supa.storage.from('magemind-docs').remove([storagePath]);
+    toast('Erro ao salvar: '+error.message,'err'); return;
+  }
   DB.docs.push(mapDoc(docRow));
   closeModal('modal-doc'); toast('Documento adicionado! ✓','ok'); loadDocs();
 }
@@ -3231,9 +3234,9 @@ function loadProfile(){
   document.getElementById('prof-name').value  = u.name;
   document.getElementById('prof-email').value = u.email;
   const bigAv = document.getElementById('profile-av-big');
-  bigAv.innerHTML = u.photo
-    ? `<img src="${u.photo}" alt=""><input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`
-    : `${u.av}<input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`;
+  bigAv.innerHTML = safeImageUrl(u.photo)
+    ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`
+    : `${escapeHTML(u.av)}<input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`;
   const planCard = document.getElementById('plan-card');
   const profileCardsRow = document.getElementById('profile-cards-row');
   if(isClient()){
@@ -3242,9 +3245,9 @@ function loadProfile(){
     const c = DB.clients.find(x=>x.id===u.clientId);
     const pd = DB.plans.find(p=>p.id===c?.plan);
     document.getElementById('plan-content').innerHTML = pd ? `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--violet2)">${pd.name}</span><span class="badge b-violet">Plano atual</span></div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">${pd.tagline}</div>
-      ${pd.includes.split('\n').map(i=>`<div style="font-size:13px;margin-bottom:6px;color:var(--text2)">✓ ${i}</div>`).join('')}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--violet2)">${escapeHTML(pd.name)}</span><span class="badge b-violet">Plano atual</span></div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">${escapeHTML(pd.tagline)}</div>
+      ${pd.includes.split('\n').map(i=>`<div style="font-size:13px;margin-bottom:6px;color:var(--text2)">✓ ${escapeHTML(i)}</div>`).join('')}
       <div style="margin-top:12px;font-size:13px;color:var(--text3)">Valor: <strong style="color:var(--emerald)">R$ ${pd.price.toLocaleString('pt-BR')}</strong></div>
       <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="toast('Mensagem enviada para nosso time!','ok')">📩 Solicitar upgrade</button>`
       : `<div style="font-size:13px;color:var(--text3)">Nenhum plano definido.</div>`;
@@ -3336,38 +3339,39 @@ async function openDetail(id){
 
   // Título — editável direto (input) para quem pode editar; senão, texto simples
   if(editable){
-    document.getElementById('det-title').outerHTML = `<input class="fi m-title" id="det-title" style="font-size:16px;font-weight:700;padding:6px 8px" value="${(d.title||'').replace(/"/g,'&quot;')}">`;
+    document.getElementById('det-title').outerHTML = `<input class="fi m-title" id="det-title" style="font-size:16px;font-weight:700;padding:6px 8px" value="${escapeHTML(d.title||'')}">`;
   } else {
-    document.getElementById('det-title').outerHTML = `<div class="m-title" id="det-title">${d.title}</div>`;
+    document.getElementById('det-title').outerHTML = `<div class="m-title" id="det-title">${escapeHTML(d.title)}</div>`;
   }
 
   // Descrição — textarea direto quando editável
   if(editable){
-    document.getElementById('det-desc').outerHTML = `<textarea class="fi" id="det-desc" style="font-size:13px;min-height:80px;resize:vertical;margin-bottom:16px">${d.desc||''}</textarea>`;
+    document.getElementById('det-desc').outerHTML = `<textarea class="fi" id="det-desc" style="font-size:13px;min-height:80px;resize:vertical;margin-bottom:16px">${escapeHTML(d.desc||'')}</textarea>`;
   } else {
-    document.getElementById('det-desc').outerHTML = `<div id="det-desc" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;background:var(--bg3);border-radius:var(--r2);padding:12px;border:1px solid var(--border)">${d.desc||'Sem descrição.'}</div>`;
+    document.getElementById('det-desc').outerHTML = `<div id="det-desc" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;background:var(--bg3);border-radius:var(--r2);padding:12px;border:1px solid var(--border)">${escapeHTML(d.desc||'Sem descrição.')}</div>`;
   }
 
   // Referências — sempre visível quando editável (para poder adicionar), só aparece se preenchido quando somente leitura
   const refsSection = document.getElementById('det-refs-section');
   if(editable){
     refsSection.style.display='block';
-    document.getElementById('det-refs').outerHTML = `<textarea class="fi" id="det-refs" style="font-size:12px;min-height:50px;resize:vertical">${d.refs||''}</textarea>`;
+    document.getElementById('det-refs').outerHTML = `<textarea class="fi" id="det-refs" style="font-size:12px;min-height:50px;resize:vertical">${escapeHTML(d.refs||'')}</textarea>`;
   } else if(d.refs){
     refsSection.style.display='block';
-    document.getElementById('det-refs').outerHTML = `<div id="det-refs" style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:var(--r2);padding:10px 12px;border:1px solid var(--border);word-break:break-all;white-space:pre-wrap;line-height:1.6">${d.refs}</div>`;
+    document.getElementById('det-refs').outerHTML = `<div id="det-refs" style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:var(--r2);padding:10px 12px;border:1px solid var(--border);word-break:break-all;white-space:pre-wrap;line-height:1.6">${escapeHTML(d.refs)}</div>`;
   } else {
     refsSection.style.display='none';
   }
 
   // Cliente — select em ordem alfabética para CEO/Gerente/Gestor; texto para os demais
+  const detClientEl = document.getElementById('det-client') || document.getElementById('det-client-sel');
   if(canChangeDemandClient()){
     const sortedClients = DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name));
-    document.getElementById('det-client').outerHTML = `<select class="fi" id="det-client-sel" style="margin-bottom:14px">
-      ${sortedClients.map(c=>`<option value="${c.id}"${c.id===d.client?' selected':''}>${c.name}</option>`).join('')}
+    detClientEl.outerHTML = `<select class="fi" id="det-client-sel" style="margin-bottom:14px">
+      ${sortedClients.map(c=>`<option value="${c.id}"${c.id===d.client?' selected':''}>${escapeHTML(c.name)}</option>`).join('')}
     </select>`;
   } else {
-    document.getElementById('det-client').outerHTML = `<div class="dd-val" id="det-client"><span style="color:var(--violet2)">${cn(d.client)}</span></div>`;
+    detClientEl.outerHTML = `<div class="dd-val" id="det-client"><span style="color:var(--violet2)">${escapeHTML(cn(d.client))}</span></div>`;
   }
 
   // Responsável — select apenas para quem pode trocar; texto para os demais (editor nunca altera)
@@ -3375,11 +3379,11 @@ async function openDetail(id){
     const assignees = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role));
     document.getElementById('det-assignee-wrap').innerHTML = `
       <select class="fi" id="det-assignee-sel" style="margin-bottom:14px">
-        ${assignees.map(a=>`<option value="${a.id}"${a.id===d.assigneeId?' selected':''}>${a.name}</option>`).join('')}
+        ${assignees.map(a=>`<option value="${a.id}"${a.id===d.assigneeId?' selected':''}>${escapeHTML(a.name)}</option>`).join('')}
       </select>`;
   } else {
-    const avHtml = d.assigneePhoto ? `<img src="${d.assigneePhoto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : (d.assigneeAv||avatarInitials(d.assignee));
-    document.getElementById('det-assignee-wrap').innerHTML = `<div class="dd-val"><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${avHtml}</div>${d.assignee||'—'}</div></div>`;
+    const avHtml = safeImageUrl(d.assigneePhoto) ? `<img src="${safeImageUrl(d.assigneePhoto)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : escapeHTML(d.assigneeAv||avatarInitials(d.assignee));
+    document.getElementById('det-assignee-wrap').innerHTML = `<div class="dd-val"><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${avHtml}</div>${escapeHTML(d.assignee||'—')}</div></div>`;
   }
 
   // Data de entrega — input date direto quando editável
@@ -3486,13 +3490,13 @@ function openEditDemand(id){
   document.getElementById('md-title').textContent = 'Editar demanda';
   document.getElementById('md-btn-label').textContent = 'Salvar alterações';
   const dc = document.getElementById('d-client');
-  dc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  dc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   dc.value = d.client;
   document.getElementById('d-client-wrap').style.display='flex';
   document.getElementById('d-assignee-wrap').style.display= canChangeDemandAssignee() ? 'flex' : 'none';
   document.getElementById('d-title').value    = d.title;
   const dAssignSel = document.getElementById('d-assignee');
-  dAssignSel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  dAssignSel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
   dAssignSel.value = d.assigneeId||'';
   document.getElementById('d-priority').value = d.priority;
   document.getElementById('d-status').value   = d.status;
@@ -3506,8 +3510,8 @@ function renderComments(comments){
   document.getElementById('det-comments').innerHTML = comments.length
     ? comments.map(c=>`
       <div class="cmt">
-        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${c.photo?`<img src="${c.photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(c.av||'?')}</div>
-        <div class="cmt-bubble"><div class="cmt-name">${c.author}</div><div class="cmt-text">${c.text}</div><div class="cmt-time">${c.time}</div></div>
+        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${safeImageUrl(c.photo)?`<img src="${safeImageUrl(c.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escapeHTML(c.av||'?')}</div>
+        <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(c.author)}</div><div class="cmt-text">${escapeHTML(c.text)}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
       </div>`).join('')
     : '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0">Nenhum comentário ainda.</div>';
 }
@@ -3560,12 +3564,12 @@ function renderPlansAdmin(){
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px;display:flex;flex-direction:column;gap:6px;position:relative">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div>
-          <div style="font-weight:700;font-size:13px;color:var(--text)">${p.name}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${typeLabel[p.type]||p.type} · ${p.qty} criativo${p.qty>1?'s':''}</div>
+          <div style="font-weight:700;font-size:13px;color:var(--text)">${escapeHTML(p.name)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${escapeHTML(typeLabel[p.type]||p.type)} · ${Number(p.qty)||0} criativo${p.qty>1?'s':''}</div>
         </div>
         <span class="badge ${p.active?'b-emerald':'b-muted'}" style="flex-shrink:0">${p.active?'Ativo':'Off'}</span>
       </div>
-      <div style="font-size:12px;color:var(--text3);line-height:1.4">${p.tagline}</div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.4">${escapeHTML(p.tagline)}</div>
       <div style="margin-top:4px">
         ${p.priceOrig>p.price?`<span style="font-size:11px;color:var(--text3);text-decoration:line-through">R$ ${p.priceOrig.toLocaleString('pt-BR')}</span> `:''}
         <span style="font-size:15px;font-weight:800;color:var(--emerald)">R$ ${p.price.toLocaleString('pt-BR')}</span>
@@ -3648,7 +3652,7 @@ function openModal(id){
   if(id==='modal-doc'){
     const dc = document.getElementById('doc-client');
     dc.innerHTML = '<option value="">Uso interno (agência)</option>'+
-      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   }
   document.getElementById(id).classList.add('open');
 }
@@ -3721,11 +3725,11 @@ function renderNotifPanel(){
   if(empty) empty.style.display='none';
   list.innerHTML = notifs.map(n=>`
     <div class="notif-item${n.read?'':' unread'}" onclick="clickNotif('${n.id}'${n.linkDemandId?`,'${n.linkDemandId}'`:''})">
-      <div class="notif-icon" style="background:${n.iconBg}">${n.icon}</div>
+      <div class="notif-icon" style="background:${safeThemeColor(n.iconBg)}">${escapeHTML(n.icon)}</div>
       <div class="notif-body">
-        <div class="notif-title">${n.title}</div>
-        <div class="notif-text">${n.body}</div>
-        <div class="notif-time">${n.date} · ${n.time}</div>
+        <div class="notif-title">${escapeHTML(n.title)}</div>
+        <div class="notif-text">${escapeHTML(n.body)}</div>
+        <div class="notif-time">${escapeHTML(n.date)} · ${escapeHTML(n.time)}</div>
       </div>
       ${n.read?'':'<div class="notif-dot"></div>'}
     </div>`).join('');
@@ -3768,8 +3772,8 @@ document.addEventListener('click', function(e){
 /* ═══ HELPERS ═══ */
 function cn(id){ return DB.clients.find(c=>c.id===id)?.name||'—'; }
 function avatarInitials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?'; }
-function stBadge(s){ const m={'Não iniciado':'b-muted','Em andamento':'b-amber','Concluído':'b-emerald'}; return `<span class="badge ${m[s]||'b-muted'}">${s}</span>`; }
-function prBadge(p){ const m={Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'}; return `<span class="badge ${m[p]||'b-muted'}">${p}</span>`; }
+function stBadge(s){ const m={'Não iniciado':'b-muted','Em andamento':'b-amber','Concluído':'b-emerald'}; return `<span class="badge ${m[s]||'b-muted'}">${escapeHTML(s)}</span>`; }
+function prBadge(p){ const m={Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'}; return `<span class="badge ${m[p]||'b-muted'}">${escapeHTML(p)}</span>`; }
 
 /* ═══ ICONS ═══ */
 function ico(n){
@@ -3834,3 +3838,4 @@ async function clearDB(){
 </script>
 </body>
 </html>
+
