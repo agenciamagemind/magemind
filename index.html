@@ -133,7 +133,7 @@ tbody td:first-child{padding-left:20px}
 .overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r4);width:580px;max-width:92vw;max-height:88vh;overflow-y:auto;transform:translateY(12px) scale(.98);transition:transform .2s}
 .overlay.open .modal{transform:translateY(0) scale(1)}
-.modal-lg{width:680px}
+.modal-lg{width:920px}
 .m-head{padding:22px 24px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:1}
 .m-title{font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;letter-spacing:-.4px;flex:1}
 .m-sub{font-size:12px;color:var(--text3);margin-top:2px}
@@ -157,16 +157,44 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .card-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden}
 .cb-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .cb-title{font-family:'Poppins',sans-serif;font-size:13px;font-weight:600}
-.dd-grid{display:grid;grid-template-columns:1fr 230px;gap:0}
-.dd-main{padding:20px 24px;border-right:1px solid var(--border);overflow-y:auto;max-height:70vh}
-.dd-side{padding:16px;background:var(--bg3);overflow-y:auto;max-height:70vh}
+.dd-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:0;min-height:520px}
+.dd-main{padding:24px 28px;border-right:1px solid var(--border);overflow-y:auto;max-height:72vh;display:flex;flex-direction:column;gap:22px}
+.dd-side{padding:20px;background:linear-gradient(180deg,var(--bg3),rgba(17,17,31,.78));overflow-y:auto;max-height:72vh}
 .dd-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
 .dd-val{font-size:13px;color:var(--text);margin-bottom:14px}
-.cmt{display:flex;gap:9px;margin-bottom:12px}
-.cmt-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;flex:1}
-.cmt-name{font-size:11px;font-weight:700;color:var(--violet2);margin-bottom:3px}
-.cmt-text{font-size:13px;line-height:1.5;color:var(--text)}
-.cmt-time{font-size:10px;color:var(--text3);margin-top:3px}
+.detail-section{min-width:0}
+.detail-section-card{background:rgba(23,23,42,.6);border:1px solid var(--border);border-radius:14px;padding:16px;transition:border-color .15s,background .15s}
+.detail-section-card:focus-within{border-color:var(--violetborder);background:var(--bg3)}
+.detail-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.detail-section-title{font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:7px}
+.detail-section-title span{color:var(--violet2)}
+.detail-edit-btn{border:0;background:transparent;color:var(--violet3);font:600 11px 'Manrope',sans-serif;cursor:pointer;padding:5px 7px;border-radius:6px}
+.detail-edit-btn:hover{background:var(--violetbg);color:var(--text)}
+.detail-rich-text{border:0;background:transparent;padding:0;color:var(--text2);min-height:22px}
+.detail-empty{color:var(--text3);font-style:italic}
+.detail-editor{width:100%;min-height:110px;resize:vertical;background:var(--bg)!important;border-color:var(--border2)!important;line-height:1.7!important}
+.detail-editor.refs{min-height:86px;font-size:12px}
+.detail-side-group{padding:14px;border:1px solid var(--border);border-radius:12px;background:rgba(8,8,15,.28);margin-bottom:12px}
+.detail-side-group .fi{margin-bottom:0!important;background:var(--bg2)}
+.detail-save-state{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:6px;margin-top:7px;min-height:16px}
+.detail-save-state::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 3px var(--emeraldbg)}
+.detail-save-state.saving::before{background:var(--amber);box-shadow:0 0 0 3px var(--amberbg);animation:pulse 1s infinite}
+.detail-save-state.error{color:var(--rose)}
+.detail-save-state.error::before{background:var(--rose);box-shadow:0 0 0 3px var(--rosebg)}
+.detail-status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.detail-status-grid .btn{min-width:0;padding:7px 5px;font-size:10px;white-space:nowrap}
+.detail-comments-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.detail-comments-count{font-size:10px;color:var(--text3);background:var(--bg4);border:1px solid var(--border);border-radius:999px;padding:3px 8px}
+.cmt{display:flex;gap:10px;margin-bottom:14px;min-width:0}
+.cmt-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:4px 12px 12px 12px;padding:11px 13px;flex:1;min-width:0}
+.cmt-name{font-size:11px;font-weight:700;color:var(--violet2);margin-bottom:5px}
+.cmt-text{font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.cmt-text a{color:var(--cyan);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(6,182,212,.35)}
+.cmt-text a:hover{color:#67e8f9;border-color:#67e8f9}
+.cmt-time{font-size:10px;color:var(--text3);margin-top:6px}
+.detail-comment-composer{display:flex;gap:10px;margin-top:14px;align-items:flex-end;background:rgba(23,23,42,.55);border:1px solid var(--border);border-radius:12px;padding:10px}
+.detail-comment-composer textarea{border:0!important;background:transparent!important;padding:7px!important;min-height:42px!important}
+.detail-comment-composer textarea:focus{box-shadow:none!important}
 .bar-chart{display:flex;align-items:flex-end;gap:6px;height:82px;padding-top:8px}
 .bar{flex:1;border-radius:3px 3px 0 0;background:var(--violet);opacity:.5;transition:opacity .2s;min-height:6px}
 .bar:hover{opacity:1}
@@ -234,10 +262,19 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .profile-av-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:8px}
 .profile-av-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--pink));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;cursor:pointer;position:relative;overflow:hidden;font-family:'Poppins',sans-serif}
 .rich-text{font-size:13px;color:var(--text2);line-height:1.75;background:var(--bg3);border-radius:var(--r2);padding:12px;border:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere}
-.rich-text a,.detected-links a{color:var(--cyan);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(6,182,212,.35);transition:color .15s,border-color .15s}
-.rich-text a:hover,.detected-links a:hover{color:#67e8f9;border-color:#67e8f9}
-.detected-links{margin-top:7px;padding:9px 11px;border-radius:var(--r2);background:rgba(6,182,212,.06);border:1px solid var(--cyanborder);font-size:11px;line-height:1.65;overflow-wrap:anywhere}
-.detected-links:empty{display:none}
+.rich-text a{color:var(--cyan);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(6,182,212,.35);transition:color .15s,border-color .15s}
+.rich-text a:hover{color:#67e8f9;border-color:#67e8f9}
+.detail-danger-zone{padding-top:14px;margin-top:16px;border-top:1px solid var(--border)}
+@media(max-width:760px){
+  .overlay{align-items:flex-end}
+  .modal.modal-lg{width:100%;max-width:100vw;max-height:96vh;border-radius:18px 18px 0 0}
+  .dd-grid{grid-template-columns:1fr;min-height:0}
+  .dd-main{order:2;border-right:0;max-height:none;padding:20px;gap:18px}
+  .dd-side{order:1;max-height:none;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .detail-status-grid{grid-template-columns:1fr}
+  .detail-status-grid .btn{font-size:11px}
+  .m-head{padding:18px 20px 15px}
+}
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
 .profile-av-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
 </style>
@@ -884,31 +921,45 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       <div style="flex:1">
         <div class="m-title" id="det-title"></div>
         <div style="display:flex;gap:6px;margin-top:8px" id="det-badges"></div>
+        <div class="detail-save-state" id="det-save-state">Alterações salvas automaticamente</div>
       </div>
       <div class="m-close" onclick="closeModal('modal-detail')">✕</div>
     </div>
     <div class="dd-grid">
       <div class="dd-main">
-        <div class="dd-label">Descrição</div>
-        <div id="det-desc" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;background:var(--bg3);border-radius:var(--r2);padding:12px;border:1px solid var(--border)"></div>
-        <div id="det-refs-section" style="margin-bottom:16px;display:none">
-          <div class="dd-label">Referências</div>
-          <div id="det-refs" style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:var(--r2);padding:10px 12px;border:1px solid var(--border);word-break:break-all;white-space:pre-wrap;line-height:1.6"></div>
-        </div>
+        <section class="detail-section detail-section-card" id="det-desc-section">
+          <div class="detail-section-head">
+            <div class="detail-section-title"><span>◫</span> Descrição</div>
+            <button class="detail-edit-btn" id="det-desc-edit" type="button" onclick="editDemandRichField('desc')">Editar</button>
+          </div>
+          <div class="rich-text detail-rich-text" id="det-desc"></div>
+        </section>
+        <section class="detail-section detail-section-card" id="det-refs-section" style="display:none">
+          <div class="detail-section-head">
+            <div class="detail-section-title"><span>↗</span> Referências</div>
+            <button class="detail-edit-btn" id="det-refs-edit" type="button" onclick="editDemandRichField('refs')">Editar</button>
+          </div>
+          <div class="rich-text detail-rich-text" id="det-refs"></div>
+        </section>
         <div id="det-status-controls"></div>
-        <div class="dd-label" style="margin-top:4px">Comentários</div>
-        <div id="det-comments"></div>
-        <div id="det-comment-input" style="display:flex;gap:8px;margin-top:12px;align-items:flex-end">
-          <div class="av av-sm" id="det-comment-av" style="margin-bottom:4px;flex-shrink:0">?</div>
-          <textarea class="fi" id="new-comment" style="flex:1;min-height:56px;resize:none" placeholder="Adicionar comentário..."></textarea>
-          <button class="btn btn-primary btn-sm" style="align-self:flex-end" onclick="addComment()">Enviar</button>
-        </div>
+        <section class="detail-section" id="det-comments-section">
+          <div class="detail-comments-head">
+            <div class="detail-section-title"><span>◌</span> Comentários</div>
+            <div class="detail-comments-count" id="det-comments-count">0 comentários</div>
+          </div>
+          <div id="det-comments"></div>
+          <div class="detail-comment-composer" id="det-comment-input">
+            <div class="av av-sm" id="det-comment-av" style="margin-bottom:4px;flex-shrink:0">?</div>
+            <textarea class="fi" id="new-comment" style="flex:1;resize:none" placeholder="Escreva um comentário..."></textarea>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-end" onclick="addComment()">Enviar</button>
+          </div>
+        </section>
       </div>
       <div class="dd-side">
-        <div class="dd-label">Cliente</div><div class="dd-val" id="det-client"></div>
-        <div class="dd-label">Responsável</div><div id="det-assignee-wrap"></div>
-        <div class="dd-label" style="margin-top:8px">Data de entrega</div><div class="dd-val" id="det-date"></div>
-        <div class="dd-label">Prioridade</div><div class="dd-val" id="det-priority"></div>
+        <div class="detail-side-group"><div class="dd-label">Cliente</div><div class="dd-val" id="det-client"></div></div>
+        <div class="detail-side-group"><div class="dd-label">Responsável</div><div id="det-assignee-wrap"></div></div>
+        <div class="detail-side-group"><div class="dd-label">Data de entrega</div><div class="dd-val" id="det-date"></div></div>
+        <div class="detail-side-group"><div class="dd-label">Prioridade</div><div class="dd-val" id="det-priority"></div></div>
         <div id="det-admin-controls"></div>
       </div>
     </div>
@@ -1195,21 +1246,6 @@ function formatActivityText(value){
   return escapeHTML(value).replace(/&(?:amp;)?lt;(\/?)(strong|em)&(?:amp;)?gt;/gi,
     (_,slash,tag)=>`<${slash}${tag.toLowerCase()}>`);
 }
-function extractSafeLinks(value){
-  const text=String(value||''), found=[], seen=new Set();
-  const pattern=/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
-  for(const match of text.matchAll(pattern)){
-    let label=match[0], trailing='';
-    while(/[),.;:!?}\]]$/.test(label)){ trailing=label.slice(-1)+trailing; label=label.slice(0,-1); }
-    const href=/^www\./i.test(label)?`https://${label}`:label;
-    try{
-      const parsed=new URL(href);
-      if(!['http:','https:'].includes(parsed.protocol)||seen.has(parsed.href)) continue;
-      seen.add(parsed.href); found.push({label,href:parsed.href,trailing});
-    }catch(_){ /* texto parecido com URL, mas inválido: permanece texto */ }
-  }
-  return found;
-}
 function linkifyText(value){
   const text=String(value||''), pattern=/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
   let html='', last=0, match;
@@ -1227,15 +1263,6 @@ function linkifyText(value){
     last=match.index+raw.length;
   }
   return html+escapeHTML(text.slice(last));
-}
-function renderDetectedLinks(value){
-  const links=extractSafeLinks(value);
-  if(!links.length) return '';
-  return `<span style="color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Links detectados</span><br>${links.map(link=>`<a href="${escapeHTML(link.href)}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.label)}</a>`).join('<br>')}`;
-}
-function refreshDetectedLinks(sourceId,targetId){
-  const source=document.getElementById(sourceId), target=document.getElementById(targetId);
-  if(target) target.innerHTML=renderDetectedLinks(source?.value||'');
 }
 function safeImageUrl(value){
   const url = String(value||'');
@@ -3407,21 +3434,78 @@ function canChangeDemandClient(){ return hasPermission('demands.change_client');
 /* Compat/uso em formulários de criação */
 function canSelectDemandClient(){ return canChangeDemandClient(); }
 function canCreateDemandForClient(){ return hasPermission('demands.create'); }
-/* Usados no salvamento — nunca sobrescrevem client/assignee com valores
-   vazios quando o campo está oculto/desabilitado para o cargo atual. */
-function getDemandFormClientId(existingClientId){
-  if(canChangeDemandClient()){
-    const sel = document.getElementById('det-client-sel');
-    return sel ? sel.value : existingClientId;
-  }
-  return existingClientId;
+const demandAutosaveTimers = new Map();
+const demandAutosavePending = new Map();
+const demandAutosaveQueues = new Map();
+const demandAutosaveVersions = new Map();
+const demandFieldMap = {
+  title:{local:'title',db:'title'}, desc:{local:'desc',db:'description'}, refs:{local:'refs',db:'refs'},
+  priority:{local:'priority',db:'priority'}, date:{local:'date',db:'due_date'},
+  client:{local:'client',db:'client_id'}, assigneeId:{local:'assigneeId',db:'assignee_id'}
+};
+function setDemandSaveState(state='saved',message='Alterações salvas automaticamente'){
+  const el=document.getElementById('det-save-state'); if(!el) return;
+  el.className=`detail-save-state${state==='saved'?'':' '+state}`;
+  el.textContent=message;
 }
-function getDemandFormAssigneeId(existingAssigneeId){
-  if(canChangeDemandAssignee()){
-    const sel = document.getElementById('det-assignee-sel');
-    return sel ? sel.value : existingAssigneeId;
-  }
-  return existingAssigneeId; // preserva o responsável atual — nunca zera
+function queueDemandFieldSave(field,value,immediate=false){
+  const d=DB.demands.find(x=>x.id===currentDemandId); const cfg=demandFieldMap[field];
+  if(!d||!cfg||!canEditDemand(d)) return;
+  const normalized=field==='title' ? String(value).trim() : value;
+  if(field==='title'&&!normalized){ setDemandSaveState('error','O título não pode ficar vazio'); return; }
+  d[cfg.local]=normalized;
+  const key=`${d.id}:${field}`;
+  const version=(demandAutosaveVersions.get(key)||0)+1;
+  demandAutosaveVersions.set(key,version);
+  demandAutosavePending.set(key,{demandId:d.id,field,value:normalized,version});
+  clearTimeout(demandAutosaveTimers.get(key));
+  setDemandSaveState('saving','Salvando…');
+  demandAutosaveTimers.set(key,setTimeout(()=>persistDemandField(key),immediate?0:700));
+}
+function persistDemandField(key){
+  clearTimeout(demandAutosaveTimers.get(key)); demandAutosaveTimers.delete(key);
+  const pending=demandAutosavePending.get(key); if(!pending) return Promise.resolve();
+  const previous=demandAutosaveQueues.get(key)||Promise.resolve();
+  const job=previous.catch(()=>{}).then(async()=>{
+    const cfg=demandFieldMap[pending.field];
+    const {error}=await supa.from('demands').update({[cfg.db]:pending.value||null}).eq('id',pending.demandId);
+    if(error){
+      if(currentDemandId===pending.demandId) setDemandSaveState('error','Não foi possível salvar. Tente novamente.');
+      toast('Erro ao salvar alteração: '+error.message,'err'); return;
+    }
+    if(demandAutosaveVersions.get(key)===pending.version){
+      demandAutosavePending.delete(key);
+      const stillPending=[...demandAutosavePending.keys()].some(k=>k.startsWith(`${pending.demandId}:`));
+      if(currentDemandId===pending.demandId&&!stillPending) setDemandSaveState();
+    }
+    const d=DB.demands.find(x=>x.id===pending.demandId);
+    if(d&&pending.field==='priority'&&currentDemandId===d.id) document.getElementById('det-badges').innerHTML=`${stBadge(d.status)}${prBadge(d.priority)}`;
+    renderKanban(); if(currentView==='list'&&typeof renderDemandsList==='function') renderDemandsList(); buildNav();
+  });
+  demandAutosaveQueues.set(key,job); return job;
+}
+function flushDemandAutosaves(demandId=currentDemandId){
+  [...demandAutosavePending.keys()].filter(k=>k.startsWith(`${demandId}:`)).forEach(k=>persistDemandField(k));
+}
+function renderDemandRichField(field,editable){
+  const d=DB.demands.find(x=>x.id===currentDemandId); if(!d) return;
+  const id=field==='desc'?'det-desc':'det-refs';
+  const value=field==='desc'?(d.desc||''):(d.refs||'');
+  const placeholder=field==='desc'?'Nenhuma descrição adicionada.':'Nenhuma referência adicionada.';
+  const el=document.getElementById(id); if(!el) return;
+  el.outerHTML=`<div class="rich-text detail-rich-text${value?'':' detail-empty'}" id="${id}">${value?linkifyText(value):escapeHTML(placeholder)}</div>`;
+  const edit=document.getElementById(`${id}-edit`); if(edit) edit.style.display=editable?'inline-flex':'none';
+}
+function editDemandRichField(field){
+  const d=DB.demands.find(x=>x.id===currentDemandId); if(!d||!canEditDemand(d)) return;
+  const id=field==='desc'?'det-desc':'det-refs'; const value=field==='desc'?(d.desc||''):(d.refs||'');
+  const el=document.getElementById(id); if(!el||el.tagName==='TEXTAREA') return;
+  el.outerHTML=`<textarea class="fi detail-editor${field==='refs'?' refs':''}" id="${id}" oninput="queueDemandFieldSave('${field}',this.value)" onblur="finishDemandRichField('${field}',this.value)">${escapeHTML(value)}</textarea>`;
+  const input=document.getElementById(id); input.focus(); input.setSelectionRange(input.value.length,input.value.length);
+}
+function finishDemandRichField(field,value){
+  queueDemandFieldSave(field,value,true);
+  renderDemandRichField(field,true);
 }
 
 async function openDetail(id){
@@ -3431,40 +3515,29 @@ async function openDetail(id){
   const editable = canEditDemand(d); // ceo/manager/gestor sempre; editor se tiver demands.edit_operational
 
   document.getElementById('det-badges').innerHTML  = `${stBadge(d.status)}${prBadge(d.priority)}`;
+  setDemandSaveState();
+  document.getElementById('det-save-state').style.display=editable?'flex':'none';
 
   // Título — editável direto (input) para quem pode editar; senão, texto simples
   if(editable){
-    document.getElementById('det-title').outerHTML = `<input class="fi m-title" id="det-title" style="font-size:16px;font-weight:700;padding:6px 8px" value="${escapeHTML(d.title||'')}">`;
+    document.getElementById('det-title').outerHTML = `<input class="fi m-title" id="det-title" oninput="queueDemandFieldSave('title',this.value)" style="font-size:18px;font-weight:700;padding:5px 8px;background:transparent;border-color:transparent" value="${escapeHTML(d.title||'')}">`;
   } else {
     document.getElementById('det-title').outerHTML = `<div class="m-title" id="det-title">${escapeHTML(d.title)}</div>`;
   }
 
-  // Descrição — textarea direto quando editável
-  document.getElementById('det-desc-links')?.remove();
-  if(editable){
-    document.getElementById('det-desc').outerHTML = `<textarea class="fi" id="det-desc" oninput="refreshDetectedLinks('det-desc','det-desc-links')" style="font-size:13px;min-height:80px;resize:vertical">${escapeHTML(d.desc||'')}</textarea><div class="detected-links" id="det-desc-links" style="margin-bottom:16px">${renderDetectedLinks(d.desc)}</div>`;
-  } else {
-    document.getElementById('det-desc').outerHTML = `<div class="rich-text" id="det-desc" style="margin-bottom:16px">${linkifyText(d.desc||'Sem descrição.')}</div>`;
-  }
+  // Leitura limpa com links clicáveis; o campo de edição aparece apenas sob demanda.
+  renderDemandRichField('desc',editable);
 
-  // Referências — sempre visível quando editável (para poder adicionar), só aparece se preenchido quando somente leitura
+  // Referências seguem o mesmo fluxo, sem duplicar URLs numa área separada.
   const refsSection = document.getElementById('det-refs-section');
-  document.getElementById('det-refs-links')?.remove();
-  if(editable){
-    refsSection.style.display='block';
-    document.getElementById('det-refs').outerHTML = `<textarea class="fi" id="det-refs" oninput="refreshDetectedLinks('det-refs','det-refs-links')" style="font-size:12px;min-height:50px;resize:vertical">${escapeHTML(d.refs||'')}</textarea><div class="detected-links" id="det-refs-links">${renderDetectedLinks(d.refs)}</div>`;
-  } else if(d.refs){
-    refsSection.style.display='block';
-    document.getElementById('det-refs').outerHTML = `<div class="rich-text" id="det-refs" style="font-size:12px">${linkifyText(d.refs)}</div>`;
-  } else {
-    refsSection.style.display='none';
-  }
+  refsSection.style.display=editable||d.refs?'block':'none';
+  renderDemandRichField('refs',editable);
 
   // Cliente — somente a equipe operacional recebe o diretório mínimo necessário.
   const detClientEl = document.getElementById('det-client') || document.getElementById('det-client-sel');
   if(canChangeDemandClient()){
     const sortedClients = DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name));
-    detClientEl.outerHTML = `<select class="fi" id="det-client-sel" style="margin-bottom:14px">
+    detClientEl.outerHTML = `<select class="fi" id="det-client-sel" onchange="queueDemandFieldSave('client',this.value,true)">
       ${sortedClients.map(c=>`<option value="${c.id}"${c.id===d.client?' selected':''}>${escapeHTML(c.name)}</option>`).join('')}
     </select>`;
   } else {
@@ -3475,7 +3548,7 @@ async function openDetail(id){
   if(canChangeDemandAssignee()){
     const assignees = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role));
     document.getElementById('det-assignee-wrap').innerHTML = `
-      <select class="fi" id="det-assignee-sel" style="margin-bottom:14px">
+      <select class="fi" id="det-assignee-sel" onchange="queueDemandFieldSave('assigneeId',this.value,true)">
         ${assignees.map(a=>`<option value="${a.id}"${a.id===d.assigneeId?' selected':''}>${escapeHTML(a.name)}</option>`).join('')}
       </select>`;
   } else {
@@ -3485,14 +3558,14 @@ async function openDetail(id){
 
   // Data de entrega — input date direto quando editável
   if(editable){
-    document.getElementById('det-date').outerHTML = `<input class="fi" type="date" id="det-date" style="margin-bottom:14px" value="${d.date||''}">`;
+    document.getElementById('det-date').outerHTML = `<input class="fi" type="date" id="det-date" onchange="queueDemandFieldSave('date',this.value,true)" value="${d.date||''}">`;
   } else {
     document.getElementById('det-date').outerHTML = `<div class="dd-val" id="det-date">${fDate(d.date)}</div>`;
   }
 
   // Prioridade — select direto quando editável
   if(editable){
-    document.getElementById('det-priority').outerHTML = `<select class="fi" id="det-priority" style="margin-bottom:14px">
+    document.getElementById('det-priority').outerHTML = `<select class="fi" id="det-priority" onchange="queueDemandFieldSave('priority',this.value,true)">
       <option value="Baixa"${d.priority==='Baixa'?' selected':''}>Baixa</option>
       <option value="Média"${d.priority==='Média'?' selected':''}>Média</option>
       <option value="Alta"${d.priority==='Alta'?' selected':''}>Alta</option>
@@ -3502,9 +3575,9 @@ async function openDetail(id){
   }
 
   document.getElementById('det-status-controls').innerHTML = canMoveDemand(d) ? `
-    <div style="margin-bottom:16px">
-      <div class="dd-label">Alterar status</div>
-      <div style="display:flex;gap:8px">
+    <div class="detail-section-card">
+      <div class="detail-section-head"><div class="detail-section-title"><span>◇</span> Status da demanda</div></div>
+      <div class="detail-status-grid">
         <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="changeStatus('Não iniciado')">⬜ Não iniciado</button>
         <button class="btn btn-sm" style="flex:1;justify-content:center;background:var(--amberbg);color:var(--amber);border:1px solid var(--amberborder)" onclick="changeStatus('Em andamento')">🟡 Em andamento</button>
         <button class="btn btn-sm" style="flex:1;justify-content:center;background:var(--emeraldbg);color:var(--emerald);border:1px solid var(--emeraldborder)" onclick="changeStatus('Concluído')">✅ Concluído</button>
@@ -3514,8 +3587,7 @@ async function openDetail(id){
   // Ações do rodapé: Editor também possui autoridade completa sobre demandas.
   if(editable){
     document.getElementById('det-admin-controls').innerHTML = `
-      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:flex;flex-direction:column;gap:6px">
-        <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="saveDemandInline()">💾 Salvar alterações</button>
+      <div class="detail-danger-zone">
         ${canDeleteDemand()?`<button class="btn btn-danger btn-sm" style="width:100%;justify-content:center" data-action="delete-demand" data-id="${d.id}">✕ Excluir demanda</button>`:''}
       </div>`;
   } else {
@@ -3533,51 +3605,6 @@ async function openDetail(id){
   const ciEl = document.getElementById('det-comment-input');
   if(ciEl) ciEl.style.display = hasPermission('demands.comment')||hasPermission('demands.comment_own') ? 'flex' : 'none';
   openModal('modal-detail');
-}
-
-/* Salva TODOS os campos editáveis do detalhe de uma vez (título, descrição,
-   referências, cliente, responsável, data, prioridade). Substitui o antigo
-   fluxo de "abrir modal de edição separado" — a edição agora é sempre aqui,
-   direto no detalhe. Nunca sobrescreve client/assignee quando o campo não
-   está visível para o cargo atual (getDemandForm*). */
-async function saveDemandInline(){
-  const d = DB.demands.find(x=>x.id===currentDemandId); if(!d) return;
-  if(!canEditDemand(d)){ toast('Sem permissão para editar esta demanda','err'); return; }
-
-  const titleEl = document.getElementById('det-title');
-  const title = (titleEl?.value ?? titleEl?.textContent ?? d.title).trim();
-  if(!title){ toast('Título não pode ser vazio','err'); return; }
-  const desc     = document.getElementById('det-desc')?.value ?? d.desc ?? '';
-  const refs     = document.getElementById('det-refs')?.value ?? d.refs ?? '';
-  const priority = document.getElementById('det-priority')?.value || d.priority;
-  const date     = document.getElementById('det-date')?.value || null;
-  const clientId    = getDemandFormClientId(d.client);
-  const assigneeId  = getDemandFormAssigneeId(d.assigneeId);
-
-  const updateData = {
-    title, description:desc, refs, priority, due_date:date,
-    client_id: clientId, assignee_id: assigneeId
-  };
-  const {data:updated, error} = await supa.from('demands')
-    .update(updateData).eq('id', d.id)
-    .select('*').maybeSingle();
-  if(error){ toast('Erro: '+error.message,'err'); return; }
-
-  // Atualiza SOMENTE esta demanda no cache local (nunca substitui DB.demands inteiro)
-  if(updated){
-    const fresh = mapDemand(updated);
-    fresh.comments = d.comments; fresh.commentsLoaded = d.commentsLoaded; // preserva comentários já carregados
-    const idx = DB.demands.findIndex(x=>x.id===d.id);
-    if(idx>=0) DB.demands[idx] = fresh;
-  } else {
-    Object.assign(d,{title,desc,refs,priority,date,client:clientId,assigneeId});
-  }
-
-  document.getElementById('det-badges').innerHTML = `${stBadge(d.status)}${prBadge(priority)}`;
-  renderKanban(); if(currentView==='list' && typeof renderDemandsList==='function') renderDemandsList();
-  buildNav();
-  await dbPushNotif(null,'admin','✏️','var(--amberbg)', isStaffRole()?'Demanda editada':'Cliente editou demanda', `${DB.me.name} alterou "${title}".`, d.id);
-  toast('Alterações salvas! ✓','ok');
 }
 
 function openEditDemand(id){
@@ -3604,11 +3631,13 @@ function openEditDemand(id){
 }
 
 function renderComments(comments){
+  const count=document.getElementById('det-comments-count');
+  if(count) count.textContent=`${comments.length} ${comments.length===1?'comentário':'comentários'}`;
   document.getElementById('det-comments').innerHTML = comments.length
     ? comments.map(c=>`
       <div class="cmt">
         <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${safeImageUrl(c.photo)?`<img src="${safeImageUrl(c.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escapeHTML(c.av||'?')}</div>
-        <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(c.author)}</div><div class="cmt-text">${escapeHTML(c.text)}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
+        <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(c.author)}</div><div class="cmt-text">${linkifyText(c.text||'')}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
       </div>`).join('')
     : '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0">Nenhum comentário ainda.</div>';
 }
@@ -3754,6 +3783,7 @@ function openModal(id){
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id){
+  if(id==='modal-detail'&&currentDemandId) flushDemandAutosaves(currentDemandId);
   document.getElementById(id).classList.remove('open');
   // Evita ids de edição "presos" depois de fechar sem salvar
   if(id==='modal-detail') currentDemandId = null;
