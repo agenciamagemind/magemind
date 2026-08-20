@@ -302,6 +302,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .payout-status.approved{color:var(--cyan);background:rgba(6,182,212,.09);border:1px solid rgba(6,182,212,.22)}
 .payout-status.paid{color:var(--emerald);background:var(--emeraldbg);border:1px solid rgba(16,185,129,.22)}
 .payout-status.rejected,.payout-status.cancelled{color:var(--rose);background:var(--rosebg);border:1px solid rgba(244,63,94,.2)}
+.payout-status.reversed{color:var(--amber);background:var(--amberbg);border:1px solid rgba(245,158,11,.22)}
 .pix-preview{font:500 11px 'Manrope',sans-serif;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .payout-actions{display:flex;gap:6px;flex-wrap:wrap}
 .secure-note{display:flex;gap:9px;padding:11px 13px;border-radius:10px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);color:var(--text2);font-size:11px;line-height:1.5}
@@ -1746,7 +1747,7 @@ async function loadAllData(){
         }
       } catch(e){ /* tabela client_plans pode não existir ainda — mantém fallback de plan_id único */ }
 
-      const {data:profiles} = await supa.from('profiles').select('*');
+      const {data:profiles} = await supa.from('profiles').select('*').is('archived_at',null);
       DB.users = (profiles||[]).map(p=>({
         id:p.id, name:p.name, role:p.role, email:p.email||null, phone:p.phone||'',
         av:p.av||p.name.slice(0,2).toUpperCase(),
@@ -2886,7 +2887,10 @@ async function toggleUserActive(id){
 async function deleteTeamMember(id){
   const u = DB.users.find(x=>x.id===id); if(!u) return;
   if(!canHardDeleteTeamMember(u)){ toast('Sem permissão para excluir este usuário','err'); return; }
-  if(!confirm(`Excluir "${u.name}" permanentemente? Essa ação apaga o acesso e os dados dele e NÃO pode ser desfeita.`)) return;
+  const affiliateNotice = u.role==='affiliate'
+    ? ' Se existir histórico financeiro, o acesso será desativado e o perfil será arquivado para preservar a auditoria.'
+    : '';
+  if(!confirm(`Remover "${u.name}"?${affiliateNotice}`)) return;
   try{
     const {data:sess} = await supa.auth.getSession();
     const res = await fetch(`${SUPA_URL}/functions/v1/delete-user`, {
@@ -2898,7 +2902,7 @@ async function deleteTeamMember(id){
     if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
     DB.users = DB.users.filter(x=>x.id!==id);
     buildNav(); renderTeam();
-    toast(`${u.name} excluído permanentemente`,'ok');
+    toast(json.archived?`${u.name} foi desativado e arquivado com o histórico preservado`:`${u.name} excluído permanentemente`,'ok');
   } catch(e){
     toast('Erro ao excluir usuário: '+(e.message||e),'err');
   }
@@ -2977,7 +2981,7 @@ async function confirmConvertTeamToClient(){
    ═══════════════════════════════════════════════════════════════ */
 const WITHDRAWAL_STATUS = {
   pending:['Em análise','pending'], approved:['Aprovado','approved'], paid:['Pago','paid'],
-  rejected:['Recusado','rejected'], cancelled:['Cancelado','cancelled']
+  rejected:['Recusado','rejected'], cancelled:['Cancelado','cancelled'], reversed:['Estornado','reversed']
 };
 const PIX_TYPE_LABEL = {cpf:'CPF',cnpj:'CNPJ',email:'E-mail',phone:'Telefone',random:'Aleatória'};
 let withdrawalRequestKey = null;
@@ -3103,7 +3107,7 @@ function renderWithdrawalApproval(){
   stats.innerHTML=`<div class="stat"><div class="stat-label">Em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(pendingTotal)}</div><div class="stat-delta delta-neutral">${pending.length} solicitações</div></div><div class="stat"><div class="stat-label">Aprovado, aguardando PIX</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(approvedTotal)}</div><div class="stat-delta delta-neutral">${approved.length} pagamentos</div></div><div class="stat"><div class="stat-label">Total pago</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(paidTotal)}</div></div><div class="stat"><div class="stat-label">Histórico</div><div class="stat-val" style="color:var(--violet2)">${DB.withdrawals.length}</div><div class="stat-delta delta-neutral">registros auditados</div></div>`;
   document.getElementById('payout-queue-count').textContent=`${pending.length} em análise`;
   const ordered=DB.withdrawals.slice().sort((a,b)=>{
-    const rank={pending:0,approved:1,paid:2,rejected:3,cancelled:4};
+    const rank={pending:0,approved:1,paid:2,reversed:3,rejected:4,cancelled:5};
     return (rank[a.status]-rank[b.status])||new Date(b.requested_at)-new Date(a.requested_at);
   });
   body.innerHTML=ordered.length?ordered.map(row=>`<tr>
@@ -3111,7 +3115,7 @@ function renderWithdrawalApproval(){
     <td class="financial-value" style="font-weight:700">${formatCurrencyBRL(row.amount)}</td>
     <td><div style="font-size:10px;color:var(--text3)">${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div class="pix-preview" title="${escapeHTML(row.pix_key)}">${escapeHTML(row.pix_key)}</div></td>
     <td style="font-size:11px;color:var(--text2)">${withdrawalDate(row.requested_at)}</td><td>${withdrawalStatusBadge(row.status)}</td>
-    <td>${['pending','approved'].includes(row.status)?`<button class="btn btn-ghost btn-xs" onclick="openWithdrawalReview('${row.id}')">Analisar</button>`:'<span style="font-size:11px;color:var(--text3)">Concluído</span>'}</td>
+    <td>${['pending','approved','paid'].includes(row.status)?`<button class="btn btn-ghost btn-xs" onclick="openWithdrawalReview('${row.id}')">${row.status==='paid'?'Estornar':'Analisar'}</button>`:'<span style="font-size:11px;color:var(--text3)">Concluído</span>'}</td>
   </tr>`).join(''):'<tr><td colspan="6" class="payout-empty">Nenhuma solicitação de saque</td></tr>';
 }
 function openWithdrawalReview(id){
@@ -3119,18 +3123,26 @@ function openWithdrawalReview(id){
   currentWithdrawalReviewId=id; document.getElementById('wr-note').value='';
   document.getElementById('wr-subtitle').textContent=`${row.affiliate_name_snapshot} · ${withdrawalDate(row.requested_at)}`;
   document.getElementById('wr-summary').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><div class="fl">Valor</div><div class="financial-value" style="font-size:22px;font-weight:700;margin-top:5px">${formatCurrencyBRL(row.amount)}</div></div><div><div class="fl">Status</div><div style="margin-top:7px">${withdrawalStatusBadge(row.status)}</div></div></div><div style="margin-top:15px"><div class="fl">Chave PIX — ${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div style="font-size:13px;margin-top:6px;overflow-wrap:anywhere">${escapeHTML(row.pix_key)}</div></div>`;
-  document.getElementById('wr-actions').innerHTML=row.status==='pending'?`<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('approve')">Aprovar saque</button>`:`<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('pay')">Confirmar PIX pago</button>`;
+  document.getElementById('wr-actions').innerHTML=row.status==='pending'
+    ? `<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('approve')">Aprovar saque</button>`
+    : row.status==='approved'
+      ? `<button class="btn btn-danger" onclick="performWithdrawalAction('reject')">Recusar</button><button class="btn btn-primary" onclick="performWithdrawalAction('pay')">Confirmar PIX pago</button>`
+      : `<button class="btn btn-danger" onclick="performWithdrawalAction('reverse')">Estornar pagamento</button>`;
   openModal('modal-withdrawal-review');
 }
 async function performWithdrawalAction(action){
   const note=document.getElementById('wr-note').value.trim();
   if(action==='reject'&&note.length<3){toast('Informe o motivo da recusa','err');return;}
   if(action==='pay'&&!confirm('Confirma que a transferência PIX já foi realizada?'))return;
+  if(action==='reverse'&&note.length<3){toast('Informe o motivo do estorno','err');return;}
+  if(action==='reverse'&&!confirm('Confirma o estorno deste pagamento? O valor voltará ao saldo do afiliado e a ação ficará registrada.'))return;
   const buttons=document.querySelectorAll('#wr-actions button');buttons.forEach(b=>b.disabled=true);
-  const {error}=await supa.rpc('review_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_action:action,p_note:note||null});
+  const {error}=action==='reverse'
+    ? await supa.rpc('reverse_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_reason:note})
+    : await supa.rpc('review_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_action:action,p_note:note||null});
   if(error){buttons.forEach(b=>b.disabled=false);toast('Erro: '+error.message,'err');return;}
   closeModal('modal-withdrawal-review'); currentWithdrawalReviewId=null;
-  await refreshWithdrawalData(); toast(action==='pay'?'Pagamento confirmado ✓':action==='approve'?'Saque aprovado ✓':'Saque recusado','ok');
+  await refreshWithdrawalData(); toast(action==='reverse'?'Pagamento estornado com auditoria ✓':action==='pay'?'Pagamento confirmado ✓':action==='approve'?'Saque aprovado ✓':'Saque recusado','ok');
 }
 
 function loadAffiliates(){
@@ -3661,7 +3673,25 @@ async function saveSale(){
 }
 
 async function removeSale(id){
-  if(!confirm('Remover esta venda?')) return;
+  const sale=DB.sales.find(s=>s.id===id);
+  const commission=(DB.commissions||[]).find(c=>c.sale_id===id);
+  if(commission){
+    if(sale?.status==='Cancelado'){
+      toast('Venda cancelada preservada no histórico financeiro','err');
+      return;
+    }
+    if(!confirm('Esta venda gerou comissão e não pode ser apagada. Deseja cancelá-la?')) return;
+    const {error}=await supa.from('sales').update({status:'Cancelado'}).eq('id',id);
+    if(error){
+      const paid=/reservada|paga|saque/i.test(error.message||'');
+      toast(paid?'A comissão já foi usada em um saque. Estorne o pagamento na área Afiliados antes de cancelar a venda.':'Erro: '+error.message,'err');
+      return;
+    }
+    if(sale) sale.status='Cancelado';
+    toast('Venda cancelada; histórico financeiro preservado','ok');
+    loadSales(); return;
+  }
+  if(!confirm('Remover esta venda permanentemente?')) return;
   const {error} = await supa.from('sales').delete().eq('id',id);
   if(error){ toast('Erro: '+error.message,'err'); return; }
   DB.sales = DB.sales.filter(x=>x.id!==id);

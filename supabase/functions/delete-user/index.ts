@@ -70,11 +70,30 @@ Deno.serve(async (req) => {
       const isProtected = target.role === "ceo" || String(target.email || "").toLowerCase() === protectedEmail;
       if (isProtected) return json({ error: "O perfil do CEO é protegido" }, 403);
 
+      // Afiliados com movimentacao financeira sao arquivados. O perfil fica
+      // inativo, sai da operacao e os lancamentos permanecem auditaveis.
+      if (target.role === "affiliate") {
+        const [{ count: commissionCount, error: commissionError }, { count: withdrawalCount, error: withdrawalError }] = await Promise.all([
+          admin.from("affiliate_commissions").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
+          admin.from("affiliate_withdrawals").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
+        ]);
+        if (commissionError || withdrawalError) {
+          return json({ error: "Falha ao verificar o histórico financeiro do afiliado" }, 500);
+        }
+        if ((commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
+          const { error: unlinkError } = await admin.from("clients").update({ affiliate_id: null }).eq("affiliate_id", targetId);
+          if (unlinkError) return json({ error: "Falha ao desvincular os clientes do afiliado: " + unlinkError.message }, 409);
+          const { error: archiveError } = await admin.from("profiles").update({ active: false, archived_at: new Date().toISOString() }).eq("id", targetId);
+          if (archiveError) return json({ error: "Falha ao arquivar o afiliado: " + archiveError.message }, 500);
+          return json({ ok: true, archived: true, preserved_history: true });
+        }
+      }
+
       // Deleting Auth first is failure-safe: the FK cascade removes profiles,
       // notifications/sessions and sets demand assignee/creator fields to null.
       // Comments and demands remain as company history.
       const { error: deleteError } = await admin.auth.admin.deleteUser(targetId);
-      if (deleteError) return json({ error: "Falha ao remover acesso: " + deleteError.message }, 500);
+      if (deleteError) return json({ error: "Não foi possível excluir esta conta. Desative o acesso e verifique os vínculos históricos antes de tentar novamente." }, 409);
 
       return json({ ok: true, preserved_history: true });
     }
