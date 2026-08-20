@@ -47,4 +47,3 @@ $$;
 revoke execute on function public.guard_notification_update() from public, anon, authenticated;
 
 commit;
-
