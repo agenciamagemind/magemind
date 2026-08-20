@@ -1,0 +1,35 @@
+{
+  "name": "Magemind",
+  "short_name": "Magemind",
+  "description": "Gestão operacional da agência Magemind",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#08080f",
+  "theme_color": "#0f0f1a",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "magemind-app-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "magemind-app-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "magemind-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
