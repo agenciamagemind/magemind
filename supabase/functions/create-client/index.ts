@@ -14,6 +14,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const cleanText = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
@@ -35,11 +37,11 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey);
   const { data: callerProfile, error: callerProfileError } = await admin
     .from("profiles")
-    .select("role")
+    .select("role,active,archived_at")
     .eq("id", callerAuth.user.id)
     .maybeSingle();
 
-  if (callerProfileError || !callerProfile || !["ceo", "manager"].includes(callerProfile.role)) {
+  if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager"].includes(callerProfile.role)) {
     return json({ error: "Sem permissão para criar clientes" }, 403);
   }
 
@@ -57,43 +59,41 @@ Deno.serve(async (req) => {
   const status = cleanText(body.status, 30) || "Ativo";
   const notes = cleanText(body.notes, 3000);
   const type = cleanText(body.type, 60) || "Mensal";
-  const planId = body.plan_id || null;
-  const affiliateId = body.affiliate_id || null;
+  const planIds = Array.isArray(body.plan_ids) ? [...new Set(body.plan_ids.filter((id): id is string => typeof id === "string"))] : [];
+  const affiliateId = typeof body.affiliate_id === "string" && body.affiliate_id ? body.affiliate_id : null;
   const customerSince = body.customer_since || null;
 
   if (!name || !email || !password) return json({ error: "Nome, e-mail e senha são obrigatórios" }, 400);
   if (password.length < 8) return json({ error: "A senha deve ter ao menos 8 caracteres" }, 400);
+  if (planIds.some((id) => !uuidPattern.test(id)) || (affiliateId && !uuidPattern.test(affiliateId))) {
+    return json({ error: "Plano ou afiliado inválido" }, 400);
+  }
 
-  const since = new Date().toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
-  const { data: clientRow, error: clientError } = await admin
-    .from("clients")
-    .insert({
-      name,
-      email,
-      phone,
-      type,
-      status,
-      since,
-      notes,
-      plan_id: planId,
-      affiliate_id: affiliateId,
-      customer_since: customerSince,
-    })
-    .select()
-    .single();
+  const { data: clientRow, error: clientError } = await callerClient.rpc("admin_create_client_record", {
+    p_name: name,
+    p_email: email,
+    p_phone: phone,
+    p_status: status,
+    p_notes: notes,
+    p_type: type,
+    p_customer_since: customerSince,
+    p_affiliate_id: affiliateId,
+    p_plan_ids: planIds,
+  });
 
-  if (clientError || !clientRow) return json({ error: clientError?.message || "Falha ao criar cliente" }, 400);
+  const createdClient = Array.isArray(clientRow) ? clientRow[0] : clientRow;
+  if (clientError || !createdClient) return json({ error: clientError?.message || "Falha ao criar cliente" }, 400);
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: { name, phone },
-    app_metadata: { source: "managed_client", role: "client", client_id: clientRow.id },
+    app_metadata: { source: "managed_client", role: "client", client_id: createdClient.id },
   });
 
   if (authError || !authData.user) {
-    await admin.from("clients").delete().eq("id", clientRow.id);
+    await admin.from("clients").delete().eq("id", createdClient.id);
     return json({ error: authError?.message || "Falha ao criar acesso do cliente" }, 400);
   }
 
@@ -106,14 +106,23 @@ Deno.serve(async (req) => {
     phone,
     role: "client",
     av,
-    active: true,
-    client_id: clientRow.id,
+    active: status !== "Inativo",
+    client_id: createdClient.id,
   }, { onConflict: "id" });
 
   if (profileError) {
     await admin.auth.admin.deleteUser(userId);
-    await admin.from("clients").delete().eq("id", clientRow.id);
+    await admin.from("clients").delete().eq("id", createdClient.id);
     return json({ error: "Falha ao criar perfil: " + profileError.message }, 500);
+  }
+
+  if (status === "Inativo") {
+    const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
+    if (banError) {
+      await admin.auth.admin.deleteUser(userId);
+      await admin.from("clients").delete().eq("id", createdClient.id);
+      return json({ error: "Falha ao bloquear o acesso do cliente inativo" }, 500);
+    }
   }
 
   await Promise.all([
@@ -138,6 +147,6 @@ Deno.serve(async (req) => {
     }),
   ]);
 
-  return json({ ok: true, client: clientRow, user_id: userId });
+  return json({ ok: true, client: createdClient, user_id: userId });
 });
 
