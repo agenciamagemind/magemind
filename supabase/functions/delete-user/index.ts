@@ -35,10 +35,10 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: callerProfile, error: callerProfileError } = await admin
       .from("profiles")
-      .select("role")
+      .select("role,active,archived_at")
       .eq("id", callerAuth.user.id)
       .maybeSingle();
-    if (callerProfileError || !callerProfile || !["ceo", "manager"].includes(callerProfile.role)) {
+    if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager"].includes(callerProfile.role)) {
       return json({ error: "Somente CEO ou Gerente podem excluir contas" }, 403);
     }
 
@@ -61,11 +61,12 @@ Deno.serve(async (req) => {
     if (type === "team") {
       const { data: target, error: targetError } = await admin
         .from("profiles")
-        .select("id, role, email")
+        .select("id, role, email, archived_at")
         .eq("id", targetId)
         .maybeSingle();
       if (targetError) return json({ error: "Falha ao consultar usuário: " + targetError.message }, 500);
       if (!target) return json({ error: "Usuário de equipe não encontrado" }, 404);
+      if (target.archived_at) return json({ error: "Usuário já está arquivado" }, 409);
 
       const isProtected = target.role === "ceo" || String(target.email || "").toLowerCase() === protectedEmail;
       if (isProtected) return json({ error: "O perfil do CEO é protegido" }, 403);
@@ -81,10 +82,13 @@ Deno.serve(async (req) => {
           return json({ error: "Falha ao verificar o histórico financeiro do afiliado" }, 500);
         }
         if ((commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
-          const { error: unlinkError } = await admin.from("clients").update({ affiliate_id: null }).eq("affiliate_id", targetId);
-          if (unlinkError) return json({ error: "Falha ao desvincular os clientes do afiliado: " + unlinkError.message }, 409);
-          const { error: archiveError } = await admin.from("profiles").update({ active: false, archived_at: new Date().toISOString() }).eq("id", targetId);
-          if (archiveError) return json({ error: "Falha ao arquivar o afiliado: " + archiveError.message }, 500);
+          const { error: banError } = await admin.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
+          if (banError) return json({ error: "Falha ao bloquear o acesso do afiliado" }, 500);
+          const { error: archiveError } = await callerClient.rpc("admin_archive_affiliate", { p_affiliate_id: targetId });
+          if (archiveError) {
+            await admin.auth.admin.updateUserById(targetId, { ban_duration: "none" });
+            return json({ error: "Arquivamento cancelado sem perda de acesso: " + archiveError.message }, 409);
+          }
           return json({ ok: true, archived: true, preserved_history: true });
         }
       }
@@ -100,11 +104,12 @@ Deno.serve(async (req) => {
 
     const { data: client, error: clientError } = await admin
       .from("clients")
-      .select("id")
+      .select("id,archived_at")
       .eq("id", targetId)
       .maybeSingle();
     if (clientError) return json({ error: "Falha ao consultar cliente: " + clientError.message }, 500);
     if (!client) return json({ error: "Cliente não encontrado" }, 404);
+    if (client.archived_at) return json({ error: "Cliente já está arquivado" }, 409);
 
     const { data: linkedProfiles, error: linkedError } = await admin
       .from("profiles")
@@ -119,15 +124,18 @@ Deno.serve(async (req) => {
     if (linked) {
       const linkedProtected = linked.role === "ceo" || String(linked.email || "").toLowerCase() === protectedEmail;
       if (linkedProtected) return json({ error: "O perfil do CEO é protegido" }, 403);
-      const { error: authDeleteError } = await admin.auth.admin.deleteUser(linked.id);
-      if (authDeleteError) return json({ error: "Falha ao remover acesso do cliente: " + authDeleteError.message }, 500);
+      const { error: authBanError } = await admin.auth.admin.updateUserById(linked.id, { ban_duration: "876000h" });
+      if (authBanError) return json({ error: "Falha ao bloquear o acesso do cliente: " + authBanError.message }, 500);
     }
 
-    // The schema cascades only data that belongs to this exact client.
-    const { error: deleteClientError } = await admin.from("clients").delete().eq("id", targetId);
-    if (deleteClientError) return json({ error: "Falha ao excluir cliente: " + deleteClientError.message }, 500);
+    // Arquivamento atomico preserva vendas, demandas, documentos e planos.
+    const { error: archiveClientError } = await callerClient.rpc("admin_archive_client", { p_client_id: targetId });
+    if (archiveClientError) {
+      if (linked) await admin.auth.admin.updateUserById(linked.id, { ban_duration: "none" });
+      return json({ error: "Arquivamento cancelado sem perda de acesso: " + archiveClientError.message }, 409);
+    }
 
-    return json({ ok: true });
+    return json({ ok: true, archived: true, preserved_history: true });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Erro inesperado" }, 500);
   }
