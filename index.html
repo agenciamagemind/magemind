@@ -1760,7 +1760,7 @@ async function loadAllData(){
 
     if(role==='ceo' || role==='manager'){
       // ── CEO / GERENTE: acesso total (a RLS do banco também protege isso) ──
-      const {data:clients}  = await supa.from('clients').select('*, plans(name)').order('created_at',{ascending:false});
+      const {data:clients}  = await supa.from('clients').select('*, plans(name)').is('archived_at',null).order('created_at',{ascending:false});
       DB.clients = (clients||[]).filter(c=>!c.converted_to_team).map(mapClient);
       // Multi-plano: carrega client_plans e mescla (não sobrescreve o legado se a tabela ainda não existir)
       try {
@@ -2596,51 +2596,29 @@ async function saveClient(){
   const customerSince = sinceRaw ? new Date(sinceRaw).toISOString() : null;
   const btn          = document.querySelector('#modal-client .btn-primary');
 
-  // Sincroniza a tabela relacional client_plans sem duplicar (apaga tudo e reinsere o conjunto atual)
-  async function syncClientPlans(clientId){
-    await supa.from('client_plans').delete().eq('client_id', clientId);
-    if(planIds.length){
-      await supa.from('client_plans').insert(planIds.map(pid=>({client_id:clientId, plan_id:pid})));
-    }
-  }
-
   if(editClientId){
     if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
     try {
-      const cCache = DB.clients.find(x=>x.id===editClientId);
-      const emailChanged = cCache && email && email.toLowerCase() !== (cCache.email||'').toLowerCase();
-
-      // Nome/telefone/status/plano etc. seguem indo direto para `clients` — mas
-      // o e-mail NUNCA é atualizado sozinho nessa tabela, pra não dessincronizar
-      // de auth.users/profiles.email (ver Edge Function update-email abaixo).
-      const updateData = {name,phone,status,notes,plan_id:primaryPlan};
-      if(customerSince) updateData.customer_since = customerSince;
-      if(hasPermission('affiliates.manage')||isManager()) updateData.affiliate_id = affiliate_id;
-      const {error:cErr} = await supa.from('clients').update(updateData).eq('id',editClientId);
-      if(cErr){ toast('Erro: '+cErr.message,'err'); return; }
-      await syncClientPlans(editClientId);
-
-      const u = DB.users.find(x=>x.clientId===editClientId);
-      if(u) await supa.from('profiles').update({name,phone}).eq('id',u.id);
-
-      if(emailChanged){
-        const {data:sess} = await supa.auth.getSession();
-        const res = await fetch(`${SUPA_URL}/functions/v1/update-email`, {
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':`Bearer ${sess.session.access_token}`},
-          body: JSON.stringify({targetId:editClientId, type:'client', newEmail:email})
-        });
-        const json = await res.json();
-        if(!res.ok || json.error){
-          toast('Dados salvos, mas o e-mail não foi alterado: '+(json.error||res.statusText),'err');
-          renderClients();
-          return;
-        }
+      const clientPatch = {
+        name, phone, status, notes, customer_since:customerSince,
+        affiliate_id, plan_ids:planIds
+      };
+      const {data:sess} = await supa.auth.getSession();
+      if(!sess?.session?.access_token){ toast('Sessão expirada. Faça login novamente.','err'); return; }
+      const res = await fetch(`${SUPA_URL}/functions/v1/update-email`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${sess.session.access_token}`,'apikey':SUPA_KEY},
+        body: JSON.stringify({targetId:editClientId, type:'client', newEmail:email, clientPatch})
+      });
+      const json = await res.json();
+      if(!res.ok || json.error){
+        toast('Nenhuma alteração foi aplicada: '+(json.error||res.statusText),'err'); return;
       }
 
+      const u = DB.users.find(x=>x.clientId===editClientId);
       const c = DB.clients.find(x=>x.id===editClientId);
-      if(c) Object.assign(c,{name,email:emailChanged?email:c.email,phone,status,notes,plan:primaryPlan||'',planIds,customerSince:customerSince||c.customerSince,affiliateId:updateData.affiliate_id!==undefined?updateData.affiliate_id:c.affiliateId});
-      if(u) u.name = name;
+      if(c) Object.assign(c,{name,email,phone,status,notes,plan:primaryPlan||'',planIds,customerSince,affiliateId:affiliate_id});
+      if(u) Object.assign(u,{name,email,phone,active:status!=='Inativo'});
 
       closeModal('modal-client');
       toast(`${name} atualizado! ✓`,'ok');
@@ -2667,7 +2645,7 @@ async function saveClient(){
         res = await fetch(`${SUPA_URL}/functions/v1/create-client`, {
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SUPA_KEY},
-          body: JSON.stringify({name, email, password:pass, phone, status, notes, plan_id:primaryPlan, customer_since:customerSince, affiliate_id})
+          body: JSON.stringify({name, email, password:pass, phone, status, notes, plan_ids:planIds, customer_since:customerSince, affiliate_id})
         });
         json = await res.json();
       } catch(fetchErr){
@@ -2676,30 +2654,9 @@ async function saveClient(){
         return;
       }
 
-      // A Edge Function pode retornar erro 400 se o e-mail já existir no Auth.
-      // Nesse caso o cliente pode já ter sido criado pela tela de cadastro público —
-      // tentamos apenas vincular/atualizar em vez de criar duplicado.
-      if(json.error && (json.error.toLowerCase().includes('already') || json.error.toLowerCase().includes('email'))){
-        // Busca o cliente existente pelo e-mail e atualiza
-        const {data:existing} = await supa.from('clients').select('*').eq('email',email).maybeSingle();
-        if(existing){
-          await supa.from('clients').update({name,phone,status,notes,plan_id:primaryPlan,affiliate_id}).eq('id',existing.id);
-          await syncClientPlans(existing.id);
-          // Atualiza cache
-          const idx = DB.clients.findIndex(x=>x.id===existing.id);
-          const updated = mapClient({...existing,name,phone,status,notes,plan_id:primaryPlan,affiliate_id});
-          updated.planIds = planIds;
-          if(idx>=0) DB.clients[idx]=updated; else DB.clients.unshift(updated);
-          closeModal('modal-client');
-          toast(`${name} já existia e foi atualizado! ✓`,'ok');
-          buildNav(); renderClients(); return;
-        }
-        toast('Erro: '+(json.error||res.statusText),'err'); return;
-      }
       if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
 
       // Sucesso: adiciona ao cache usando os dados reais retornados pelo servidor
-      await syncClientPlans(json.client.id);
       const newClient = mapClient({...json.client, plan_id:primaryPlan, customer_since:customerSince, affiliate_id});
       newClient.planIds = planIds;
       DB.clients.unshift(newClient);
@@ -2716,13 +2673,11 @@ async function saveClient(){
   }
 }
 
-/* Exclui PERMANENTEMENTE um cliente (linha em clients + profile
-   vinculado + auth.users vinculado, quando existirem). Precisa de
-   service_role, por isso é feito via Edge Function delete-user. */
+/* Arquiva o cliente e bloqueia seu acesso preservando todo o histórico. */
 async function removeClient(id){
   const c = DB.clients.find(x=>x.id===id); if(!c) return;
   if(!hasPermission('clients.delete')){ toast('Sem permissão para excluir clientes','err'); return; }
-  if(!confirm(`Excluir "${c.name}" permanentemente? Demandas, vendas e docs vinculados a esse cliente também serão removidos. Essa ação NÃO pode ser desfeita.`)) return;
+  if(!confirm(`Arquivar "${c.name}"? O acesso será bloqueado imediatamente e demandas, vendas, documentos e planos serão preservados no histórico.`)) return;
   try{
     const {data:sess} = await supa.auth.getSession();
     const res = await fetch(`${SUPA_URL}/functions/v1/delete-user`, {
@@ -2734,10 +2689,7 @@ async function removeClient(id){
     if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
     DB.clients  = DB.clients.filter(x=>x.id!==id);
     DB.users    = DB.users.filter(x=>x.clientId!==id);
-    DB.demands  = DB.demands.filter(x=>x.client!==id);
-    DB.sales    = DB.sales.filter(x=>x.client!==id);
-    DB.docs     = DB.docs.filter(x=>x.client!==id);
-    toast(`${c.name} excluído permanentemente`,'ok');
+    toast(`${c.name} arquivado com o histórico preservado`,'ok');
     buildNav();
     renderClients();
   } catch(e){
@@ -2853,6 +2805,9 @@ async function saveTeamMember(){
   const phone = document.getElementById('tm-phone').value.trim();
   const commissionRate = role==='affiliate' ? parseFloat(document.getElementById('tm-commission').value||0) : null;
   if(!name){ toast('Informe o nome','err'); return; }
+  if(commissionRate!==null && (!Number.isFinite(commissionRate) || commissionRate<0 || commissionRate>100)){
+    toast('A comissão deve estar entre 0% e 100%','err'); return;
+  }
   const btn = document.getElementById('tm-btn');
 
   if(editTeamId){
@@ -2862,10 +2817,14 @@ async function saveTeamMember(){
     const finalRole = isGestor() ? u.role : role;
     btn.disabled = true;
     try{
-      const updateData = {name, role:finalRole, active, phone};
+      const updateData = {name, role:finalRole, phone};
       if(commissionRate!==null) updateData.commission_rate = commissionRate;
       const {error} = await supa.from('profiles').update(updateData).eq('id',editTeamId);
       if(error){ toast('Erro: '+error.message,'err'); return; }
+      if(active !== (u.active!==false)){
+        const lifecycle = await setUserActiveOnServer(editTeamId,active);
+        if(!lifecycle.ok){ toast('Dados do perfil salvos, mas o acesso não mudou: '+lifecycle.error,'err'); return; }
+      }
       Object.assign(u,{name,role:finalRole,active,phone,commissionRate:commissionRate??u.commissionRate});
       closeModal('modal-team'); toast('Usuário atualizado ✓','ok');
       buildNav(); renderTeam();
@@ -2885,23 +2844,37 @@ async function saveTeamMember(){
     const res = await fetch(`${SUPA_URL}/functions/v1/create-user`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${sess.session.access_token}`},
-      body: JSON.stringify({name,email,password:pass,phone,role,commission_rate:commissionRate})
+      body: JSON.stringify({name,email,password:pass,phone,role,commission_rate:commissionRate,active})
     });
     const json = await res.json();
     if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
-    DB.users.push({id:json.user_id, name, role, email, phone, av:avatarInitials(name), photo:null, active:true, commissionRate:commissionRate||0});
+    DB.users.push({id:json.user_id, name, role, email, phone, av:avatarInitials(name), photo:null, active, commissionRate:commissionRate||0});
     closeModal('modal-team'); toast(`${name} cadastrado como ${ROLE_LABELS[role]} ✓`,'ok');
     buildNav(); renderTeam();
   } catch(e){
     toast('Erro ao criar usuário: '+(e.message||e),'err');
   } finally { btn.disabled=false; }
 }
+async function setUserActiveOnServer(id, active){
+  try{
+    const {data:sess} = await supa.auth.getSession();
+    const token=sess?.session?.access_token;
+    if(!token) return {ok:false,error:'Sessão expirada'};
+    const res=await fetch(`${SUPA_URL}/functions/v1/set-user-active`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,'apikey':SUPA_KEY},
+      body:JSON.stringify({targetId:id,active})
+    });
+    const data=await res.json();
+    return res.ok&&!data.error?{ok:true,data}:{ok:false,error:data.error||res.statusText};
+  }catch(e){ return {ok:false,error:e.message||String(e)}; }
+}
 async function toggleUserActive(id){
   const u = DB.users.find(x=>x.id===id); if(!u) return;
   if(!canToggleUserActive(u)){ toast('Sem permissão','err'); return; }
   const newActive = !(u.active!==false);
-  const {error} = await supa.from('profiles').update({active:newActive}).eq('id',id);
-  if(error){ toast('Erro: '+error.message,'err'); return; }
+  const result = await setUserActiveOnServer(id,newActive);
+  if(!result.ok){ toast('Erro: '+result.error,'err'); return; }
   u.active = newActive; renderTeam();
   toast(newActive?'Usuário ativado':'Usuário desativado','ok');
 }
@@ -2949,11 +2922,8 @@ async function confirmConvertClientToTeam(){
   if(!u){ toast('Usuário de acesso vinculado não encontrado para este cliente','err'); return; }
   if(!canCreateRole(newRole)){ toast('Você não tem permissão para definir esse cargo','err'); return; }
   try{
-    // Sincroniza WhatsApp/telefone do cliente para o profile de equipe, preservando o dado
-    const {error:e1} = await supa.from('profiles').update({role:newRole, client_id:null, phone:c.phone||u.phone||''}).eq('id',u.id);
-    if(e1){ toast('Erro: '+e1.message,'err'); return; }
-    const {error:e2} = await supa.from('clients').update({converted_to_team:true}).eq('id',c.id);
-    if(e2){ toast('Erro: '+e2.message,'err'); return; }
+    const {error} = await supa.rpc('admin_convert_client_to_team',{p_client_id:c.id,p_new_role:newRole});
+    if(error){ toast('Erro: '+error.message,'err'); return; }
     DB.clients = DB.clients.filter(x=>x.id!==c.id);
     u.role = newRole; u.clientId = null; u.phone = c.phone||u.phone||'';
     closeModal('modal-convert-to-team');
@@ -2976,23 +2946,10 @@ async function confirmConvertTeamToClient(){
   const u = DB.users.find(x=>x.id===convertTargetTeamId); if(!u) return;
   if(!canManageRole(u)){ toast('Sem permissão','err'); return; }
   try{
-    let clientRow = null;
-    if(u.email){
-      const {data:existing} = await supa.from('clients').select('*').eq('email', u.email).maybeSingle();
-      if(existing){
-        const {error:eUp} = await supa.from('clients').update({converted_to_team:false, status:'Ativo', phone:u.phone||existing.phone||''}).eq('id',existing.id);
-        if(eUp){ toast('Erro: '+eUp.message,'err'); return; }
-        clientRow = {...existing, converted_to_team:false, status:'Ativo', phone:u.phone||existing.phone||''};
-      }
-    }
-    if(!clientRow){
-      const {data:created, error:eIns} = await supa.from('clients')
-        .insert({name:u.name, email:u.email||'', phone:u.phone||'', status:'Ativo'}).select().single();
-      if(eIns){ toast('Erro: '+eIns.message,'err'); return; }
-      clientRow = created;
-    }
-    const {error:eProf} = await supa.from('profiles').update({role:'client', client_id:clientRow.id}).eq('id',u.id);
-    if(eProf){ toast('Erro: '+eProf.message,'err'); return; }
+    const {data,error} = await supa.rpc('admin_convert_team_to_client',{p_user_id:u.id});
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    const clientRow=Array.isArray(data)?data[0]:data;
+    if(!clientRow){ toast('Erro: cliente convertido não retornado','err'); return; }
     u.role='client'; u.clientId=clientRow.id;
     DB.clients.unshift(mapClient(clientRow));
     closeModal('modal-convert-to-client'); closeModal('modal-team');
@@ -3199,8 +3156,9 @@ function renderAffiliates(){
 }
 async function updateAffiliateCommission(id, value){
   if(!hasPermission('affiliates.manage')){ toast('Sem permissão','err'); return; }
-  const rate = parseFloat(value)||0;
-  const {error} = await supa.from('profiles').update({commission_rate:rate}).eq('id',id);
+  const rate = Number(value);
+  if(!Number.isFinite(rate) || rate<0 || rate>100){ toast('A comissão deve estar entre 0% e 100%','err'); renderAffiliates(); return; }
+  const {error} = await supa.rpc('admin_update_affiliate_commission',{p_affiliate_id:id,p_rate:rate});
   if(error){ toast('Erro: '+error.message,'err'); return; }
   const u = DB.users.find(x=>x.id===id); if(u) u.commissionRate = rate;
   toast('Comissão atualizada ✓','ok');
@@ -3612,7 +3570,7 @@ async function openNewSale(){
   document.getElementById('ms-btn-label').textContent = 'Registrar venda';
 
   // Sempre recarrega clientes do banco para garantir lista completa
-  const {data:freshClients} = await supa.from('clients').select('*').order('name');
+  const {data:freshClients} = await supa.from('clients').select('*').is('archived_at',null).order('name');
   if(freshClients && freshClients.length){
     // Mescla com cache sem duplicar
     freshClients.forEach(fc=>{
@@ -3658,11 +3616,11 @@ function openEditSale(id){
 }
 
 async function saveSale(){
-  const v       = parseFloat(document.getElementById('s-value').value)||0;
+  const v       = Number(document.getElementById('s-value').value);
   const planId  = document.getElementById('s-plan').value;
   const plan    = DB.plans.find(p=>p.id===planId);
   const svc     = plan ? plan.name : 'Pacote personalizado';
-  if(!v){ toast('Informe o valor ou selecione um pacote','err'); return; }
+  if(!Number.isFinite(v) || v<=0){ toast('Informe um valor de venda maior que zero','err'); return; }
   const clientId = document.getElementById('s-client').value;
   const saleData = {
     client_id:clientId, plan_id:planId||null,
