@@ -338,8 +338,24 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 }
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
 .profile-av-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
+.auth-options{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.remember-option{display:inline-flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;cursor:pointer;user-select:none}
+.remember-option input,.push-category input{width:16px;height:16px;accent-color:var(--violet2);cursor:pointer}
+.push-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.push-settings-title{display:flex;gap:10px;align-items:center}
+.push-settings-title svg{color:var(--violet3);flex-shrink:0}
+.push-status{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.45}
+.switch{width:42px;height:24px;border:1px solid var(--border2);border-radius:12px;background:var(--bg4);padding:2px;cursor:pointer;transition:.18s;flex-shrink:0}
+.switch::after{content:'';display:block;width:18px;height:18px;border-radius:50%;background:var(--text3);transition:.18s}
+.switch.on{background:var(--violet);border-color:var(--violet2)}
+.switch.on::after{transform:translateX(18px);background:#fff}
+.switch:disabled{opacity:.45;cursor:not-allowed}
+.push-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.push-category{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;line-height:1.4;cursor:pointer}
+.push-category strong{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
+.push-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260820-2">
+<link rel="stylesheet" href="mobile.css?v=20260827-1">
 </head>
 <body>
 
@@ -356,7 +372,10 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
     <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
       <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" placeholder="seu@email.com"></div>
       <div class="fg"><label class="fl">Senha</label><input class="fi" id="li-pass" type="password" placeholder="••••••••"></div>
-      <div style="display:flex;justify-content:flex-end"><span style="font-size:12px;color:var(--violet2);cursor:pointer">Esqueci minha senha</span></div>
+      <div class="auth-options">
+        <label class="remember-option"><input id="li-keep" type="checkbox" checked><span>Manter conectado</span></label>
+        <span style="font-size:12px;color:var(--violet2);cursor:pointer">Esqueci minha senha</span>
+      </div>
       <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Acessar o painel</button>
     </div>
     <div id="auth-reg" style="display:none;flex-direction:column;gap:12px">
@@ -735,6 +754,25 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
                   <div class="fg"><label class="fl">Confirmar nova senha</label><input class="fi" id="prof-pass-con" type="password" placeholder="••••••••"></div>
                   <button class="btn btn-primary btn-sm" onclick="changePassword()">Alterar senha</button>
                 </div>
+              </div>
+            </div>
+            <div class="settings-card" id="push-settings-card">
+              <div class="push-settings-head">
+                <div class="push-settings-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                  <div><div class="settings-card-title" style="margin:0">Notificações no celular</div><div class="push-status" id="push-status">Verificando compatibilidade...</div></div>
+                </div>
+                <button class="switch" id="push-master-toggle" type="button" role="switch" aria-checked="false" aria-label="Ativar notificações no celular" onclick="togglePushNotifications()"></button>
+              </div>
+              <div class="push-categories" id="push-categories">
+                <label class="push-category"><input type="checkbox" data-push-pref="demand_updates" onchange="savePushCategory(this)"><span><strong>Demandas</strong>Criação, produção, mudanças e conclusão.</span></label>
+                <label class="push-category"><input type="checkbox" data-push-pref="comments" onchange="savePushCategory(this)"><span><strong>Comentários</strong>Novas mensagens nas demandas.</span></label>
+                <label class="push-category"><input type="checkbox" data-push-pref="sales" onchange="savePushCategory(this)"><span><strong>Vendas</strong>Registros e movimentos comerciais relevantes.</span></label>
+                <label class="push-category"><input type="checkbox" data-push-pref="team_activity" onchange="savePushCategory(this)"><span><strong>Equipe</strong>Atividades operacionais destinadas ao seu perfil.</span></label>
+              </div>
+              <div class="push-settings-actions">
+                <button class="btn btn-primary btn-sm" id="push-enable-button" type="button" onclick="enablePushNotifications()">Ativar notificações</button>
+                <button class="btn btn-ghost btn-sm" type="button" onclick="openInstallGuide(true)">Ver instalação do app</button>
               </div>
             </div>
             <button class="btn btn-danger btn-sm" onclick="doLogout()" style="align-self:flex-start">Sair da conta</button>
@@ -1136,6 +1174,10 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       </div>
       <button class="install-close" type="button" onclick="closeInstallGuide(true)" aria-label="Fechar">×</button>
     </div>
+    <div class="install-platforms" role="tablist" aria-label="Sistema do celular">
+      <button type="button" role="tab" data-install-platform="ios" onclick="setInstallPlatform('ios')"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.9c1.5 0 2.8 1.1 4 1.1 3 0 6-8 6-12.2A4.6 4.6 0 0 0 17.5 5C16 5 15 6.1 12 6.1S8.5 5 7 5a4.6 4.6 0 0 0-4.5 4.8C2.5 14 5.5 22 8.5 22c1.3 0 2-1.1 3.5-1.1Z"/><path d="M10 2c1 .5 2 2 2 4"/></svg> iPhone e iPad</button>
+      <button type="button" role="tab" data-install-platform="android" onclick="setInstallPlatform('android')"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="8" width="14" height="10" rx="2"/><path d="M8 8 6 4m10 4 2-4M9 12h.01M15 12h.01M8 18v3m8-3v3"/></svg> Android</button>
+    </div>
     <div class="install-steps" id="install-steps"></div>
     <div class="install-actions">
       <button class="btn btn-ghost" type="button" onclick="closeInstallGuide(true)">Agora não</button>
@@ -1145,14 +1187,36 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   </div>
 </div>
 
+<div class="overlay" id="push-onboarding" role="dialog" aria-modal="true" aria-labelledby="push-onboarding-title" onclick="if(event.target===this)dismissPushOnboarding()">
+  <div class="modal" style="width:460px">
+    <div class="m-head"><div><div class="m-title" id="push-onboarding-title">Notificações, agora sem precisar ficar de plantão</div><div class="m-sub">Receba no celular somente os avisos ligados ao seu perfil.</div></div><button class="m-close" type="button" onclick="dismissPushOnboarding()" aria-label="Fechar">✕</button></div>
+    <div class="m-body"><div class="secure-note"><span>i</span><span>Demandas, comentários e eventos comerciais continuam organizados por categoria. Você pode mudar tudo em Meu Perfil.</span></div></div>
+    <div class="m-foot"><button class="btn btn-ghost" type="button" onclick="dismissPushOnboarding()">Agora não</button><button class="btn btn-primary" type="button" onclick="enablePushNotifications(true)">Ativar notificações</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast-el"></div>
 
-<script src="mobile-app.js?v=20260820-1"></script>
+<script src="mobile-app.js?v=20260827-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzYXd4bWxmdm52ZXB6Z2N6dGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzcwMzgsImV4cCI6MjA5NzA1MzAzOH0.Ch7JcBwsEAStYKZhNVsKWATatbjqY5TGaz4gP_SHE94';
-const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+const KEEP_CONNECTED_KEY = 'mm_keep_connected';
+const routedAuthStorage = {
+  getItem(key){
+    const keep = localStorage.getItem(KEEP_CONNECTED_KEY) !== '0';
+    return keep ? (localStorage.getItem(key) || sessionStorage.getItem(key)) : sessionStorage.getItem(key);
+  },
+  setItem(key,value){
+    const keep = localStorage.getItem(KEEP_CONNECTED_KEY) !== '0';
+    const target = keep ? localStorage : sessionStorage;
+    const other = keep ? sessionStorage : localStorage;
+    target.setItem(key,value); other.removeItem(key);
+  },
+  removeItem(key){ localStorage.removeItem(key); sessionStorage.removeItem(key); }
+};
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{storage:routedAuthStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 /* ═══ CACHE LOCAL (fonte da verdade = Supabase) ═══ */
 const DB = {
@@ -1493,7 +1557,7 @@ function mapNotif(n){
     icon:n.icon||'🔔', iconBg:n.icon_bg||'var(--violetbg)',
     title:n.title, body:n.body||'',
     time:fmtTime(n.created_at), date:fmtDate(n.created_at),
-    read:n.read||false, linkDemandId:n.link_demand_id||null
+    read:n.read||false, linkDemandId:n.link_demand_id||null, eventType:n.event_type||'general'
   };
 }
 
@@ -1530,6 +1594,7 @@ async function doLogin(){
   const email = document.getElementById('li-email').value.trim();
   const pass  = document.getElementById('li-pass').value;
   if(!email||!pass){ toast('Preencha email e senha','err'); return; }
+  localStorage.setItem(KEEP_CONNECTED_KEY, document.getElementById('li-keep')?.checked ? '1' : '0');
   const btn = document.querySelector('#auth-login .btn-primary');
   if(btn){ btn.disabled=true; btn.textContent='Entrando...'; }
   try {
@@ -1730,6 +1795,7 @@ async function afterLogin(authUser){
     document.body.classList.add('app-ready');
     await loadAllData();
     initApp();
+    document.dispatchEvent(new CustomEvent('magemind:session-ready'));
   } catch(e){
     toast('Erro inesperado ao entrar: '+(e.message||e),'err');
     console.error('afterLogin unexpected error:', e);
@@ -2452,8 +2518,12 @@ function loadDashFull(){
 
 /* ═══ CLIENTS ═══ */
 function loadClients(){
-  const types = ['Todos','Mensal','Avulso','Mentorado','Equipe','Ativo','Pausado'];
-  document.getElementById('client-filters').innerHTML = isAffiliate() ? '' : types.map((t,i)=>`<div class="chip${i===0?' on':''}" onclick="filterClients(this,'${t}')">${t}</div>`).join('');
+  const filters = [
+    {label:'Todos',value:'Todos'}, {label:'Mensal',value:'Mensal'},
+    {label:'Mentorado',value:'Mentorado'}, {label:'Ativos',value:'Ativo'},
+    {label:'Pausados',value:'Pausado'}, {label:'Inativos',value:'Inativo'}
+  ];
+  document.getElementById('client-filters').innerHTML = isAffiliate() ? '' : filters.map((filter,i)=>`<div class="chip${i===0?' on':''}" onclick="filterClients(this,'${filter.value}')">${filter.label}</div>`).join('');
   if(isAffiliate()) currentClientFilter='Todos';
   renderClients();
 }
@@ -3287,10 +3357,10 @@ async function drop(e,col){
   if(statusChanged){
     dragged.status = col;
     if(isStaffRole()){
-      if(col==='Concluído') await dbPushNotifToClient(dragged.client,'✅','var(--emeraldbg)','Demanda concluída! 🎉',`"${dragged.title}" foi concluída por ${DB.me.name}.`,dragged.id);
-      else if(col==='Em andamento') await dbPushNotifToClient(dragged.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${dragged.title}".`,dragged.id);
+      if(col==='Concluído') await dbPushNotifToClient(dragged.client,'✅','var(--emeraldbg)','Demanda concluída!',`"${dragged.title}" foi concluída por ${DB.me.name}.`,dragged.id,'demand_completed');
+      else if(col==='Em andamento') await dbPushNotifToClient(dragged.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${dragged.title}".`,dragged.id,'demand_started');
     } else {
-      await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente moveu demanda',`${DB.me.name} moveu "${dragged.title}" para ${col}.`,dragged.id);
+      await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente moveu demanda',`${DB.me.name} moveu "${dragged.title}" para ${col}.`,dragged.id,'demand_status');
     }
     buildNav(); toast(`Movido para "${col}"!`,'ok');
   } else if(dragOverId && dragOverId!==dragId){
@@ -3371,7 +3441,7 @@ async function saveDemand(){
         Object.assign(d,{title,client:clientId,assigneeId,assignee:assigneeProf?.name||d.assignee,priority,status,date:dueDate||'',desc,refs});
       }
       if(isStaffRole()){
-        await dbPushNotifToClient(clientId,'✏️','var(--amberbg)','Demanda atualizada',`${DB.me.name} atualizou "${title}".`,editDemandId);
+        await dbPushNotifToClient(clientId,'✏️','var(--amberbg)','Demanda atualizada',`${DB.me.name} atualizou "${title}".`,editDemandId,'demand_updated');
       }
       closeModal('modal-demand'); toast('Demanda atualizada! ✓','ok');
 
@@ -3388,9 +3458,9 @@ async function saveDemand(){
       DB.demands.unshift(mapped);
       await supa.from('activity').insert({icon:'➕',bg:'var(--cyanbg)',text:`${DB.me.name} criou demanda: ${title}`});
       if(isStaffRole()){
-        await dbPushNotifToClient(clientId,'📋','var(--cyanbg)','Nova demanda criada',`${DB.me.name} criou "${title}" para você.`,nd.id);
+        await dbPushNotifToClient(clientId,'📋','var(--cyanbg)','Nova demanda criada',`${DB.me.name} criou "${title}" para você.`,nd.id,'demand_created');
       } else {
-        await dbPushNotif(null,'admin','📋','var(--cyanbg)','Nova demanda do cliente',`${DB.me.name} criou "${title}".`,nd.id);
+        await dbPushNotif(null,'admin','📋','var(--cyanbg)','Nova demanda do cliente',`${DB.me.name} criou "${title}".`,nd.id,'demand_created');
       }
       closeModal('modal-demand'); toast('Demanda criada! ✓','ok');
     }
@@ -3645,7 +3715,7 @@ async function saveSale(){
       if(error){ toast('Erro: '+error.message,'err'); return; }
       DB.sales.unshift(mapSale(ns));
       if(clientId){
-        await dbPushNotifToClient(clientId,'💰','var(--emeraldbg)','Nova venda registrada',`${DB.me.name} registrou: ${svc} — ${formatCurrencyBRL(v)}.`);
+        await dbPushNotifToClient(clientId,'💰','var(--emeraldbg)','Nova venda registrada',`${DB.me.name} registrou: ${svc} — ${formatCurrencyBRL(v)}.`,null,'sale_created');
       }
       closeModal('modal-sale'); toast('Venda registrada! ✓','ok');
     }
@@ -3804,6 +3874,7 @@ function loadProfile(){
     planCard.style.display='none';
     if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
   }
+  window.renderPushSettings?.();
 }
 
 async function saveProfile(){
@@ -4072,8 +4143,8 @@ async function addComment(){
   const cmt = {author:DB.me.name, av:DB.me.av, photo:DB.me.photo||null, text, time:fmtTime(new Date().toISOString())};
   d.comments.push(cmt);
   const preview = text.length>60 ? text.slice(0,57)+'...' : text;
-  if(isStaffRole()) await dbPushNotifToClient(d.client,'💬','var(--cyanbg)',`Novo comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id);
-  else              await dbPushNotif(null,'admin','💬','var(--cyanbg)',`Comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id);
+  if(isStaffRole()) await dbPushNotifToClient(d.client,'💬','var(--cyanbg)',`Novo comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id,'comment_added');
+  else              await dbPushNotif(null,'admin','💬','var(--cyanbg)',`Comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id,'comment_added');
   renderComments(d.comments); inp.value=''; toast('Comentário enviado!','ok');
 }
 
@@ -4084,10 +4155,10 @@ async function changeStatus(status){
   d.status = status;
   document.getElementById('det-badges').innerHTML = `${stBadge(status)}${prBadge(d.priority)}`;
   if(isStaffRole()){
-    if(status==='Concluído') await dbPushNotifToClient(d.client,'✅','var(--emeraldbg)','Demanda concluída! 🎉',`"${d.title}" foi concluída.`,d.id);
-    else if(status==='Em andamento') await dbPushNotifToClient(d.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${d.title}".`,d.id);
+    if(status==='Concluído') await dbPushNotifToClient(d.client,'✅','var(--emeraldbg)','Demanda concluída!',`"${d.title}" foi concluída.`,d.id,'demand_completed');
+    else if(status==='Em andamento') await dbPushNotifToClient(d.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${d.title}".`,d.id,'demand_started');
   } else {
-    await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente alterou status',`${DB.me.name} moveu "${d.title}" para ${status}.`,d.id);
+    await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente alterou status',`${DB.me.name} moveu "${d.title}" para ${status}.`,d.id,'demand_status');
   }
   toast(`Status: ${status}`,'ok'); renderKanban(); if(currentView==='list') renderDemandsList(); buildNav();
 }
@@ -4129,7 +4200,7 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
     copied.comments=[];
     DB.demands.unshift(copied);
     await supa.from('activity').insert({icon:'⧉',bg:'var(--violetbg)',text:`${DB.me.name} duplicou demanda: ${title}`});
-    if(isStaffRole()) await dbPushNotifToClient(source.client,'📋','var(--violetbg)','Demanda duplicada',`${DB.me.name} criou "${title}".`,nd.id);
+    if(isStaffRole()) await dbPushNotifToClient(source.client,'📋','var(--violetbg)','Demanda duplicada',`${DB.me.name} criou "${title}".`,nd.id,'demand_created');
     buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
     toast('Demanda duplicada! ✓','ok');
     if(openAfter) await openDetail(nd.id);
@@ -4260,16 +4331,33 @@ function toast(msg, type='ok'){
 }
 
 /* ═══ NOTIFICATIONS ═══ */
-async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDemandId){
-  const row = {icon, icon_bg:iconBg||'var(--violetbg)', title, body:body||'', link_demand_id:linkDemandId||null, read:false};
-  if(toRole==='admin') row.to_role='admin';
-  else if(toUserId)    row.to_user_id=toUserId;
-  await supa.from('notifications').insert(row);
+const NOTIFICATION_TITLES = {
+  demand_completed:['Pronto. Pode fingir que foi fácil.','Finalizada. A espera perdeu.','Demanda concluída. Sobrevivemos.'],
+  demand_started:['Entrou em produção. Agora vai.','As engrenagens começaram a girar.','Produção iniciada. O sossego acabou.'],
+  demand_created:['Demanda nova na área.','Chegou trabalho novo. Que surpresa.','Nova demanda. A fila ganhou companhia.'],
+  demand_updated:['Mudou alguma coisa. De novo.','Demanda atualizada, porque detalhes importam.','Tem novidade nessa demanda.'],
+  demand_status:['O status mudou. O suspense continua.','Movimentação detectada. Nada fica parado.'],
+  comment_added:['Comentário novo. A paz durou pouco.','Alguém comentou. Hora de espiar.','Nova mensagem na demanda.'],
+  sale_created:['Ca-ching. O comercial aprontou de novo.','Venda registrada. Belo problema para ter.','Entrou venda. Pode comemorar discretamente.']
+};
+function playfulNotification(eventType,title,body){
+  const choices=NOTIFICATION_TITLES[eventType];
+  return {title:choices?.[Math.floor(Math.random()*choices.length)]||title,body};
+}
+async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDemandId, eventType='general'){
+  const copy=playfulNotification(eventType,title,body||'');
+  const {data:notificationId,error}=await supa.rpc('create_notification',{
+    p_to_user_id:toUserId||null,p_to_role:toRole==='admin'?'admin':null,p_icon:icon,
+    p_icon_bg:iconBg||'var(--violetbg)',p_title:copy.title,p_body:copy.body,
+    p_link_demand_id:linkDemandId||null,p_event_type:eventType
+  });
+  if(error){ console.error('dbPushNotif: erro ao criar notificação:',error); return; }
+  supa.functions.invoke('send-push',{body:{notificationId}}).catch(err=>console.error('send-push:',err));
   // Atualiza cache local se a notif é para o usuário atual.
   // "admin" é o bucket de equipe interna (CEO/Gerente/Gestor/Editor), não só CEO/Gerente.
   // to_user_id é sempre profiles.id — comparamos com DB.me.id (nunca com clientId).
   if((toRole==='admin'&&isStaffRole())||(toUserId && toUserId===DB.me.id)){
-    const n = {id:String(Date.now()),to:toUserId||toRole,icon,iconBg:iconBg||'var(--violetbg)',title,body,time:fmtTime(new Date().toISOString()),date:fmtDate(new Date().toISOString()),read:false,linkDemandId:linkDemandId||null};
+    const n = {id:notificationId,to:toUserId||toRole,icon,iconBg:iconBg||'var(--violetbg)',title:copy.title,body:copy.body,time:fmtTime(new Date().toISOString()),date:fmtDate(new Date().toISOString()),read:false,linkDemandId:linkDemandId||null,eventType};
     DB.notifications.unshift(n);
     if(DB.notifications.length>50) DB.notifications.length=50;
     updateNotifBadge();
@@ -4282,12 +4370,12 @@ async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDema
    Busca ao vivo no banco (não confia no cache DB.users, que em sessões de
    Gestor/Editor nem carrega profiles de clientes). Se não existir profile
    vinculado, não quebra o fluxo — apenas não envia a notificação. */
-async function dbPushNotifToClient(clientId, icon, iconBg, title, body, linkDemandId){
+async function dbPushNotifToClient(clientId, icon, iconBg, title, body, linkDemandId, eventType='general'){
   if(!clientId) return;
   const {data:prof, error} = await supa.from('profiles').select('id').eq('client_id', clientId).maybeSingle();
   if(error){ console.error('dbPushNotifToClient: erro ao resolver profile do cliente:', error); return; }
   if(!prof){ console.warn('dbPushNotifToClient: nenhum profile vinculado ao cliente', clientId, '— notificação não enviada.'); return; }
-  await dbPushNotif(prof.id, null, icon, iconBg, title, body, linkDemandId);
+  await dbPushNotif(prof.id, null, icon, iconBg, title, body, linkDemandId, eventType);
 }
 
 function notifTarget(){ return isStaffRole() ? 'admin' : DB.me.id; }
@@ -4408,6 +4496,7 @@ function getAgencyPhone(){
 }
 
 window.addEventListener('load', ()=>{
+  const keep=document.getElementById('li-keep'); if(keep) keep.checked=localStorage.getItem(KEEP_CONNECTED_KEY)!=='0';
   const saleDate=document.getElementById('s-date'); if(saleDate) saleDate.value=localDateInputValue(new Date());
   const demandDate=document.getElementById('d-date'); if(demandDate) demandDate.value=tomorrowDateInput();
 });
@@ -4434,5 +4523,6 @@ async function clearDB(){
   }
 }
 </script>
+<script src="push-notifications.js?v=20260827-1"></script>
 </body>
 </html>

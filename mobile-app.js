@@ -3,10 +3,13 @@
   const DISMISS_KEY='mm_install_prompt_dismissed_at';
   const DISMISS_DAYS=14;
   let deferredInstallPrompt=null;
+  let selectedPlatform=null;
 
   function isMobile(){ return window.matchMedia('(max-width: 900px)').matches; }
   function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
   function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+  function isAndroid(){ return /android/i.test(navigator.userAgent); }
+  function detectedPlatform(){ return isIOS()?'ios':(isAndroid()?'android':'android'); }
   function recentlyDismissed(){
     try{
       const stamp=Number(localStorage.getItem(DISMISS_KEY)||0);
@@ -53,24 +56,38 @@
     const steps=document.getElementById('install-steps');
     const primary=document.getElementById('install-primary');
     if(!steps||!primary) return;
-    if(isIOS()){
+    const platform=selectedPlatform||detectedPlatform();
+    document.querySelectorAll('[data-install-platform]').forEach(button=>{
+      const active=button.dataset.installPlatform===platform;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-selected',String(active));
+    });
+    if(platform==='ios'){
       steps.innerHTML=`
-        <div class="install-step"><div class="install-step-num">1</div><div><strong>Abra o menu do Safari</strong><span>Toque em Mais (…) e depois em <b>Compartilhar</b>. Dependendo do layout, o botão Compartilhar já aparece na barra.</span></div></div>
-        <div class="install-step"><div class="install-step-num">2</div><div><strong>Adicionar à Tela de Início</strong><span>Role a lista de ações e toque nessa opção. Se ela não aparecer, use “Editar Ações”.</span></div></div>
-        <div class="install-step"><div class="install-step-num">3</div><div><strong>Ative “Abrir como App”</strong><span>Confirme em <b>Adicionar</b>. A Magemind ficará na sua tela inicial, sem a barra do navegador.</span></div></div>`;
+        <div class="install-step"><div class="install-step-num">1</div><div><strong>Abra o menu do navegador</strong><span>Toque no botão de compartilhar. Se você estiver vendo o botão de três pontos (…), abra-o e escolha <b>Compartilhar</b>.</span></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div><strong>Encontre a ação correta</strong><span>Role a folha de compartilhamento e toque em <b>Adicionar à Tela de Início</b>. Se necessário, use “Editar Ações”.</span></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div><strong>Confirme a instalação</strong><span>Mantenha <b>Abrir como App</b> ativado e toque em <b>Adicionar</b>.</span></div></div>
+        <div class="install-step"><div class="install-step-num">4</div><div><strong>Abra pelo ícone da Magemind</strong><span>No iPhone e iPad, as notificações só podem ser ativadas depois que o app é aberto pela Tela de Início.</span></div></div>`;
       primary.style.display='none';
     }else{
       steps.innerHTML=`
-        <div class="install-step"><div class="install-step-num">1</div><div><strong>Instale a Magemind</strong><span>Use o botão abaixo. Se ele não aparecer, abra o menu ⋮ do navegador.</span></div></div>
-        <div class="install-step"><div class="install-step-num">2</div><div><strong>Confirme a instalação</strong><span>Escolha “Instalar app” ou “Adicionar à tela inicial”.</span></div></div>
-        <div class="install-step"><div class="install-step-num">3</div><div><strong>Abra pelo novo ícone</strong><span>O sistema será iniciado em uma janela própria, com aparência de aplicativo.</span></div></div>`;
+        <div class="install-step"><div class="install-step-num">1</div><div><strong>Use a instalação rápida</strong><span>Toque em <b>Instalar agora</b>. Se o botão não aparecer, abra o menu ⋮ do Chrome.</span></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div><strong>Escolha a opção de aplicativo</strong><span>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>, conforme o seu navegador.</span></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div><strong>Confirme e abra</strong><span>A Magemind ganhará um ícone próprio e será iniciada sem a barra do navegador.</span></div></div>`;
       primary.style.display=deferredInstallPrompt?'inline-flex':'none';
     }
   }
 
+  window.setInstallPlatform=function(platform){
+    if(platform!=='ios'&&platform!=='android') return;
+    selectedPlatform=platform;
+    renderInstallContent();
+  };
+
   window.openInstallGuide=function(force){
     if(!isMobile() && !force) return;
     if(isStandalone() && !force) return;
+    if(!selectedPlatform) selectedPlatform=detectedPlatform();
     renderInstallContent();
     const guide=document.getElementById('install-guide');
     if(!guide) return;
@@ -97,7 +114,10 @@
     deferredInstallPrompt=event;
     renderInstallContent();
   });
-  window.addEventListener('appinstalled',()=>window.closeInstallGuide(true));
+  window.addEventListener('appinstalled',()=>{
+    try{ localStorage.setItem('mm_app_just_installed','1'); }catch(_){}
+    window.closeInstallGuide(true);
+  });
   window.addEventListener('resize',()=>{ if(!isMobile()) window.closeMobileMenu(); });
 
   document.addEventListener('keydown',event=>{
