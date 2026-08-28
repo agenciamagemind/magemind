@@ -55,7 +55,7 @@ body{font-family:'Manrope',sans-serif;color:var(--text);font-size:14px;line-heig
 .sb-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--violetbg);color:var(--violet2);border:1px solid var(--violetborder)}
 .sb-badge.warn{background:var(--amberbg);color:var(--amber);border-color:var(--amberborder)}
 .sb-bottom{padding:12px 10px;border-top:1px solid var(--border)}
-.sb-user{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r2);cursor:pointer;transition:background .15s}
+.sb-user{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:var(--r2);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .15s;touch-action:manipulation}
 .sb-user:hover{background:var(--bg3)}
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;font-family:'Poppins',sans-serif;font-size:11px;background:linear-gradient(135deg,var(--violet),var(--pink));overflow:hidden}
 .av-sm{width:30px;height:30px}
@@ -355,7 +355,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .push-category strong{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
 .push-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260827-1">
+<link rel="stylesheet" href="mobile.css?v=20260828-1">
 </head>
 <body>
 
@@ -411,14 +411,14 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           Falar no WhatsApp
         </a>
       </div>
-      <div class="sb-user" onclick="goTo('profile')">
+      <button class="sb-user" type="button" onclick="goTo('profile')" aria-label="Abrir meu perfil e configurações">
         <div class="av av-sm" id="sb-av">?</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-name">–</div>
           <div style="font-size:11px;color:var(--text3)" id="sb-role">–</div>
         </div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      </div>
+      </button>
     </div>
   </aside>
 
@@ -1197,7 +1197,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 
 <div class="toast" id="toast-el"></div>
 
-<script src="mobile-app.js?v=20260827-1"></script>
+<script src="mobile-app.js?v=20260828-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -1329,7 +1329,16 @@ function isStaffRole(){ return isOperationalStaff(); }
 function hasPermission(perm){
   const role = getRole();
   if(!role) return false;
+  if(role==='client' && clientHasMonthlyPlan() && perm==='demands.create') return true;
   return (ROLE_PERMISSIONS[role]||[]).includes(perm);
+}
+
+function clientHasMonthlyPlan(){
+  if(!isClient()||!DB.me?.clientId) return false;
+  const client=DB.clients.find(item=>item.id===DB.me.clientId);
+  if(!client) return false;
+  const planIds=(client.planIds?.length?client.planIds:[client.plan]).filter(Boolean);
+  return planIds.some(id=>DB.plans.find(plan=>plan.id===id)?.type==='Mensal');
 }
 
 function canAccessPage(page){
@@ -1409,6 +1418,7 @@ function canEditDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
   if(isEditor()) return hasPermission('demands.edit_operational');
+  if(isClient()) return clientHasMonthlyPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
@@ -1417,6 +1427,7 @@ function canMoveDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
   if(isEditor()) return hasPermission('demands.move');
+  if(isClient()) return clientHasMonthlyPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
@@ -1427,7 +1438,7 @@ function canChangeDemandAssignee(){
 
 /* CEO, Gerente, Gestor e Editor podem excluir demandas. */
 function canDeleteDemand(){
-  return hasPermission('demands.delete');
+  return hasPermission('demands.delete') || (isClient()&&clientHasMonthlyPlan());
 }
 
 /* ═══ HELPERS DE TEMPO ═══ */
@@ -1985,6 +1996,9 @@ async function loadAllData(){
             tagline:pl.tagline||'', includes:pl.includes||'', active:pl.active
           });
         }
+        const {data:ownPlanLinks,error:ownPlanLinksError}=await supa.from('client_plans').select('plan_id').eq('client_id',cid);
+        if(ownPlanLinksError) console.error('[Magemind] Falha ao carregar planos do cliente:',ownPlanLinksError);
+        else if(ownPlanLinks?.length) DB.clients[0].planIds=ownPlanLinks.map(link=>link.plan_id);
       }
 
       const {data:teamMin} = await supa.from('demand_team_directory').select('*');
@@ -2025,7 +2039,7 @@ async function loadAllData(){
    contra chamada duplicada via _loginInFlight e DB.me, então é seguro chamá-lo aqui
    mesmo que doLogin() também o chame para o mesmo evento. */
 supa.auth.onAuthStateChange((event, session)=>{
-  if(event==='SIGNED_IN' && session && !DB.me){
+  if((event==='INITIAL_SESSION'||event==='SIGNED_IN'||event==='TOKEN_REFRESHED') && session && !DB.me){
     afterLogin(session.user).catch(e=>{
       console.error('onAuthStateChange afterLogin error:', e);
       toast('Erro ao restaurar sessão: '+(e.message||e),'err');
@@ -2034,6 +2048,13 @@ supa.auth.onAuthStateChange((event, session)=>{
   if(event==='SIGNED_OUT'){
     clearSessionState();
   }
+});
+
+// Restauração explícita para navegadores/PWAs que suspendem a página antes de
+// entregar INITIAL_SESSION. A trava de afterLogin evita inicialização dupla.
+supa.auth.getSession().then(({data,error})=>{
+  if(error){ console.error('getSession restore error:',error); return; }
+  if(data?.session?.user&&!DB.me) afterLogin(data.session.user).catch(e=>console.error('restore session error:',e));
 });
 
 /* ═══ REALTIME ═══
@@ -2286,7 +2307,7 @@ function goTo(page){
   if(ctaFn[page] && ctaAllowed){
     ctaBtn.style.display='inline-flex';
     document.getElementById('tb-cta-label').textContent=ctaLabel[page];
-    ctaBtn.onclick=ctaFn[page];
+    ctaBtn.onclick=()=>ctaFn[page]();
   } else { ctaBtn.style.display='none'; }
 
   updateSidebarUser();
@@ -3399,7 +3420,8 @@ function openNewDemand(status){
     document.getElementById('d-client-wrap').style.display='none';
     document.getElementById('d-assignee-wrap').style.display='none';
   }
-  document.getElementById('d-status').value = status||'Não iniciado';
+  const allowedStatuses=['Não iniciado','Em andamento','Concluído'];
+  document.getElementById('d-status').value = typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
   const dAssign = document.getElementById('d-assignee');
   if(dAssign) dAssign.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
   document.getElementById('d-title').value = '';
@@ -3430,15 +3452,17 @@ async function saveDemand(){
   try {
     if(editDemandId){
       // ── EDITAR
-      const {error} = await supa.from('demands').update({
-        title, client_id:clientId, assignee_id:assigneeId,
-        priority, status, due_date:dueDate, description:desc, refs
-      }).eq('id',editDemandId);
+      const demandUpdate={title,priority,status,due_date:dueDate,description:desc,refs};
+      if(canChangeDemandClient()) demandUpdate.client_id=clientId;
+      if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
+      const {error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId);
       if(error){ toast('Erro: '+error.message,'err'); return; }
       const d = DB.demands.find(x=>x.id===editDemandId);
       if(d){
         const assigneeProf = DB.users.find(u=>u.id===assigneeId);
-        Object.assign(d,{title,client:clientId,assigneeId,assignee:assigneeProf?.name||d.assignee,priority,status,date:dueDate||'',desc,refs});
+        Object.assign(d,{title,priority,status,date:dueDate||'',desc,refs});
+        if(canChangeDemandClient()) d.client=clientId;
+        if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
       }
       if(isStaffRole()){
         await dbPushNotifToClient(clientId,'✏️','var(--amberbg)','Demanda atualizada',`${DB.me.name} atualizou "${title}".`,editDemandId,'demand_updated');
@@ -4523,6 +4547,6 @@ async function clearDB(){
   }
 }
 </script>
-<script src="push-notifications.js?v=20260827-1"></script>
+<script src="push-notifications.js?v=20260828-1"></script>
 </body>
 </html>

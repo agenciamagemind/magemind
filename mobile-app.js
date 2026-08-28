@@ -33,12 +33,15 @@
     const nav=document.getElementById('mobile-bottom-nav');
     if(!nav) return;
     const priorities=['dashboard','demands','clients','sales','docs','team'];
-    const direct=priorities.map(id=>items.find(i=>i.id===id)).filter(Boolean).slice(0,4);
+    const direct=priorities.map(id=>items.find(i=>i.id===id)).filter(Boolean).slice(0,3);
     nav.innerHTML=direct.map(i=>`
       <button class="mobile-tab" type="button" data-mobile-page="${i.id}" onclick="goTo('${i.id}')" aria-label="${i.label}">
         <span class="sb-icon">${i.icon}</span><span>${i.label.replace('Minhas ','').replace('Meus ','')}</span>
         ${i.badge?`<span class="mobile-tab-badge">${i.badge>99?'99+':i.badge}</span>`:''}
       </button>`).join('')+`
+      <button class="mobile-tab" type="button" data-mobile-page="profile" onclick="goTo('profile')" aria-label="Abrir meu perfil e configurações">
+        <span class="sb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span><span>Perfil</span>
+      </button>
       <button class="mobile-tab" id="mobile-more-tab" type="button" onclick="toggleMobileMenu(true)" aria-label="Abrir mais opções">
         <span class="sb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><span>Mais</span>
       </button>`;
