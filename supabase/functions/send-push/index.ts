@@ -69,14 +69,25 @@ Deno.serve(async (req) => {
     if (!notification) return json({ error: "Notificação não encontrada" }, 404);
     if (notification.created_by !== callerAuth.user.id) return json({ error: "Notificação não pertence ao remetente" }, 403);
 
+    let linkedAssigneeId: string | null = null;
+    if (notification.link_demand_id) {
+      const { data: demand } = await admin.from("demands").select("assignee_id")
+        .eq("id", notification.link_demand_id).maybeSingle();
+      linkedAssigneeId = demand?.assignee_id || null;
+    }
+
     let targetIds: string[] = [];
     if (notification.to_user_id) {
-      targetIds = [notification.to_user_id];
+      const { data: target } = await admin.from("profiles").select("id,role")
+        .eq("id", notification.to_user_id).maybeSingle();
+      if (target && (target.role !== "editor" || target.id === linkedAssigneeId)) targetIds = [target.id];
     } else if (notification.to_role === "admin") {
-      const { data: staff } = await admin.from("profiles").select("id")
+      const { data: staff } = await admin.from("profiles").select("id,role")
         .in("role", ["ceo", "manager", "gestor", "editor"])
         .eq("active", true).is("archived_at", null);
-      targetIds = (staff || []).map((profile) => profile.id);
+      targetIds = (staff || [])
+        .filter((profile) => profile.role !== "editor" || profile.id === linkedAssigneeId)
+        .map((profile) => profile.id);
     }
     if (!targetIds.length) return json({ ok: true, sent: 0, skipped: 0 });
 

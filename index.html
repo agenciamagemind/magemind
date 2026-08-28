@@ -42,7 +42,7 @@ body{font-family:'Manrope',sans-serif;color:var(--text);font-size:14px;line-heig
 .sidebar{width:230px;min-width:230px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative;overflow:hidden}
 .sidebar::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(139,92,246,.12) 0%,transparent 70%);pointer-events:none}
 .sb-logo{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.sb-logo img{width:44px;height:44px;object-fit:contain;border-radius:10px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.sb-logo img{width:44px;height:44px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.24))}
 .sb-logo-text,.auth-title{font-family:'Poppins',sans-serif;letter-spacing:-.65px;text-transform:lowercase;background:linear-gradient(135deg,#c4b5fd,#f9a8d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-flex;align-items:baseline;overflow:visible;padding:2px 0 4px}
 .sb-logo-text{font-size:18px;line-height:1.35}
 .brand-mage{font-weight:800}.brand-mind{font-weight:300}
@@ -247,7 +247,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .auth-shell::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
 .auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r4);padding:40px;width:440px;max-width:95vw;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5)}
 .auth-logo{text-align:center;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.auth-logo img{width:110px;height:110px;object-fit:contain;border-radius:24px;border:1px solid rgba(255,255,255,.05);box-shadow:0 10px 28px rgba(0,0,0,.34)}
+.auth-logo img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.28))}
 .auth-title{font-size:25px;line-height:1.1}
 .auth-tabs{display:flex;background:var(--bg3);border-radius:var(--r2);padding:3px;margin-bottom:20px;border:1px solid var(--border)}
 .auth-tab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:all .15s;color:var(--text3)}
@@ -368,7 +368,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 <div id="auth-screen" class="auth-shell">
   <div class="auth-card">
     <div class="auth-logo">
-      <img src="magemind-logo-512.png" alt="Magemind">
+      <img src="magemind-logo-transparent.png" alt="Magemind">
       <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
     </div>
     <div class="auth-tabs">
@@ -405,7 +405,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 <div id="app" class="shell" style="display:none">
   <aside class="sidebar">
     <div class="sb-logo">
-      <img src="magemind-logo-512.png" alt="Magemind">
+      <img src="magemind-logo-transparent.png" alt="Magemind">
       <div class="sb-logo-text" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
     </div>
     <nav class="sb-nav" id="sb-nav"></nav>
@@ -1291,7 +1291,7 @@ const ROLE_PERMISSIONS = {
   ],
   editor: [
     'dashboard.editor',
-    'demands.view_all','demands.create','demands.edit_operational','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
+    'demands.view_assigned','demands.move','demands.comment',
     'docs.view','docs.create','docs.edit'
   ],
   affiliate: [
@@ -1391,14 +1391,12 @@ function canManageRole(targetUser){
 function canEditTeamMember(u){ return canManageRole(u); }
 function canDeleteTeamMember(u){ return canManageRole(u); }
 function canToggleUserActive(u){ return canManageRole(u); }
-/* Exclusão PERMANENTE (Auth + profiles) só pode ser feita por CEO ou
-   Gerente — é o que a Edge Function delete-user exige no servidor.
-   Gestor continua podendo editar/desativar um editor (canManageRole),
-   mas não excluir permanentemente. */
+/* CEO/Gerente podem excluir perfis gerenciáveis. Gestor pode excluir apenas
+   Editores; a Edge Function repete esta mesma regra no servidor. */
 function canHardDeleteTeamMember(u){
   if(!u) return false;
   if(isProtectedCEO(u)) return false;
-  return isCEO() || isManager();
+  return isCEO() || isManager() || (isGestor()&&u.role==='editor');
 }
 
 function canSeeFinancials(){ return hasPermission('financial.view'); }
@@ -1421,19 +1419,19 @@ function canViewSale(sale){
   return false;
 }
 
-/* Gestor e Editor agora enxergam TODAS as demandas (com filtro "Minhas" no front) */
 function canViewDemand(demand){
   if(!demand) return false;
-  if(isCEO()||isManager()||isGestor()||isEditor()) return true;
+  if(isCEO()||isManager()||isGestor()) return true;
+  if(isEditor()) return demand.assigneeId===DB.me.id;
   if(isClient()) return demand.client===DB.me.clientId;
   return false; // afiliado não acessa demandas
 }
 
-/* Quem pode editar campos operacionais (título, descrição, prazo, prioridade, status, refs, comentários) */
+/* Editor comenta e move o status, mas não altera os demais campos. */
 function canEditDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
-  if(isEditor()) return hasPermission('demands.edit_operational');
+  if(isEditor()) return false;
   if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
 }
@@ -1442,17 +1440,15 @@ function canEditDemand(demand){
 function canMoveDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
-  if(isEditor()) return hasPermission('demands.move');
+  if(isEditor()) return demand.assigneeId===DB.me.id && hasPermission('demands.move');
   if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
-/* Toda a equipe operacional pode administrar integralmente as demandas. */
 function canChangeDemandAssignee(){
   return hasPermission('demands.change_assignee');
 }
 
-/* CEO, Gerente, Gestor e Editor podem excluir demandas. */
 function canDeleteDemand(){
   return hasPermission('demands.delete') || (isClient()&&clientHasDemandManagementPlan());
 }
@@ -1488,6 +1484,9 @@ function clientRecordBelongsToTeam(client){
   return DB.users.some(user=>user.role!=='client' && (
     user.clientId===client?.id || (email && String(user.email||'').trim().toLowerCase()===email)
   ));
+}
+function activeDemandClients(){
+  return DB.clients.filter(client=>client.status==='Ativo'&&!clientRecordBelongsToTeam(client));
 }
 function removeTeamProfilesFromClientCache(){
   DB.clients=DB.clients.filter(client=>!clientRecordBelongsToTeam(client));
@@ -1971,8 +1970,7 @@ async function loadAllData(){
       walletRows.filter(Boolean).forEach(w=>{ DB.affiliateWallets[w.affiliate_id]=w; });
 
     } else if(role==='gestor' || role==='editor'){
-      // ── GESTOR / EDITOR: veem TODAS as demandas (com filtro "Minhas" no front),
-      //    diretórios mínimos de clientes/equipe e nenhum dado financeiro/sensível. ──
+      // Gestor vê a operação completa; Editor recebe apenas demandas atribuídas.
       const {data:clientsMin, error:clientsErr} = await supa
         .from('demand_client_directory').select('*').order('name');
       if(clientsErr) console.error('[Magemind] Falha ao carregar o diretório seguro de clientes:', clientsErr);
@@ -1995,8 +1993,9 @@ async function loadAllData(){
         });
       }
 
-      const {data:demands, error:demandsErr} = await supa.from('demands')
-        .select('*').order('sort_order').order('created_at',{ascending:false});
+      let demandsQuery = supa.from('demands').select('*');
+      if(role==='editor') demandsQuery=demandsQuery.eq('assignee_id',DB.me.id);
+      const {data:demands, error:demandsErr} = await demandsQuery.order('sort_order').order('created_at',{ascending:false});
       if(demandsErr) console.error('[Magemind] Falha ao carregar demandas para Gestor/Editor:', demandsErr);
       DB.demands = (demands||[]).map(mapDemand);
 
@@ -2007,8 +2006,7 @@ async function loadAllData(){
 
       DB.sales = []; DB.commissions = [];
 
-      // Notificações: pessoais + broadcast da equipe interna ("admin" = bucket de staff,
-      // não só CEO/Gerente — Gestor e Editor também precisam ver "cliente comentou" etc.)
+      // A RLS restringe o Editor a notificações vinculadas às próprias demandas.
       const {data:notifsPersonal} = await supa.from('notifications')
         .select('*').eq('to_user_id',DB.me.id).order('created_at',{ascending:false}).limit(50);
       const {data:notifsStaff} = await supa.from('notifications')
@@ -2158,7 +2156,9 @@ function setupRealtime(){
   const notifChannel = supa.channel(`notifs-${DB.me.id}`)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:notifFilter},
       payload=>{
-        DB.notifications.unshift(mapNotif(payload.new));
+        const mapped=mapNotif(payload.new);
+        if(!canReceiveCurrentNotification(mapped)) return;
+        DB.notifications.unshift(mapped);
         if(DB.notifications.length>50) DB.notifications.length=50;
         updateNotifBadge();
       })
@@ -2196,16 +2196,15 @@ function setupRealtime(){
   realtimeChannels.push(demandsChannel);
 }
 
-/* Recarrega a lista de demandas de acordo com o cargo atual — usada pelo
-   realtime. CEO/Gerente/Gestor/Editor sempre carregam TODAS as demandas
-   (o filtro "Minhas demandas" e o filtro por cliente são só de exibição,
-   aplicados depois em getMyDemands()/renderKanban() — nunca na query). */
+/* Recarrega a lista de demandas respeitando o recorte do cargo atual. */
 async function reloadDemandsForRole(){
   const sel = (isCEO()||isManager())
     ? '*, profiles!demands_assignee_id_fkey(name,photo,av), clients(name)'
     : '*';
   let q;
-  if(isCEO()||isManager()||isGestor()||isEditor()){
+  if(isEditor()){
+    q = supa.from('demands').select(sel).eq('assignee_id',DB.me.id).order('sort_order').order('created_at',{ascending:false});
+  } else if(isCEO()||isManager()||isGestor()){
     q = supa.from('demands').select(sel).order('sort_order').order('created_at',{ascending:false});
   } else if(isClient()){
     q = supa.from('demands').select(sel).eq('client_id',DB.me.clientId).order('sort_order').order('created_at',{ascending:false});
@@ -2875,7 +2874,7 @@ function loadDemands(){
     dd.innerHTML='<option value="">Todos os clientes</option>'+
       DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   } else { dd.style.display='none'; }
-  mineWrap.style.display = (isGestor()||isEditor()) ? 'flex' : 'none';
+  mineWrap.style.display = isGestor() ? 'flex' : 'none';
   document.getElementById('demands-sub').textContent = (isAdmin()||isGestor()||isEditor()) ? 'Kanban de tarefas e projetos' : 'Suas demandas ativas';
   renderKanban();
 }
@@ -3061,10 +3060,11 @@ async function deleteTeamMember(id){
     : '';
   if(!confirm(`Remover "${u.name}"?${affiliateNotice}`)) return;
   try{
-    const {data:sess} = await supa.auth.getSession();
+    const token = await getFreshAccessToken();
+    if(!token){ await handleExpiredSession(); return; }
     const res = await fetch(`${SUPA_URL}/functions/v1/delete-user`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${sess.session.access_token}`},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,'apikey':SUPA_KEY},
       body: JSON.stringify({targetId:id, type:'team'})
     });
     const json = await res.json();
@@ -3343,7 +3343,12 @@ function getMyDemands(){
     const cid = document.getElementById('client-filter-dd')?.value;
     return cid ? DB.demands.filter(d=>d.client===cid) : DB.demands;
   }
-  if(isGestor()||isEditor()){
+  if(isEditor()){
+    const cid = document.getElementById('client-filter-dd')?.value;
+    const assigned = DB.demands.filter(d=>d.assigneeId===DB.me.id);
+    return cid ? assigned.filter(d=>d.client===cid) : assigned;
+  }
+  if(isGestor()){
     const cid = document.getElementById('client-filter-dd')?.value;
     const mineOnly = document.getElementById('mine-filter-chk')?.checked;
     let list = DB.demands;
@@ -3495,7 +3500,7 @@ function openNewDemand(status){
   document.getElementById('md-btn-label').textContent = 'Criar demanda';
   const dc = document.getElementById('d-client');
   if(canSelectDemandClient()){
-    dc.innerHTML = DB.clients.filter(c=>c.status==='Ativo').sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    dc.innerHTML = activeDemandClients().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
     document.getElementById('d-client-wrap').style.display='flex';
     document.getElementById('d-assignee-wrap').style.display= canChangeDemandAssignee() ? 'flex' : 'none';
   } else {
@@ -4166,7 +4171,7 @@ async function openDetail(id){
   currentDemandId = id;
   const d = DB.demands.find(x=>x.id===id); if(!d) return;
   if(!canViewDemand(d)){ toast('Sem permissão','err'); return; }
-  const editable = canEditDemand(d); // ceo/manager/gestor sempre; editor se tiver demands.edit_operational
+  const editable = canEditDemand(d);
 
   document.getElementById('det-badges').innerHTML  = `${stBadge(d.status)}${prBadge(d.priority)}`;
   setDemandSaveState();
@@ -4238,7 +4243,7 @@ async function openDetail(id){
       </div>
     </div>` : '';
 
-  // Ações do rodapé: Editor também possui autoridade completa sobre demandas.
+  // Ações administrativas ficam reservadas a quem pode editar a demanda.
   if(editable){
     document.getElementById('det-admin-controls').innerHTML = `
       ${hasPermission('demands.create')?`<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-bottom:10px" data-action="duplicate-demand" data-id="${d.id}" data-open-detail="true">⧉ Duplicar demanda</button>`:''}
@@ -4246,9 +4251,9 @@ async function openDetail(id){
         ${canDeleteDemand()?`<button class="btn btn-danger btn-sm" style="width:100%;justify-content:center" data-action="delete-demand" data-id="${d.id}">✕ Excluir demanda</button>`:''}
       </div>`;
   } else {
-    // Somente leitura (ex: cliente acompanhando a própria demanda)
-    document.getElementById('det-admin-controls').innerHTML = `
-      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;text-align:center;font-size:12px;color:var(--text3)">👁 Modo somente leitura</div>`;
+    document.getElementById('det-admin-controls').innerHTML = isEditor()
+      ? `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;text-align:center;font-size:12px;color:var(--text3)">Você pode comentar e alterar apenas o status.</div>`
+      : `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;text-align:center;font-size:12px;color:var(--text3)">👁 Modo somente leitura</div>`;
   }
 
   if(!d.commentsLoaded){
@@ -4263,8 +4268,9 @@ async function openDetail(id){
 }
 
 function openEditDemand(id){
-  editDemandId = id;
   const d = DB.demands.find(x=>x.id===id); if(!d) return;
+  if(!canEditDemand(d)){ toast('Sem permissão para editar esta demanda','err'); return; }
+  editDemandId = id;
   closeModal('modal-detail');
   document.getElementById('md-title').textContent = 'Editar demanda';
   document.getElementById('md-btn-label').textContent = 'Salvar alterações';
@@ -4313,6 +4319,7 @@ async function addComment(){
 
 async function changeStatus(status){
   const d = DB.demands.find(x=>x.id===currentDemandId); if(!d) return;
+  if(!canMoveDemand(d)){ toast('Sem permissão para alterar o status','err'); return; }
   const {error} = await supa.from('demands').update({status}).eq('id',d.id);
   if(error){ toast('Erro: '+error.message,'err'); return; }
   d.status = status;
@@ -4522,7 +4529,8 @@ async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDema
   // Atualiza cache local se a notif é para o usuário atual.
   // "admin" é o bucket de equipe interna (CEO/Gerente/Gestor/Editor), não só CEO/Gerente.
   // to_user_id é sempre profiles.id — comparamos com DB.me.id (nunca com clientId).
-  if((toRole==='admin'&&isStaffRole())||(toUserId && toUserId===DB.me.id)){
+  const localCandidate={to:toUserId||toRole,linkDemandId:linkDemandId||null};
+  if(((toRole==='admin'&&isStaffRole())||(toUserId && toUserId===DB.me.id))&&canReceiveCurrentNotification(localCandidate)){
     const n = {id:notificationId,to:toUserId||toRole,icon,iconBg:iconBg||'var(--violetbg)',title:copy.title,body:copy.body,time:fmtTime(new Date().toISOString()),date:fmtDate(new Date().toISOString()),read:false,linkDemandId:linkDemandId||null,eventType};
     DB.notifications.unshift(n);
     if(DB.notifications.length>50) DB.notifications.length=50;
@@ -4545,7 +4553,15 @@ async function dbPushNotifToClient(clientId, icon, iconBg, title, body, linkDema
 }
 
 function notifTarget(){ return isStaffRole() ? 'admin' : DB.me.id; }
+function editorOwnsNotificationDemand(notification){
+  return Boolean(notification?.linkDemandId&&DB.demands.some(d=>d.id===notification.linkDemandId&&d.assigneeId===DB.me.id));
+}
+function canReceiveCurrentNotification(notification){
+  if(!isEditor()) return true;
+  return editorOwnsNotificationDemand(notification)&&(notification.to==='admin'||notification.to===DB.me.id);
+}
 function myNotifs(){
+  if(isEditor()) return DB.notifications.filter(canReceiveCurrentNotification);
   if(isStaffRole()) return DB.notifications.filter(n=>n.to==='admin');
   return DB.notifications.filter(n=>n.to===DB.me.id||n.to===DB.me.clientId);
 }
@@ -4587,10 +4603,11 @@ async function clickNotif(nid, demandId){
   if(demandId){ closeNotifPanel(); goTo('demands'); setTimeout(()=>openDetail(demandId),200); }
 }
 async function markAllRead(){
-  myNotifs().forEach(n=>n.read=true);
+  const visible=myNotifs();
+  visible.forEach(n=>n.read=true);
   updateNotifBadge(); renderNotifPanel();
-  if(isStaffRole()) supa.from('notifications').update({read:true}).eq('to_role','admin').then(()=>{});
-  else          supa.from('notifications').update({read:true}).eq('to_user_id',DB.me.id).then(()=>{});
+  const ids=visible.map(n=>n.id).filter(Boolean);
+  if(ids.length) supa.from('notifications').update({read:true}).in('id',ids).then(()=>{});
 }
 document.addEventListener('click', e=>{ const w=document.getElementById('notif-wrapper'); if(w&&!w.contains(e.target)) closeNotifPanel(); });
 

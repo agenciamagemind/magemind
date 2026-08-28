@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
       .select("role,active,archived_at")
       .eq("id", callerAuth.user.id)
       .maybeSingle();
-    if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager"].includes(callerProfile.role)) {
-      return json({ error: "Somente CEO ou Gerente podem excluir contas" }, 403);
+    if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager", "gestor"].includes(callerProfile.role)) {
+      return json({ error: "Você não tem permissão para excluir contas" }, 403);
     }
 
     let body: Record<string, unknown>;
@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
 
       const isProtected = target.role === "ceo" || String(target.email || "").toLowerCase() === protectedEmail;
       if (isProtected) return json({ error: "O perfil do CEO é protegido" }, 403);
+      if (callerProfile.role === "gestor" && target.role !== "editor") {
+        return json({ error: "Gestores podem excluir apenas perfis de Editores" }, 403);
+      }
 
       // Afiliados com movimentacao financeira sao arquivados. O perfil fica
       // inativo, sai da operacao e os lancamentos permanecem auditaveis.
@@ -101,6 +104,8 @@ Deno.serve(async (req) => {
 
       return json({ ok: true, preserved_history: true });
     }
+
+    if (callerProfile.role === "gestor") return json({ error: "Gestores não podem excluir clientes" }, 403);
 
     const { data: client, error: clientError } = await admin
       .from("clients")
@@ -140,4 +145,3 @@ Deno.serve(async (req) => {
     return json({ error: error instanceof Error ? error.message : "Erro inesperado" }, 500);
   }
 });
-
