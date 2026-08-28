@@ -379,6 +379,14 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 }
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
 .profile-av-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
+.avatar-onboarding-modal{width:min(440px,calc(100vw - 28px));text-align:center}
+.avatar-onboarding-body{display:flex;flex-direction:column;align-items:center;padding:24px 26px 8px}
+.avatar-onboarding-preview{width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,var(--violet),var(--pink));border:3px solid var(--bg2);box-shadow:0 0 0 1px var(--border2),0 14px 34px rgba(0,0,0,.28);color:#fff;font:700 32px 'Poppins',sans-serif}
+.avatar-onboarding-preview img{width:100%;height:100%;object-fit:cover}
+.avatar-onboarding-title{margin-top:18px;font:700 20px/1.3 'Poppins',sans-serif;color:var(--text)}
+.avatar-onboarding-copy{max-width:340px;margin-top:8px;color:var(--text2);font-size:13px;line-height:1.65}
+.avatar-onboarding-hint{margin-top:13px;color:var(--text3);font-size:10px}
+.avatar-onboarding-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:18px 24px 24px}
 .auth-options{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .remember-option{display:inline-flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;cursor:pointer;user-select:none}
 .remember-option input,.push-category input{width:16px;height:16px;accent-color:var(--violet2);cursor:pointer}
@@ -1329,6 +1337,23 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
 <div class="toast" id="toast-el"></div>
 
+<div class="overlay" id="avatar-onboarding" role="dialog" aria-modal="true" aria-labelledby="avatar-onboarding-title" onclick="if(event.target===this)dismissAvatarOnboarding()">
+  <div class="modal avatar-onboarding-modal">
+    <div class="avatar-onboarding-body">
+      <div class="avatar-onboarding-preview" id="avatar-onboarding-preview">?</div>
+      <div class="avatar-onboarding-title" id="avatar-onboarding-title">Dê um rosto ao seu perfil</div>
+      <div class="avatar-onboarding-copy">Pode ser uma foto bonita sua ou a logomarca da sua empresa. Assim todo mundo reconhece você mais rápido pelo sistema.</div>
+      <div class="avatar-onboarding-hint">JPG, PNG, WebP ou HEIC. A imagem será otimizada antes do envio.</div>
+      <input type="file" id="avatar-onboarding-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="previewAvatarOnboarding(event)">
+    </div>
+    <div class="avatar-onboarding-actions">
+      <button class="btn btn-ghost" type="button" onclick="dismissAvatarOnboarding()">Agora não</button>
+      <button class="btn btn-ghost" type="button" onclick="document.getElementById('avatar-onboarding-file').click()">Escolher imagem</button>
+      <button class="btn btn-primary" id="avatar-onboarding-save" type="button" onclick="saveAvatarOnboarding()" disabled>Usar esta imagem</button>
+    </div>
+  </div>
+</div>
+
 <script src="mobile-app.js?v=20260828-2"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
@@ -1362,6 +1387,8 @@ const DB = {
   plans: [],
   notifications: [],
   commissions: [],
+  avatarProfiles: {},
+  avatarClients: {},
   withdrawals: [],
   wallet: null,
   affiliateWallets: {},
@@ -1680,6 +1707,70 @@ function safeImageUrl(value){
   if(/^https:\/\//i.test(url) || /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) return escapeHTML(url);
   return '';
 }
+function avatarHTML(person,name,alt=''){
+  const photo=safeImageUrl(person?.photo);
+  return photo
+    ? `<img src="${photo}" alt="${escapeHTML(alt||name||'Foto de perfil')}" loading="lazy" decoding="async">`
+    : escapeHTML(person?.av||avatarInitials(name));
+}
+function profileAvatarHTML(profileId,name){
+  return avatarHTML(DB.avatarProfiles?.[profileId]||DB.users.find(user=>user.id===profileId),name,name?`Foto de ${name}`:'Foto de perfil');
+}
+function clientAvatarHTML(clientId,name){
+  const client=DB.clients.find(item=>item.id===clientId);
+  return avatarHTML(DB.avatarClients?.[clientId]||client,name||client?.name,name?`Foto de ${name}`:'Foto do cliente');
+}
+function applyAvatarDirectory(rows){
+  DB.avatarProfiles={}; DB.avatarClients={};
+  (rows||[]).forEach(row=>{
+    const avatar={av:row.av||'',photo:row.photo||null};
+    DB.avatarProfiles[row.profile_id]=avatar;
+    if(row.client_id) DB.avatarClients[row.client_id]=avatar;
+  });
+  if(DB.me&&DB.avatarProfiles[DB.me.id]) Object.assign(DB.me,DB.avatarProfiles[DB.me.id]);
+  DB.users.forEach(user=>{if(DB.avatarProfiles[user.id])Object.assign(user,DB.avatarProfiles[user.id]);});
+  DB.clients.forEach(client=>{if(DB.avatarClients[client.id])Object.assign(client,DB.avatarClients[client.id]);});
+  DB.demands.forEach(demand=>{
+    const avatar=DB.avatarProfiles[demand.assigneeId];
+    if(avatar){demand.assigneePhoto=avatar.photo;demand.assigneeAv=avatar.av;}
+  });
+}
+let avatarDirectoryLoadedAt=0;
+let avatarDirectoryRefreshPromise=null;
+async function loadAvatarDirectory(){
+  const {data,error}=await supa.rpc('get_avatar_directory');
+  if(error){console.error('[Magemind] Falha ao carregar avatares:',error);return;}
+  applyAvatarDirectory(data||[]);
+  avatarDirectoryLoadedAt=Date.now();
+}
+function refreshActiveAvatarSurface(){
+  updateSidebarUser();
+  const active=document.querySelector('.page.active')?.id?.replace('pg-','');
+  if(active==='dashboard') loadDash();
+  else if(active==='clients') renderClients();
+  else if(active==='demands'){
+    renderKanban();
+    if(currentView==='list') renderDemandsList();
+  }
+  else if(active==='sales') loadSales();
+  else if(active==='affiliates') loadAffiliates();
+  else if(active==='team') renderTeam();
+  else if(active==='docs') renderFilteredDocs();
+  else if(active==='settings') loadProfile();
+  if(currentDemandId){
+    const demand=DB.demands.find(item=>item.id===currentDemandId);
+    if(demand?.commentsLoaded) renderComments(demand.comments);
+    const commentAvatar=document.getElementById('det-comment-av');
+    if(commentAvatar) commentAvatar.innerHTML=avatarHTML(DB.me,DB.me?.name,'Sua foto de perfil');
+  }
+}
+function refreshAvatarDirectoryIfStale(){
+  if(!DB.me||Date.now()-avatarDirectoryLoadedAt<30000||avatarDirectoryRefreshPromise) return;
+  avatarDirectoryRefreshPromise=loadAvatarDirectory()
+    .then(refreshActiveAvatarSurface)
+    .catch(error=>console.error('[Magemind] Falha ao atualizar avatares:',error))
+    .finally(()=>{avatarDirectoryRefreshPromise=null;});
+}
 function safeDocumentDataUrl(value){
   const url = String(value||'');
   return /^data:(?:application\/pdf|image\/(?:png|jpe?g|gif|webp));base64,/i.test(url) ? url : '';
@@ -1698,7 +1789,8 @@ function mapClient(c){
     planIds: c.plan_id ? [c.plan_id] : [], // será sobrescrito com client_plans reais quando disponível
     createdAt:c.created_at||null,
     customerSince:c.customer_since||null,  // campo editável manual
-    affiliateId:c.affiliate_id||null       // afiliado responsável (profiles.id, role=affiliate)
+    affiliateId:c.affiliate_id||null,      // afiliado responsável (profiles.id, role=affiliate)
+    av:c.av||'', photo:c.photo||null
   };
 }
 function mapDemand(d){
@@ -1927,9 +2019,12 @@ async function doRegister(){
    SIGNED_OUT do Supabase (ex: token expirado em outra aba). */
 function clearSessionState(){
   cleanupRealtimeSubscriptions();
+  dismissAvatarOnboarding();
   DB.me = null;
   DB.clients = []; DB.users = []; DB.demands = []; DB.sales = [];
   DB.docs = []; DB.notifications = []; DB.activity = []; DB.commissions = [];
+  DB.avatarProfiles = {}; DB.avatarClients = {};
+  avatarDirectoryLoadedAt = 0; avatarDirectoryRefreshPromise = null;
   currentDemandId = null; editDemandId = null; editClientId = null;
   editSaleId = null; editPlanId = null; convertTargetClientId = null; convertTargetTeamId = null;
   currentView = 'kanban'; salesPeriod = 'all'; revPeriod = 'max';
@@ -2001,6 +2096,7 @@ async function afterLogin(authUser){
       role: authUser.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? 'ceo' : prof.role,
       av:prof.av||prof.name.slice(0,2).toUpperCase(),
       photo:prof.photo||null, clientId:prof.client_id||null,
+      avatarPromptCount:Number(prof.avatar_prompt_count||0),
       commissionRate:prof.commission_rate||0,
       affiliateStatus:prof.affiliate_status||(prof.role==='affiliate'?'approved':'locked'),
       affiliateRequestedAt:prof.affiliate_requested_at||null,
@@ -2010,7 +2106,9 @@ async function afterLogin(authUser){
     document.getElementById('app').style.display = 'flex';
     document.body.classList.add('app-ready');
     await loadAllData();
+    await loadAvatarDirectory();
     initApp();
+    setTimeout(()=>maybeShowAvatarOnboarding(),650);
     document.dispatchEvent(new CustomEvent('magemind:session-ready'));
   } catch(e){
     toast('Erro inesperado ao entrar: '+(e.message||e),'err');
@@ -2329,6 +2427,22 @@ function setupRealtime(){
   const profileChannel=supa.channel(`referral-profile-${DB.me.id}`)
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',...(profileFilter?{filter:profileFilter}:{})},payload=>{
       const p=payload.new||{};
+      if(p.id&&('photo' in p||'av' in p)){
+        const avatar={av:p.av||'',photo:p.photo||null};
+        DB.avatarProfiles[p.id]=avatar;
+        if(p.client_id) DB.avatarClients[p.client_id]=avatar;
+        if(p.id===DB.me.id) Object.assign(DB.me,avatar);
+        const avatarUser=DB.users.find(item=>item.id===p.id);
+        if(avatarUser) Object.assign(avatarUser,avatar);
+        if(p.client_id){
+          const avatarClient=DB.clients.find(item=>item.id===p.client_id);
+          if(avatarClient) Object.assign(avatarClient,avatar);
+        }
+        DB.demands.forEach(demand=>{
+          if(demand.assigneeId===p.id){demand.assigneePhoto=avatar.photo;demand.assigneeAv=avatar.av;}
+        });
+        refreshActiveAvatarSurface();
+      }
       if(p.id===DB.me.id){
         DB.me.affiliateStatus=p.affiliate_status||'locked';
         DB.me.affiliateRequestedAt=p.affiliate_requested_at||null;
@@ -2559,6 +2673,7 @@ function goTo(page){
     settings:loadAgencySettings
   };
   if(loaders[page]) loaders[page]();
+  refreshAvatarDirectoryIfStale();
 }
 function ctaAction(){}
 
@@ -2681,7 +2796,7 @@ function loadDashAffiliate(){
     <div class="stat"><div class="stat-label">Saques em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(review)}</div></div>`;
   document.getElementById('dash-clients-list').innerHTML = myClients.slice(0,6).map(c=>`
     <div style="padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px" onclick="goTo('clients')">
-      <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(c.name))}</div>
+      <div class="av av-xs">${clientAvatarHTML(c.id,c.name)}</div>
       <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${escapeHTML(c.name)}</div></div>
     </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente indicado ainda</div>';
   document.getElementById('dash-rev-total').textContent = formatCurrencyBRL(totalComm);
@@ -2736,14 +2851,14 @@ function loadDashFull(){
       <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(d.title)}</td>
       <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td><td>${prBadge(d.priority)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${escapeHTML(avatarInitials(d.assignee))}</div><span style="font-size:12px;color:var(--text2)">${escapeHTML(d.assignee.split(' ')[0])}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${profileAvatarHTML(d.assigneeId,d.assignee)}</div><span style="font-size:12px;color:var(--text2)">${escapeHTML(d.assignee.split(' ')[0])}</span></div></td>
     </tr>`).join('');
 
   const actClients = DB.clients.filter(c=>c.status==='Ativo').slice(0,6);
   document.getElementById('dash-clients-list').innerHTML = actClients.length
     ? actClients.map(c=>`
       <div style="padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'" onclick="goTo('clients')">
-        <div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(c.name))}</div>
+        <div class="av av-xs">${clientAvatarHTML(c.id,c.name)}</div>
         <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(c.name)}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(c.type)}</div></div>
         <div class="financial-value" style="font-size:11px;font-weight:600;color:var(--emerald)">${formatCurrencyBRL(DB.sales.filter(s=>s.client===c.id&&s.status==='Fechado').reduce((a,b)=>a+b.value,0))}</div>
       </div>`).join('')
@@ -2833,7 +2948,7 @@ function renderClients(filter){
     document.getElementById('clients-count-sub').textContent=`${DB.clients.length} clientes indicados`;
     document.getElementById('clients-table-head').innerHTML='<th>Nome</th><th>Demandas</th><th>Minha comissão</th><th>Status</th><th>Cadastro</th>';
     document.getElementById('clients-body').innerHTML=list.length?list.map(c=>`<tr>
-      <td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:11px">${escapeHTML(avatarInitials(c.name))}</div><div style="font-weight:600">${escapeHTML(c.name)}</div></div></td>
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm">${clientAvatarHTML(c.id,c.name)}</div><div style="font-weight:600">${escapeHTML(c.name)}</div></div></td>
       <td><span style="font-weight:700;color:var(--violet2)">${Number(c.demandCount||0)}</span></td>
       <td><span class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(Number(c.commissionTotal||0))}</span></td>
       <td>${c.status==='Ativo'?'<span class="badge b-emerald"><span class="dot-badge" style="background:var(--emerald)"></span>Ativo</span>':c.status==='Pausado'?'<span class="badge b-amber">Pausado</span>':'<span class="badge b-muted">Inativo</span>'}</td>
@@ -2852,7 +2967,7 @@ function renderClients(filter){
   document.getElementById('clients-body').innerHTML = list.length ? list.map(c=>`
     <tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:11px">${escapeHTML(avatarInitials(c.name))}</div>
+        <div class="av av-sm">${clientAvatarHTML(c.id,c.name)}</div>
         <div><div style="font-weight:600">${escapeHTML(c.name)}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(c.email)}</div></div>
       </div></td>
       <td><div style="font-size:12px;color:var(--text2)">${escapeHTML(c.notes||'—')}</div></td>
@@ -3060,7 +3175,7 @@ function renderTeam(){
     const canManage = canEditTeamMember(u);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--violet),var(--pink));font-size:11px">${escapeHTML(u.av||avatarInitials(u.name))}</div>
+        <div class="av av-sm">${avatarHTML(u,u.name,`Foto de ${u.name}`)}</div>
         <div><div style="font-weight:600">${escapeHTML(u.name)}${isProtected?' <span class="badge b-violet" style="font-size:9px">PROTEGIDO</span>':''}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div>
       </div></td>
       <td><span style="font-size:12px;color:var(--cyan)">${escapeHTML(u.phone||'—')}</span></td>
@@ -3451,7 +3566,7 @@ function renderWithdrawalApproval(){
     return (rank[a.status]-rank[b.status])||new Date(b.requested_at)-new Date(a.requested_at);
   });
   body.innerHTML=ordered.length?ordered.map(row=>`<tr>
-    <td><div class="payout-person"><div class="av av-xs" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:9px">${escapeHTML(avatarInitials(row.affiliate_name_snapshot))}</div><strong>${escapeHTML(row.affiliate_name_snapshot)}</strong></div></td>
+    <td><div class="payout-person"><div class="av av-xs">${profileAvatarHTML(row.affiliate_id,row.affiliate_name_snapshot)}</div><strong>${escapeHTML(row.affiliate_name_snapshot)}</strong></div></td>
     <td class="financial-value" style="font-weight:700">${formatCurrencyBRL(row.amount)}</td>
     <td><div style="font-size:10px;color:var(--text3)">${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div class="pix-preview" title="${escapeHTML(row.pix_key)}">${escapeHTML(row.pix_key)}</div></td>
     <td style="font-size:11px;color:var(--text2)">${withdrawalDate(row.requested_at)}</td><td>${withdrawalStatusBadge(row.status)}</td>
@@ -3517,7 +3632,7 @@ function renderReferralRequests(){
   const body=document.getElementById('referral-requests-body'); if(!body)return;
   const pending=DB.users.filter(u=>u.affiliateStatus==='pending').sort((a,b)=>new Date(a.affiliateRequestedAt||0)-new Date(b.affiliateRequestedAt||0));
   document.getElementById('referral-request-count').textContent=`${pending.length} em análise`;
-  body.innerHTML=pending.length?pending.map(u=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm">${escapeHTML(u.av||avatarInitials(u.name))}</div><div><strong>${escapeHTML(u.name)}</strong><div style="font-size:10px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div></div></td><td>${escapeHTML(ROLE_LABELS[u.role]||u.role)}</td><td style="font-size:11px;color:var(--text2)">${withdrawalDate(u.affiliateRequestedAt)}</td><td>${referralStatusBadge('pending')}</td><td><div style="display:flex;gap:6px"><button class="btn btn-danger btn-xs" onclick="reviewReferralAccess('${u.id}','reject')">Recusar</button><button class="btn btn-primary btn-xs" onclick="reviewReferralAccess('${u.id}','approve')">Aprovar</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="payout-empty">Nenhuma solicitação aguardando análise</td></tr>';
+  body.innerHTML=pending.length?pending.map(u=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm">${avatarHTML(u,u.name,`Foto de ${u.name}`)}</div><div><strong>${escapeHTML(u.name)}</strong><div style="font-size:10px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div></div></td><td>${escapeHTML(ROLE_LABELS[u.role]||u.role)}</td><td style="font-size:11px;color:var(--text2)">${withdrawalDate(u.affiliateRequestedAt)}</td><td>${referralStatusBadge('pending')}</td><td><div style="display:flex;gap:6px"><button class="btn btn-danger btn-xs" onclick="reviewReferralAccess('${u.id}','reject')">Recusar</button><button class="btn btn-primary btn-xs" onclick="reviewReferralAccess('${u.id}','approve')">Aprovar</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="payout-empty">Nenhuma solicitação aguardando análise</td></tr>';
 }
 async function reviewReferralAccess(id,action){
   if(!isAdmin()) return;
@@ -3589,7 +3704,7 @@ function renderReferralAdminPanel(){
     const available = Number(DB.affiliateWallets?.[a.id]?.available||0);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="av av-sm" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:11px">${escapeHTML(a.av||avatarInitials(a.name))}</div>
+        <div class="av av-sm">${avatarHTML(a,a.name,`Foto de ${a.name}`)}</div>
         <div style="font-weight:600">${escapeHTML(a.name)}</div>
       </div></td>
       <td>${escapeHTML(ROLE_LABELS[a.role]||a.role)}</td>
@@ -3666,9 +3781,7 @@ function renderKanban(){
 
 function renderCard(d){
   const pr = {Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'};
-  const avHtml = safeImageUrl(d.assigneePhoto)
-    ? `<img src="${safeImageUrl(d.assigneePhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-    : escapeHTML(d.assigneeAv||avatarInitials(d.assignee));
+  const avHtml = profileAvatarHTML(d.assigneeId,d.assignee);
   const draggable = canMoveDemand(d); // afiliado não acessa demandas; editor só arrasta se tiver permissão de mover
   const dragAttrs = draggable ? `draggable="true"
     ondragstart="dragStart(event,'${d.id}')"
@@ -3718,7 +3831,7 @@ function renderDemandsList(){
       <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
       <td>${stBadge(d.status)}</td>
       <td>${prBadge(d.priority)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${safeImageUrl(d.assigneePhoto)?`<img src="${safeImageUrl(d.assigneePhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escapeHTML(avatarInitials(d.assignee))}</div><span style="font-size:12px">${escapeHTML(d.assignee)}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${profileAvatarHTML(d.assigneeId,d.assignee)}</div><span style="font-size:12px">${escapeHTML(d.assignee)}</span></div></td>
       <td style="font-size:12px;color:var(--text2)">${fDate(d.date)}</td>
     </tr>`).join('');
 }
@@ -3954,7 +4067,7 @@ function loadSales(){
     document.getElementById('sales-table-head').innerHTML='<th>Minha comissão</th><th>Cliente</th><th>Status</th><th>Data</th><th>Responsável</th>';
     document.getElementById('sales-body').innerHTML=allSales.length?allSales.map(s=>`<tr>
       <td class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(s.value)}</td>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(cn(s.client)))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs">${clientAvatarHTML(s.client,cn(s.client))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
       <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
       <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee||'—')}</td>
@@ -3964,7 +4077,7 @@ function loadSales(){
   document.getElementById('sales-table-head').innerHTML='<th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th>';
   document.getElementById('sales-body').innerHTML = allSales.length ? allSales.map(s=>`
     <tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs" style="background:linear-gradient(135deg,var(--cyan),var(--violet));font-size:9px">${escapeHTML(avatarInitials(cn(s.client)))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs">${clientAvatarHTML(s.client,cn(s.client))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
       <td style="color:var(--text2)">${escapeHTML(s.service)}</td>
       <td class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(isAffiliate() ? s.value*(DB.me.commissionRate||0)/100 : s.value)}</td>
       <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
@@ -4199,7 +4312,7 @@ function renderDocs(list){
         <div class="doc-name">${escapeHTML(d.name)}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${escapeHTML(d.cat)}</span></div>
         <div class="doc-meta">${escapeHTML(d.size||'')} ${d.date?'· '+escapeHTML(d.date):''}</div>
-        ${d.client?`<div class="doc-meta">📎 ${escapeHTML(cn(d.client))}</div>`:'<div class="doc-meta">📁 Interno</div>'}
+        ${d.client?`<div class="doc-meta" style="display:flex;align-items:center;gap:7px"><span class="av av-xs">${clientAvatarHTML(d.client,cn(d.client))}</span><span>${escapeHTML(cn(d.client))}</span></div>`:'<div class="doc-meta">📁 Interno</div>'}
         <div style="display:flex;gap:6px;margin-top:auto">${canEdit?`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditDoc('${d.id}')">Editar</button>`:''}${canDel?`<button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}</div>
       </div>
       ${locked?`<div class="doc-restricted-cover">${restrictedDocumentIcon(26)}<strong>Esse documento é Restrito</strong></div>`:''}
@@ -4310,8 +4423,8 @@ function loadProfile(){
   document.getElementById('prof-email').value = u.email;
   const bigAv = document.getElementById('profile-av-big');
   bigAv.innerHTML = safeImageUrl(u.photo)
-    ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`
-    : `${escapeHTML(u.av)}<input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`;
+    ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`
+    : `${escapeHTML(u.av)}<input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`;
   const planCard = document.getElementById('plan-card');
   const profileCardsRow = document.getElementById('profile-cards-row');
   if(isClient()){
@@ -4368,19 +4481,134 @@ async function changePassword(){
   toast('Senha alterada com sucesso! ✓','ok');
 }
 
-function uploadAvatar(e){
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev=>{
-    DB.me.photo = ev.target.result;
-    document.getElementById('profile-av-big').innerHTML = `<img src="${ev.target.result}" alt=""><input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">`;
-    document.getElementById('sb-av').innerHTML = `<img src="${ev.target.result}" alt="">`;
-    const cmtAvEl = document.getElementById('det-comment-av');
-    if(cmtAvEl) cmtAvEl.innerHTML = `<img src="${ev.target.result}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    supa.from('profiles').update({photo:ev.target.result}).eq('id',DB.me.id).then(()=>{});
-    toast('Foto atualizada! ✓','ok');
-  };
-  reader.readAsDataURL(file);
+const PROFILE_IMAGE_TYPES=['image/jpeg','image/png','image/webp','image/heic','image/heif'];
+const PROFILE_IMAGE_MAX_INPUT=12*1024*1024;
+let avatarOnboardingFile=null;
+let avatarOnboardingPreviewUrl=null;
+
+function validateAvatarFile(file){
+  if(!file) throw new Error('Escolha uma imagem');
+  if(!PROFILE_IMAGE_TYPES.includes(file.type)) throw new Error('Use uma imagem JPG, PNG, WebP ou HEIC');
+  if(file.size>PROFILE_IMAGE_MAX_INPUT) throw new Error('A imagem original deve ter no máximo 12 MB');
+}
+function loadAvatarImage(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), image=new Image();
+    image.onload=()=>resolve({image,url});
+    image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Não foi possível ler esta imagem'));};
+    image.src=url;
+  });
+}
+function canvasBlob(canvas,type,quality){
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Não foi possível otimizar a imagem')),type,quality));
+}
+async function optimizeAvatarFile(file){
+  validateAvatarFile(file);
+  const loaded=await loadAvatarImage(file);
+  try{
+    const maxSide=900, scale=Math.min(1,maxSide/Math.max(loaded.image.naturalWidth,loaded.image.naturalHeight));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(loaded.image.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(loaded.image.naturalHeight*scale));
+    const context=canvas.getContext('2d');
+    context.drawImage(loaded.image,0,0,canvas.width,canvas.height);
+    let blob=await canvasBlob(canvas,'image/webp',0.86);
+    if(blob.size>2*1024*1024) blob=await canvasBlob(canvas,'image/webp',0.68);
+    if(blob.size>2*1024*1024) throw new Error('Não foi possível reduzir a imagem para menos de 2 MB');
+    return blob;
+  } finally { URL.revokeObjectURL(loaded.url); }
+}
+function avatarStoragePath(url){
+  const prefix=`${SUPA_URL}/storage/v1/object/public/profile-images/`;
+  if(!String(url||'').startsWith(prefix)) return '';
+  try{
+    const path=decodeURIComponent(String(url).slice(prefix.length));
+    return path.startsWith(`${DB.me.id}/`)?path:'';
+  }catch(_){return '';}
+}
+function syncMyAvatar(photo){
+  const avatar={av:DB.me.av||'',photo};
+  DB.me.photo=photo; DB.me.avatarPromptCount=2;
+  DB.avatarProfiles[DB.me.id]=avatar;
+  if(DB.me.clientId) DB.avatarClients[DB.me.clientId]=avatar;
+  const user=DB.users.find(item=>item.id===DB.me.id); if(user) Object.assign(user,avatar);
+  const client=DB.clients.find(item=>item.id===DB.me.clientId); if(client) Object.assign(client,avatar);
+  DB.demands.forEach(demand=>{
+    if(demand.assigneeId===DB.me.id){demand.assigneePhoto=photo;demand.assigneeAv=avatar.av;}
+  });
+  refreshActiveAvatarSurface();
+}
+async function persistAvatarFile(file){
+  const blob=await optimizeAvatarFile(file);
+  const oldPath=avatarStoragePath(DB.me.photo);
+  const path=`${DB.me.id}/avatar-${Date.now()}-${crypto.randomUUID()}.webp`;
+  const {error:uploadError}=await supa.storage.from('profile-images').upload(path,blob,{contentType:'image/webp',cacheControl:'31536000',upsert:false});
+  if(uploadError) throw uploadError;
+  const {data:publicData}=supa.storage.from('profile-images').getPublicUrl(path);
+  const photo=publicData?.publicUrl;
+  const {error:saveError}=await supa.rpc('set_my_avatar',{p_photo_url:photo});
+  if(saveError){
+    await supa.storage.from('profile-images').remove([path]);
+    throw saveError;
+  }
+  syncMyAvatar(photo);
+  if(oldPath&&oldPath!==path) supa.storage.from('profile-images').remove([oldPath]).catch(()=>{});
+  return photo;
+}
+async function uploadAvatar(e){
+  const file=e.target.files?.[0]; if(!file) return;
+  e.target.disabled=true;
+  try{
+    await persistAvatarFile(file);
+    toast('Foto de perfil atualizada! ✓','ok');
+  }catch(error){
+    console.error('[Magemind] Falha ao atualizar foto:',error);
+    toast('Erro ao atualizar foto: '+(error.message||error),'err');
+  }finally{
+    if(e.target){e.target.disabled=false;e.target.value='';}
+  }
+}
+function dismissAvatarOnboarding(){
+  const modal=document.getElementById('avatar-onboarding');
+  if(modal) modal.classList.remove('open');
+  if(avatarOnboardingPreviewUrl) URL.revokeObjectURL(avatarOnboardingPreviewUrl);
+  avatarOnboardingPreviewUrl=null; avatarOnboardingFile=null;
+  const input=document.getElementById('avatar-onboarding-file'); if(input) input.value='';
+  const save=document.getElementById('avatar-onboarding-save'); if(save){save.disabled=true;save.textContent='Usar esta imagem';}
+  const preview=document.getElementById('avatar-onboarding-preview');
+  if(preview&&DB.me) preview.innerHTML=avatarHTML(DB.me,DB.me.name,'Prévia da foto de perfil');
+}
+async function maybeShowAvatarOnboarding(){
+  if(!DB.me||safeImageUrl(DB.me.photo)) return;
+  const {data,error}=await supa.rpc('claim_avatar_prompt');
+  if(error){console.error('[Magemind] Falha ao consultar convite de foto:',error);return;}
+  if(!data) return;
+  DB.me.avatarPromptCount=Math.min(2,(DB.me.avatarPromptCount||0)+1);
+  const preview=document.getElementById('avatar-onboarding-preview');
+  if(preview) preview.innerHTML=avatarHTML(DB.me,DB.me.name,'Prévia da foto de perfil');
+  document.getElementById('avatar-onboarding')?.classList.add('open');
+}
+function previewAvatarOnboarding(e){
+  const file=e.target.files?.[0]; if(!file) return;
+  try{validateAvatarFile(file);}catch(error){toast(error.message,'err');e.target.value='';return;}
+  if(avatarOnboardingPreviewUrl) URL.revokeObjectURL(avatarOnboardingPreviewUrl);
+  avatarOnboardingPreviewUrl=URL.createObjectURL(file); avatarOnboardingFile=file;
+  document.getElementById('avatar-onboarding-preview').innerHTML=`<img src="${escapeHTML(avatarOnboardingPreviewUrl)}" alt="Prévia da foto de perfil">`;
+  document.getElementById('avatar-onboarding-save').disabled=false;
+}
+async function saveAvatarOnboarding(){
+  if(!avatarOnboardingFile) return;
+  const button=document.getElementById('avatar-onboarding-save');
+  button.disabled=true; button.textContent='Enviando...';
+  try{
+    await persistAvatarFile(avatarOnboardingFile);
+    dismissAvatarOnboarding();
+    toast('Foto de perfil adicionada! Ficou ótima.','ok');
+  }catch(error){
+    console.error('[Magemind] Falha no primeiro avatar:',error);
+    button.disabled=false; button.textContent='Usar esta imagem';
+    toast('Erro ao enviar foto: '+(error.message||error),'err');
+  }
 }
 
 /* ═══ DETAIL MODAL ═══ */
@@ -4507,7 +4735,7 @@ async function openDetail(id){
         ${assignees.map(a=>`<option value="${a.id}"${a.id===d.assigneeId?' selected':''}>${escapeHTML(a.name)}</option>`).join('')}
       </select>`;
   } else {
-    const avHtml = safeImageUrl(d.assigneePhoto) ? `<img src="${safeImageUrl(d.assigneePhoto)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : escapeHTML(d.assigneeAv||avatarInitials(d.assignee));
+    const avHtml = profileAvatarHTML(d.assigneeId,d.assignee);
     document.getElementById('det-assignee-wrap').innerHTML = `<div class="dd-val"><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${avHtml}</div>${escapeHTML(d.assignee||'—')}</div></div>`;
   }
 
@@ -4554,7 +4782,7 @@ async function openDetail(id){
 
   if(!d.commentsLoaded){
     const {data:cmts} = await supa.from('comments').select('*, profiles(name,photo,av)').eq('demand_id',id).order('created_at');
-    d.comments = (cmts||[]).map(c=>({author:c.profiles?.name||'?',av:c.profiles?.av||'?',photo:c.profiles?.photo||null,text:c.text,time:fmtTime(c.created_at)}));
+    d.comments = (cmts||[]).map(c=>({profileId:c.author_id,author:c.profiles?.name||'?',av:c.profiles?.av||'?',photo:c.profiles?.photo||null,text:c.text,time:fmtTime(c.created_at)}));
     d.commentsLoaded = true;
   }
   renderComments(d.comments);
@@ -4593,7 +4821,7 @@ function renderComments(comments){
   document.getElementById('det-comments').innerHTML = comments.length
     ? comments.map(c=>`
       <div class="cmt">
-        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${safeImageUrl(c.photo)?`<img src="${safeImageUrl(c.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escapeHTML(c.av||'?')}</div>
+        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${avatarHTML(DB.avatarProfiles?.[c.profileId]||c,c.author,`Foto de ${c.author}`)}</div>
         <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(c.author)}</div><div class="cmt-text">${linkifyText(c.text||'')}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
       </div>`).join('')
     : '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0">Nenhum comentário ainda.</div>';
@@ -4605,7 +4833,7 @@ async function addComment(){
   const d = DB.demands.find(x=>x.id===currentDemandId); if(!d) return;
   const {data:newCmt, error} = await supa.from('comments').insert({demand_id:d.id, author_id:DB.me.id, text}).select('*, profiles(name,photo,av)').single();
   if(error){ toast('Erro ao enviar comentário','err'); return; }
-  const cmt = {author:DB.me.name, av:DB.me.av, photo:DB.me.photo||null, text, time:fmtTime(new Date().toISOString())};
+  const cmt = {profileId:DB.me.id,author:DB.me.name, av:DB.me.av, photo:DB.me.photo||null, text, time:fmtTime(new Date().toISOString())};
   d.comments.push(cmt);
   const preview = text.length>60 ? text.slice(0,57)+'...' : text;
   if(isStaffRole()) await dbPushNotifToClient(d.client,'💬','var(--cyanbg)',`Novo comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id,'comment_added');
