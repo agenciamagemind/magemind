@@ -221,8 +221,14 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .bar{flex:1;border-radius:3px 3px 0 0;background:var(--violet);opacity:.5;transition:opacity .2s;min-height:6px}
 .bar:hover{opacity:1}
 .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;padding:16px 24px 24px;overflow-y:auto;flex:1}
-.doc-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px}
+.doc-card{position:relative;min-height:220px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px;overflow:hidden}
 .doc-card:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-1px)}
+.doc-card-content{display:flex;flex:1;flex-direction:column;gap:8px}
+.doc-card.restricted-locked .doc-card-content{filter:blur(6px);opacity:.42;pointer-events:none;user-select:none}
+.doc-restricted-cover{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;background:rgba(10,10,20,.48);color:var(--text);text-align:center;backdrop-filter:blur(2px)}
+.doc-restricted-cover svg,.doc-restricted-badge svg{display:block}
+.doc-restricted-cover strong{font:700 12px 'Poppins',sans-serif}
+.doc-restricted-badge{position:absolute;top:11px;right:11px;z-index:3;display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--roseborder);border-radius:6px;background:var(--rosebg);color:var(--rose);font-size:9px;font-weight:700}
 .doc-icon{font-size:30px;margin-bottom:2px;display:block}
 .doc-name{font-size:13px;font-weight:600;line-height:1.3}
 .doc-meta{font-size:11px;color:var(--text3)}
@@ -413,6 +419,13 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .solution-card.current{border-color:color-mix(in srgb,var(--emerald) 48%,transparent);box-shadow:inset 0 0 0 1px rgba(16,185,129,.1)}
 .solution-card.inactive{background:var(--bg);border-style:dashed}
 .solution-card.inactive::before{opacity:.35}
+.solution-card.dragging{z-index:20;opacity:.62;transform:scale(.985);box-shadow:0 18px 45px rgba(0,0,0,.38)}
+.solution-card.drag-target{border-color:var(--solution-accent,var(--violet));box-shadow:inset 0 0 0 1px var(--solution-accent,var(--violet))}
+.solution-drag-handle{position:absolute;top:10px;right:10px;z-index:3;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text3);cursor:grab;touch-action:none}
+.solution-drag-handle:hover{color:var(--text);border-color:var(--border2)}
+.solution-drag-handle:active{cursor:grabbing}
+.solution-card.has-drag-handle .solution-card-top{padding-right:34px}
+body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
 .solution-kind{display:inline-flex;align-items:center;min-height:24px;padding:4px 8px;border-radius:6px;background:color-mix(in srgb,var(--solution-accent,var(--violet)) 12%,transparent);color:var(--solution-accent,var(--violet));font:700 9px 'Poppins',sans-serif;text-transform:uppercase}
 .solution-current{display:inline-flex;align-items:center;gap:5px;color:var(--emerald);font:700 10px 'Poppins',sans-serif}
@@ -496,7 +509,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           Falar no WhatsApp
         </a>
       </div>
-      <button class="sb-user" type="button" onclick="goTo('profile')" aria-label="Abrir meu perfil e configurações">
+      <button class="sb-user" type="button" onclick="goTo('settings')" aria-label="Abrir configurações da conta">
         <div class="av av-sm" id="sb-av">?</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-name">–</div>
@@ -814,12 +827,12 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
             <div class="ph-title">Configurações</div>
-            <div class="ph-sub">Empresa e preferências</div>
+            <div class="ph-sub">Perfil, plano, segurança e preferências</div>
           </div>
         </div>
         <div style="padding:0 24px;overflow-y:auto;flex:1">
           <div class="settings-grid" style="grid-template-columns:minmax(0,720px);gap:16px;max-width:unset">
-            <div class="settings-card">
+            <div class="settings-card" id="agency-settings-card">
               <div class="settings-card-title">🏢 Dados da empresa</div>
               <div style="display:flex;flex-direction:column;gap:12px">
                 <div class="fg"><label class="fl">Nome</label><input class="fi" id="cfg-nome" placeholder="Minha empresa"></div>
@@ -829,6 +842,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
               </div>
             </div>
           </div>
+          <div id="settings-profile-mount" style="margin-top:16px"></div>
         </div>
       </div>
 
@@ -836,7 +850,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       <div class="page" id="pg-profile">
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
-            <div class="ph-title">Meu Perfil</div>
+            <div class="ph-title">Configurações da conta</div>
             <div class="ph-sub">Dados pessoais e segurança</div>
           </div>
         </div>
@@ -885,6 +899,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
                 <label class="push-category"><input type="checkbox" data-push-pref="comments" onchange="savePushCategory(this)"><span><strong>Comentários</strong>Novas mensagens nas demandas.</span></label>
                 <label class="push-category"><input type="checkbox" data-push-pref="sales" onchange="savePushCategory(this)"><span><strong>Vendas</strong>Registros e movimentos comerciais relevantes.</span></label>
                 <label class="push-category"><input type="checkbox" data-push-pref="team_activity" onchange="savePushCategory(this)"><span><strong>Equipe</strong>Atividades operacionais destinadas ao seu perfil.</span></label>
+                <label class="push-category"><input type="checkbox" data-push-pref="general" onchange="savePushCategory(this)"><span><strong>Indique &amp; Ganhe</strong>Aprovações de participação, saques e pagamentos.</span></label>
               </div>
               <div class="push-settings-actions">
                 <button class="btn btn-primary btn-sm" id="push-enable-button" type="button" onclick="enablePushNotifications()">Ativar notificações</button>
@@ -1132,7 +1147,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         </select>
       </div>
       <div class="fg">
-        <label class="fl">Pertence ao cliente (opcional)</label>
+        <label class="fl" id="doc-client-label">Pertence ao cliente (opcional)</label>
         <select class="fi" id="doc-client">
           <option value="">Uso interno</option>
         </select>
@@ -1144,7 +1159,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           <option value="client">Cliente vinculado</option>
           <option value="affiliate">Indique &amp; Ganhe</option>
           <option value="public">Público (todos os cargos)</option>
-          <option value="restricted">Restrito (só CEO/Gerente)</option>
+          <option value="restricted">Restrito (CEO/Gerente e cliente responsável)</option>
         </select>
       </div>
     </div>
@@ -1244,7 +1259,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           <select class="fi" id="p-active"><option value="1">Ativa</option><option value="0">Desativada</option></select>
         </div>
       </div>
-      <div class="secure-note" id="p-custom-note" style="display:none"><span>i</span><span>Planos personalizados nunca aparecem em Soluções para os clientes. Somente o cliente vinculado poderá vê-lo em Meu Perfil.</span></div>
+      <div class="secure-note" id="p-custom-note" style="display:none"><span>i</span><span>Planos personalizados nunca aparecem em Soluções para os clientes. Somente o cliente vinculado poderá vê-lo em Configurações.</span></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-plans')">Cancelar</button>
@@ -1307,14 +1322,14 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 <div class="overlay" id="push-onboarding" role="dialog" aria-modal="true" aria-labelledby="push-onboarding-title" onclick="if(event.target===this)dismissPushOnboarding()">
   <div class="modal" style="width:460px">
     <div class="m-head"><div><div class="m-title" id="push-onboarding-title">Notificações, agora sem precisar ficar de plantão</div><div class="m-sub">Receba no celular somente os avisos ligados ao seu perfil.</div></div><button class="m-close" type="button" onclick="dismissPushOnboarding()" aria-label="Fechar">✕</button></div>
-    <div class="m-body"><div class="secure-note"><span>i</span><span>Demandas, comentários e eventos comerciais continuam organizados por categoria. Você pode mudar tudo em Meu Perfil.</span></div></div>
+    <div class="m-body"><div class="secure-note"><span>i</span><span>Demandas, comentários e eventos comerciais continuam organizados por categoria. Você pode mudar tudo em Configurações.</span></div></div>
     <div class="m-foot"><button class="btn btn-ghost" type="button" onclick="dismissPushOnboarding()">Agora não</button><button class="btn btn-primary" type="button" onclick="enablePushNotifications(true)">Ativar notificações</button></div>
   </div>
 </div>
 
 <div class="toast" id="toast-el"></div>
 
-<script src="mobile-app.js?v=20260828-1"></script>
+<script src="mobile-app.js?v=20260828-2"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -1396,33 +1411,33 @@ const ROLE_PERMISSIONS = {
     'dashboard.gestor',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
     'docs.view','docs.create','docs.edit',
-    'users.view_operational','users.create_editor','affiliates.view'
+    'users.view_operational','users.create_editor','affiliates.view','settings.view','profile.edit'
   ],
   editor: [
     'dashboard.editor',
     'demands.view_assigned','demands.move','demands.comment',
-    'docs.view','docs.create','docs.edit','affiliates.view'
+    'docs.view','docs.create','docs.edit','affiliates.view','settings.view','profile.edit'
   ],
   affiliate: [
     'dashboard.affiliate',
     'affiliate.clients.view','affiliate.sales.view','affiliate.commissions.view',
-    'docs.view_affiliate','affiliates.view'
+    'docs.view_affiliate','affiliates.view','settings.view','profile.edit'
   ],
   client: [
     'dashboard.client',
     'demands.view_own','demands.comment_own',
-    'docs.view_own','solutions.view','profile.view','profile.edit','affiliates.view'
+    'docs.view_own','docs.create','docs.edit','solutions.view','settings.view','profile.edit','affiliates.view'
   ]
 };
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
-  manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
-  gestor:    ['dashboard','demands','affiliates','team','docs','profile'],
-  editor:    ['dashboard','demands','affiliates','docs','profile'],
-  affiliate: ['dashboard','affiliates','docs','profile'],
-  client:    ['dashboard','demands','solutions','affiliates','docs','profile']
+  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings'],
+  manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings'],
+  gestor:    ['dashboard','demands','affiliates','team','docs','settings'],
+  editor:    ['dashboard','demands','affiliates','docs','settings'],
+  affiliate: ['dashboard','affiliates','docs','settings'],
+  client:    ['dashboard','demands','solutions','affiliates','docs','settings']
 };
 
 /* Hierarquia numérica — usada só como referência/depuração; as regras de
@@ -1713,7 +1728,7 @@ function mapDoc(d){
     id:d.id, name:d.name, cat:d.category||'Outros',
     icon:d.icon||'📄', client:d.client_id,
     size:d.file_size||'—', url:d.file_url||null, storagePath:d.storage_path||null,
-    fileName:d.file_name||null,
+    fileName:d.file_name||null, createdBy:d.created_by||null,
     visibility:d.visibility||'internal', // internal|client|affiliate|public|restricted
     date:d.created_at ? new Date(d.created_at).toLocaleDateString('pt-BR') : ''
   };
@@ -2119,7 +2134,7 @@ async function loadAllData(){
       DB.demands = (demands||[]).map(mapDemand);
 
       const {data:docs,error:docsErr} = await supa.from('docs')
-        .select('*').neq('visibility','restricted').order('created_at',{ascending:false});
+        .select('*').order('created_at',{ascending:false});
       if(docsErr) console.error('[Magemind] Falha ao carregar documentos operacionais:',docsErr);
       DB.docs = (docs||[]).map(mapDoc);
 
@@ -2466,17 +2481,20 @@ function buildNav(){
     {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),label:'Equipe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
+    {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const editorItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
     {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
+    {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const affiliateItems = [
     {id:'dashboard', icon:ico('home'),   label:'Menu'},
     {id:'affiliates',icon:ico('dollar'), label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
+    {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const clientItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
@@ -2484,6 +2502,7 @@ function buildNav(){
     {id:'solutions',icon:ico('package'),label:'Soluções'},
     {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
+    {id:'settings',icon:ico('settings'),label:'Configurações'},
   ];
   let items;
   if(isCEO()||isManager()) items = staffItems;
@@ -2502,7 +2521,8 @@ function buildNav(){
 }
 
 function goTo(page){
-  if(!canAccessPage(page) && page!=='profile'){
+  if(page==='profile') page='settings';
+  if(!canAccessPage(page)){
     toast('Você não tem permissão para acessar esta página','err');
     page = 'dashboard';
   }
@@ -2513,8 +2533,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
-  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
+  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',settings:'Configurações'};
+  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Dados pessoais, segurança e preferências'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2536,7 +2556,7 @@ function goTo(page){
   const loaders = {
     dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
     affiliates:loadAffiliates, team:loadTeam, docs:loadDocs,
-    settings:loadAgencySettings, profile:loadProfile
+    settings:loadAgencySettings
   };
   if(loaders[page]) loaders[page]();
 }
@@ -3451,6 +3471,8 @@ function openWithdrawalReview(id){
   openModal('modal-withdrawal-review');
 }
 async function performWithdrawalAction(action){
+  const withdrawal=DB.withdrawals.find(row=>row.id===currentWithdrawalReviewId);
+  if(!withdrawal){toast('Solicitação não encontrada','err');return;}
   const note=document.getElementById('wr-note').value.trim();
   if(action==='reject'&&note.length<3){toast('Informe o motivo da recusa','err');return;}
   if(action==='pay'&&!confirm('Confirma que a transferência PIX já foi realizada?'))return;
@@ -3461,6 +3483,13 @@ async function performWithdrawalAction(action){
     ? await supa.rpc('reverse_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_reason:note})
     : await supa.rpc('review_affiliate_withdrawal',{p_withdrawal_id:currentWithdrawalReviewId,p_action:action,p_note:note||null});
   if(error){buttons.forEach(b=>b.disabled=false);toast('Erro: '+error.message,'err');return;}
+  const withdrawalCopy={
+    approve:{title:'Saque aprovado',body:`Seu saque de ${formatCurrencyBRL(withdrawal.amount)} foi aprovado. O PIX entrou oficialmente na fila dos adultos responsáveis.`,event:'withdrawal_approved'},
+    pay:{title:'PIX enviado',body:`O saque de ${formatCurrencyBRL(withdrawal.amount)} foi pago. Pode conferir a conta sem fingir costume.`,event:'withdrawal_paid'},
+    reject:{title:'Saque não aprovado',body:`Seu saque de ${formatCurrencyBRL(withdrawal.amount)} não foi aprovado.${note?` Motivo: ${note}`:''}`,event:'withdrawal_rejected'},
+    reverse:{title:'Pagamento estornado',body:`O pagamento de ${formatCurrencyBRL(withdrawal.amount)} foi estornado e o valor voltou para o seu saldo.`,event:'withdrawal_reversed'}
+  }[action];
+  await dbPushNotif(withdrawal.affiliate_id,null,'💸','var(--emeraldbg)',withdrawalCopy.title,withdrawalCopy.body,null,withdrawalCopy.event);
   closeModal('modal-withdrawal-review'); currentWithdrawalReviewId=null;
   await refreshWithdrawalData(); toast(action==='reverse'?'Pagamento estornado com auditoria ✓':action==='pay'?'Pagamento confirmado ✓':action==='approve'?'Saque aprovado ✓':'Saque recusado','ok');
 }
@@ -3501,6 +3530,14 @@ async function reviewReferralAccess(id,action){
   person.affiliateReviewedAt=row?.affiliate_reviewed_at||new Date().toISOString();
   if(action==='approve') person.commissionRate=Number(row?.commission_rate||person.commissionRate||10);
   if(id===DB.me.id){DB.me.affiliateStatus=person.affiliateStatus;DB.me.commissionRate=person.commissionRate;}
+  await dbPushNotif(
+    id,null,'💸',action==='approve'?'var(--emeraldbg)':'var(--rosebg)',
+    action==='approve'?'Acesso aprovado':'Solicitação não aprovada',
+    action==='approve'
+      ? 'Seu acesso ao Indique & Ganhe foi aprovado. A carteira, as indicações e os saques já estão liberados.'
+      : 'Sua solicitação para o Indique & Ganhe não foi aprovada desta vez. Você poderá solicitar novamente.',
+    null,action==='approve'?'referral_approved':'referral_rejected'
+  );
   if(action==='approve') await refreshWithdrawalData(); else renderReferralAdminPanel();
   populateClientAffiliateSelect();
   toast(action==='approve'?`${person.name} foi aprovado no Indique & Ganhe`:`Participação de ${person.name} recusada`,'ok');
@@ -3521,7 +3558,7 @@ function renderReferralGate(){
   gate.style.display='flex';
   const pending=status==='pending';
   const rejected=status==='rejected';
-  gate.innerHTML=`<div class="referral-gate-card"><div class="referral-gate-icon">${ico('dollar')}</div><div class="referral-gate-title">${pending?'Sua solicitação está em análise':rejected?'Sua participação ainda não foi aprovada':'Indique. A gente fecha. Você ganha.'}</div><div class="referral-gate-copy">${pending?'CEO e Gerentes já receberam seu pedido. Assim que a participação for aprovada, este painel será liberado com carteira, indicações e saques.':rejected?'Você pode enviar uma nova solicitação. Talvez agora os astros, a agenda e o comercial estejam finalmente alinhados.':'Indique potenciais clientes para a Magemind e receba comissão quando uma venda for fechada. O acompanhamento é transparente e os saques são solicitados por PIX.'}</div>${pending?`<span class="referral-status pending">Em análise</span>`:`<button class="btn btn-primary" id="referral-request-access" onclick="requestReferralAccess()">Quero ganhar</button>`}</div>`;
+  gate.innerHTML=`<div class="referral-gate-card"><div class="referral-gate-icon">${ico('dollar')}</div><div class="referral-gate-title">${pending?'Sua solicitação está em análise':rejected?'Sua participação ainda não foi aprovada':'Indique. A gente fecha. Você ganha.'}</div><div class="referral-gate-copy">${pending?'Nossa equipe já recebeu seu pedido. Assim que sua solicitação for aprovada, você receberá uma notificação e este painel será liberado.':rejected?'Você pode enviar uma nova solicitação. Talvez agora os astros, a agenda e o comercial estejam finalmente alinhados.':'Indique potenciais clientes para a Magemind e receba comissão quando uma venda for fechada. O acompanhamento é transparente e os saques são solicitados por PIX.'}</div>${pending?`<span class="referral-status pending">Em análise</span>`:`<button class="btn btn-primary" id="referral-request-access" onclick="requestReferralAccess()">Quero ganhar</button>`}</div>`;
 }
 function renderReferralMemberPanel(){
   const clients=DB.referralClients||[]; const wallet=DB.referralWallet||{};
@@ -4108,6 +4145,17 @@ function docsVisibleBase(){
   if(isOperationalStaff()) return DB.docs;
   return DB.docs.filter(d=>!d.client||d.client===DB.me.clientId||isAffiliate());
 }
+function canOpenRestrictedDoc(doc){
+  return doc?.visibility!=='restricted'||isAdmin()||(isClient()&&doc.client===DB.me.clientId);
+}
+function canEditDocument(doc){
+  if(!hasPermission('docs.edit')||!canOpenRestrictedDoc(doc)) return false;
+  if(!isClient()) return true;
+  return doc.client===DB.me.clientId&&doc.createdBy===DB.me.id;
+}
+function restrictedDocumentIcon(size=15){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9.5 5.2 9.5 8a7.8 7.8 0 0 1-1.4 2.9M6.6 6.6C4 8.3 2.5 10.6 2.5 12c0 2.8 4 8 9.5 8 1.2 0 2.3-.2 3.3-.6"/></svg>`;
+}
 function renderFilteredDocs(){
   let list=docsVisibleBase();
   if(currentDocCategory!=='Todos') list=list.filter(d=>d.cat===currentDocCategory);
@@ -4139,17 +4187,24 @@ function filterDocsByClient(clientId){ currentDocClient=clientId; renderFiltered
 function renderDocs(list){
   const grid = document.getElementById('docs-grid');
   const canDel = hasPermission('docs.delete');
-  const canEdit = hasPermission('docs.edit');
   if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:32px;opacity:.3;margin-bottom:10px">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2)">Nenhum documento</div></div>'; return; }
-  grid.innerHTML = list.map(d=>`
-    <div class="doc-card" onclick="openDoc('${escapeHTML(d.id)}')">
-      <span class="doc-icon">${escapeHTML(d.icon||'📄')}</span>
-      <div class="doc-name">${escapeHTML(d.name)}</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${escapeHTML(d.cat)}</span></div>
-      <div class="doc-meta">${escapeHTML(d.size||'')} ${d.date?'· '+escapeHTML(d.date):''}</div>
-      ${d.client?`<div class="doc-meta">📎 ${escapeHTML(cn(d.client))}</div>`:'<div class="doc-meta">📁 Interno</div>'}
-      <div style="display:flex;gap:6px;margin-top:4px">${canEdit?`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditDoc('${d.id}')">Editar</button>`:''}${canDel?`<button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}</div>
-    </div>`).join('');
+  grid.innerHTML = list.map(d=>{
+    const restricted=d.visibility==='restricted';
+    const locked=!canOpenRestrictedDoc(d);
+    const canEdit=canEditDocument(d);
+    return `<div class="doc-card${locked?' restricted-locked':''}" onclick="openDoc('${escapeHTML(d.id)}')">
+      ${restricted?`<span class="doc-restricted-badge">${restrictedDocumentIcon()} Restrito</span>`:''}
+      <div class="doc-card-content">
+        <span class="doc-icon">${escapeHTML(d.icon||'📄')}</span>
+        <div class="doc-name">${escapeHTML(d.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${escapeHTML(d.cat)}</span></div>
+        <div class="doc-meta">${escapeHTML(d.size||'')} ${d.date?'· '+escapeHTML(d.date):''}</div>
+        ${d.client?`<div class="doc-meta">📎 ${escapeHTML(cn(d.client))}</div>`:'<div class="doc-meta">📁 Interno</div>'}
+        <div style="display:flex;gap:6px;margin-top:auto">${canEdit?`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditDoc('${d.id}')">Editar</button>`:''}${canDel?`<button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}</div>
+      </div>
+      ${locked?`<div class="doc-restricted-cover">${restrictedDocumentIcon(26)}<strong>Esse documento é Restrito</strong></div>`:''}
+    </div>`;
+  }).join('');
 }
 function openNewDoc(){
   if(!hasPermission('docs.create')){ toast('Sem permissão para criar documentos','err'); return; }
@@ -4160,12 +4215,13 @@ function openNewDoc(){
   document.getElementById('doc-file-label').textContent='Arquivo *';
   document.getElementById('doc-save-label').textContent='Fazer upload';
   document.getElementById('doc-file').value=''; document.getElementById('doc-name').value='';
-  document.getElementById('doc-cat').value='Roteiro'; document.getElementById('doc-client').value='';
-  document.getElementById('doc-visibility').value='internal';
+  document.getElementById('doc-cat').value='Roteiro';
+  document.getElementById('doc-client').value=isClient()?(DB.me.clientId||''):'';
+  document.getElementById('doc-visibility').value=isClient()?'client':'internal';
 }
 function openEditDoc(id){
-  if(!hasPermission('docs.edit')){ toast('Sem permissão para editar documentos','err'); return; }
   const doc=DB.docs.find(item=>item.id===id); if(!doc) return;
+  if(!canEditDocument(doc)){ toast('Sem permissão para editar este documento','err'); return; }
   editDocId=id;
   openModal('modal-doc');
   document.getElementById('doc-modal-title').textContent='Editar documento';
@@ -4178,6 +4234,7 @@ function openEditDoc(id){
 }
 async function openDoc(id){
   const d = DB.docs.find(x=>x.id===id); if(!d) return;
+  if(!canOpenRestrictedDoc(d)){ toast('Esse documento é Restrito','err'); return; }
   let url = '';
   if(d.storagePath){
     const {data,error} = await supa.storage.from('magemind-docs').createSignedUrl(d.storagePath,60);
@@ -4203,8 +4260,9 @@ async function saveDoc(){
 async function _saveDocWithFile(name,file){
   const catIcons={Roteiro:'📝',Copy:'✍️',Prospecção:'📊',Briefing:'📋',Relatório:'📈',Jurídico:'📄',Design:'🎨',Outros:'📁'};
   const cat = document.getElementById('doc-cat').value;
-  const clientId = document.getElementById('doc-client').value||null;
-  const visibility = document.getElementById('doc-visibility')?.value||'internal';
+  const clientId = isClient()?DB.me.clientId:(document.getElementById('doc-client').value||null);
+  const visibility = isClient()?'client':(document.getElementById('doc-visibility')?.value||'internal');
+  if(isClient()&&!clientId){ toast('Sua conta não possui um cliente vinculado','err'); return; }
   if(visibility==='client'&&!clientId){ toast('Selecione o cliente para usar a visibilidade Cliente vinculado','err'); return; }
   const currentDoc=editDocId?DB.docs.find(item=>item.id===editDocId):null;
   let sizeLabel = currentDoc?.size||'—';
@@ -4661,7 +4719,9 @@ function solutionCardHTML(plan,currentPlanIds,adminView){
   const current=currentPlanIds.has(plan.id);
   const includes=String(plan.includes||'').split('\n').map(item=>item.trim()).filter(Boolean);
   const privatePlan=plan.custom===true||plan.type==='Personalizado';
-  return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}" style="--solution-accent:${category.accent}">
+  const reorderable=adminView&&!privatePlan;
+  return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}${reorderable?' has-drag-handle':''}" style="--solution-accent:${category.accent}"${reorderable?` data-solution-id="${plan.id}"`:''}>
+    ${reorderable?`<button class="solution-drag-handle" type="button" title="Arrastar para alterar a ordem" aria-label="Arrastar ${escapeHTML(plan.name)} para alterar a ordem" onpointerdown="startSolutionReorder(event,'${plan.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>`:''}
     <div class="solution-card-top">
       <span class="solution-kind">${escapeHTML(privatePlan?'Personalizado':category.short)}</span>
       ${current?'<span class="solution-current">✓ Esse é o seu plano atual</span>':(adminView?`<span class="badge ${plan.active?'b-emerald':'b-muted'}">${plan.active?'Ativa':'Desativada'}</span>`:'')}
@@ -4703,6 +4763,52 @@ function loadSolutions(){
     if(customPlans.length) html+=`<section class="solution-section" style="--solution-accent:var(--pink)"><div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>Planos personalizados</div><div class="solution-section-sub">Visíveis somente no perfil dos clientes vinculados.</div></div><span class="solution-private-note">Acesso privado</span></div><div class="solution-grid">${customPlans.map(plan=>solutionCardHTML(plan,currentPlanIds,true)).join('')}</div></section>`;
   }
   document.getElementById('solutions-catalog').innerHTML=html||'<div class="solution-empty" style="margin-top:22px">Nenhuma solução disponível no momento.</div>';
+}
+
+let solutionReorderState=null;
+function startSolutionReorder(event,id){
+  if(!isAdmin()||event.button!==0) return;
+  const card=event.currentTarget.closest('.solution-card[data-solution-id]');
+  const grid=card?.parentElement;
+  if(!card||!grid) return;
+  event.preventDefault(); event.stopPropagation();
+  solutionReorderState={id,card,grid,startOrder:[...grid.querySelectorAll('[data-solution-id]')].map(item=>item.dataset.solutionId)};
+  card.classList.add('dragging'); document.body.classList.add('solution-reordering');
+  window.addEventListener('pointermove',moveSolutionReorder,{passive:false});
+  window.addEventListener('pointerup',finishSolutionReorder,{once:true});
+  window.addEventListener('pointercancel',finishSolutionReorder,{once:true});
+}
+function moveSolutionReorder(event){
+  const state=solutionReorderState; if(!state) return;
+  event.preventDefault();
+  document.querySelectorAll('.solution-card.drag-target').forEach(item=>item.classList.remove('drag-target'));
+  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('.solution-card[data-solution-id]');
+  if(!target||target===state.card||target.parentElement!==state.grid) return;
+  target.classList.add('drag-target');
+  const rect=target.getBoundingClientRect();
+  const horizontal=state.grid.getBoundingClientRect().width>rect.width*1.45;
+  const after=horizontal?event.clientX>rect.left+rect.width/2:event.clientY>rect.top+rect.height/2;
+  state.grid.insertBefore(state.card,after?target.nextSibling:target);
+}
+async function finishSolutionReorder(){
+  const state=solutionReorderState; if(!state) return;
+  solutionReorderState=null;
+  window.removeEventListener('pointermove',moveSolutionReorder);
+  window.removeEventListener('pointerup',finishSolutionReorder);
+  window.removeEventListener('pointercancel',finishSolutionReorder);
+  document.body.classList.remove('solution-reordering');
+  state.card.classList.remove('dragging');
+  document.querySelectorAll('.solution-card.drag-target').forEach(item=>item.classList.remove('drag-target'));
+  const endOrder=[...state.grid.querySelectorAll('[data-solution-id]')].map(item=>item.dataset.solutionId);
+  if(endOrder.join('|')===state.startOrder.join('|')) return;
+  await persistSolutionOrder();
+}
+async function persistSolutionOrder(){
+  const ids=[...document.querySelectorAll('#solutions-catalog .solution-card[data-solution-id]')].map(item=>item.dataset.solutionId);
+  const {error}=await supa.rpc('admin_reorder_solutions',{p_solution_ids:ids});
+  if(error){toast('Não foi possível salvar a ordem: '+error.message,'err');loadSolutions();return;}
+  ids.forEach((id,index)=>{const plan=DB.plans.find(item=>item.id===id);if(plan)plan.sortOrder=index;});
+  toast('Ordem das soluções atualizada','ok');
 }
 
 function syncSolutionFormState(){
@@ -4779,10 +4885,22 @@ async function removePlan(id){
 function openModal(id){
   if(id==='modal-doc'){
     const dc = document.getElementById('doc-client');
-    dc.innerHTML = '<option value="">Uso interno</option>'+
-      DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    const visibility=document.getElementById('doc-visibility');
+    const clientLabel=document.getElementById('doc-client-label');
+    if(isClient()){
+      const ownClient=DB.clients.find(c=>c.id===DB.me.clientId);
+      dc.innerHTML=`<option value="${escapeHTML(DB.me.clientId||'')}">${escapeHTML(ownClient?.name||DB.me.name||'Minha conta')}</option>`;
+      dc.value=DB.me.clientId||''; dc.disabled=true;
+      clientLabel.textContent='Cliente responsável';
+      visibility.value='client'; visibility.disabled=true;
+    }else{
+      dc.innerHTML = '<option value="">Uso interno</option>'+
+        DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+      dc.disabled=false; visibility.disabled=false;
+      clientLabel.textContent='Pertence ao cliente (opcional)';
+    }
     const restricted=document.querySelector('#doc-visibility option[value="restricted"]');
-    if(restricted) restricted.disabled=!isAdmin();
+    if(restricted){ restricted.disabled=!isAdmin(); restricted.hidden=!isAdmin(); }
   }
   document.getElementById(id).classList.add('open');
 }
@@ -4815,7 +4933,13 @@ const NOTIFICATION_TITLES = {
   demand_updated:['Mudou alguma coisa. De novo.','Demanda atualizada, porque detalhes importam.','Tem novidade nessa demanda.'],
   demand_status:['O status mudou. O suspense continua.','Movimentação detectada. Nada fica parado.'],
   comment_added:['Comentário novo. A paz durou pouco.','Alguém comentou. Hora de espiar.','Nova mensagem na demanda.'],
-  sale_created:['Ca-ching. O comercial aprontou de novo.','Venda registrada. Belo problema para ter.','Entrou venda. Pode comemorar discretamente.']
+  sale_created:['Ca-ching. O comercial aprontou de novo.','Venda registrada. Belo problema para ter.','Entrou venda. Pode comemorar discretamente.'],
+  referral_approved:['Aprovado. Pode começar a indicar.','A porta abriu. E tem comissão do outro lado.','Indique & Ganhe liberado. Agora ficou interessante.'],
+  referral_rejected:['Ainda não foi dessa vez.','Pedido analisado. O universo pediu uma nova tentativa.'],
+  withdrawal_approved:['Saque aprovado. O PIX está aquecendo.','Dinheiro a caminho. Com alguma burocracia, claro.'],
+  withdrawal_paid:['PIX enviado. A parte bonita chegou.','Pagamento feito. Pode atualizar o extrato.'],
+  withdrawal_rejected:['Saque recusado. O saldo continua fazendo companhia.'],
+  withdrawal_reversed:['PIX estornado. O saldo voltou para casa.']
 };
 function playfulNotification(eventType,title,body){
   const choices=NOTIFICATION_TITLES[eventType];
@@ -4964,10 +5088,18 @@ function ico(n){
 
 /* ═══ CONFIGURAÇÕES DA EMPRESA ═══ */
 function loadAgencySettings(){
-  const cfg = JSON.parse(localStorage.getItem('mm_agency_cfg') || '{}');
-  document.getElementById('cfg-nome').value  = cfg.nome  || '';
-  document.getElementById('cfg-email').value = cfg.email || '';
-  document.getElementById('cfg-phone').value = cfg.phone || '';
+  const mount=document.getElementById('settings-profile-mount');
+  const profileLayout=document.getElementById('profile-layout');
+  if(mount&&profileLayout&&profileLayout.parentElement!==mount) mount.appendChild(profileLayout);
+  const agencyCard=document.getElementById('agency-settings-card');
+  if(agencyCard) agencyCard.style.display=isAdmin()?'block':'none';
+  if(isAdmin()){
+    const cfg = JSON.parse(localStorage.getItem('mm_agency_cfg') || '{}');
+    document.getElementById('cfg-nome').value  = cfg.nome  || '';
+    document.getElementById('cfg-email').value = cfg.email || '';
+    document.getElementById('cfg-phone').value = cfg.phone || '';
+  }
+  loadProfile();
 }
 function saveAgencySettings(){
   const cfg = {
