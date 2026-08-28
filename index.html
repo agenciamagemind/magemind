@@ -979,7 +979,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="fg"><label class="fl">E-mail *</label><input class="fi" id="tm-email" type="email" placeholder="email@exemplo.com"><div id="tm-email-hint" style="display:none;font-size:11px;color:var(--text3);margin-top:4px">E-mail de acesso não pode ser alterado por aqui.</div></div>
       </div>
       <div class="f2">
-        <div class="fg" id="tm-pass-wrap"><label class="fl">Senha provisória *</label><input class="fi" id="tm-pass" type="text" placeholder="Mínimo 6 caracteres"></div>
+        <div class="fg" id="tm-pass-wrap"><label class="fl">Senha provisória *</label><input class="fi" id="tm-pass" type="text" placeholder="Mínimo 8 caracteres"></div>
         <div class="fg"><label class="fl">Telefone (opcional)</label><input class="fi" id="tm-phone" placeholder="(00) 00000-0000"></div>
       </div>
       <div class="f2">
@@ -1641,6 +1641,29 @@ let _loginInFlight = false;
 
 /* ADMIN_EMAIL já está definido no bloco RBAC acima (nunca é criado como cliente pelo cadastro público) */
 
+async function getFreshAccessToken(){
+  const {data,error}=await supa.auth.refreshSession();
+  if(error||!data?.session?.access_token){
+    console.error('Falha ao renovar sessão:',error);
+    return null;
+  }
+  const {error:userError}=await supa.auth.getUser(data.session.access_token);
+  if(userError){
+    console.error('Sessão renovada não foi validada:',userError);
+    return null;
+  }
+  return data.session.access_token;
+}
+
+async function handleExpiredSession(){
+  try{ await supa.auth.signOut({scope:'local'}); }catch(error){ console.error('Falha ao limpar sessão local:',error); }
+  clearSessionState();
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.body.classList.remove('app-ready');
+  toast('Sua sessão expirou. Entre novamente para continuar.','err');
+}
+
 function authTab(t){
   document.querySelectorAll('.auth-tab').forEach((el,i) => el.classList.toggle('active', t==='login'?i===0:i===1));
   document.getElementById('auth-login').style.display = t==='login' ? 'flex' : 'none';
@@ -1808,6 +1831,12 @@ async function afterLogin(authUser){
   _loginInFlight = true;
   cleanupRealtimeSubscriptions(); // defesa extra contra canais de uma sessão anterior ainda vivos
   try {
+    const {data:verifiedAuth,error:verifyError}=await supa.auth.getUser();
+    if(verifyError||!verifiedAuth?.user){
+      await handleExpiredSession();
+      return;
+    }
+    authUser=verifiedAuth.user;
     const {data:accessRows,error:accessErr}=await supa.rpc('get_my_access_status');
     if(accessErr) console.error('afterLogin: erro ao consultar status de acesso:',accessErr);
     const access=Array.isArray(accessRows)?accessRows[0]:accessRows;
@@ -2977,18 +3006,20 @@ async function saveTeamMember(){
   // Criação: exige e-mail + senha e chama a Edge Function que cria o auth user com service role.
   // (ver checklist / instruções de deploy da função "create-user")
   const pass = document.getElementById('tm-pass').value;
-  if(!email || !pass || pass.length<6){ toast('E-mail e senha (mín. 6 caracteres) são obrigatórios','err'); return; }
+  if(!email || !pass || pass.length<8){ toast('E-mail e senha (mín. 8 caracteres) são obrigatórios','err'); return; }
   if(role==='client'){ toast('Clientes são criados na área Clientes, não em Equipe','err'); return; }
   if(!canCreateRole(role)){ toast('Você não tem permissão para criar esse cargo','err'); return; }
   btn.disabled = true;
   try{
-    const {data:sess} = await supa.auth.getSession();
+    const token=await getFreshAccessToken();
+    if(!token){ await handleExpiredSession(); return; }
     const res = await fetch(`${SUPA_URL}/functions/v1/create-user`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${sess.session.access_token}`},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,'apikey':SUPA_KEY},
       body: JSON.stringify({name,email,password:pass,phone,role,commission_rate:commissionRate,active})
     });
     const json = await res.json();
+    if(res.status===401){ await handleExpiredSession(); return; }
     if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
     DB.users.push({id:json.user_id, name, role, email, phone, av:avatarInitials(name), photo:null, active, commissionRate:commissionRate||0});
     closeModal('modal-team'); toast(`${name} cadastrado como ${ROLE_LABELS[role]} ✓`,'ok');
