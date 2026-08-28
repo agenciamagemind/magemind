@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Magemind</title>
-<meta name="description" content="Gestão operacional da agência Magemind">
+<meta name="description" content="Gestão operacional da Magemind">
 <meta name="theme-color" content="#0f0f1a">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
@@ -472,7 +472,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
             <div class="ph-title" id="dash-greeting">Olá 👋</div>
-            <div class="ph-sub" id="dash-summary-sub">Resumo da agência hoje</div>
+            <div class="ph-sub" id="dash-summary-sub">Resumo operacional de hoje</div>
           </div>
         </div>
         <div class="stats stats-4" style="margin-bottom:16px" id="dash-stats"></div>
@@ -702,7 +702,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
             <div class="ph-title">Configurações</div>
-            <div class="ph-sub">Agência e preferências</div>
+            <div class="ph-sub">Empresa e preferências</div>
           </div>
         </div>
         <div style="padding:0 24px;overflow-y:auto;flex:1">
@@ -710,8 +710,8 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
             <div class="settings-card">
               <div class="settings-card-title">🏢 Dados da empresa</div>
               <div style="display:flex;flex-direction:column;gap:12px">
-                <div class="fg"><label class="fl">Nome</label><input class="fi" id="cfg-nome" placeholder="Minha Agência Digital"></div>
-                <div class="fg"><label class="fl">Email</label><input class="fi" id="cfg-email" placeholder="contato@agencia.com"></div>
+                <div class="fg"><label class="fl">Nome</label><input class="fi" id="cfg-nome" placeholder="Minha empresa"></div>
+                <div class="fg"><label class="fl">Email</label><input class="fi" id="cfg-email" placeholder="contato@empresa.com"></div>
                 <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cfg-phone" placeholder="5511999999999"></div>
                 <button class="btn btn-primary btn-sm" onclick="saveAgencySettings()">Salvar alterações</button>
               </div>
@@ -1012,12 +1012,12 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 <div class="overlay" id="modal-doc" onclick="if(event.target===this)closeModal('modal-doc')">
   <div class="modal" style="width:460px">
     <div class="m-head">
-      <div><div class="m-title">Upload de arquivo</div><div class="m-sub">Enviar para biblioteca</div></div>
+      <div><div class="m-title" id="doc-modal-title">Upload de arquivo</div><div class="m-sub" id="doc-modal-sub">Enviar para biblioteca</div></div>
       <div class="m-close" onclick="closeModal('modal-doc')">✕</div>
     </div>
     <div class="m-body">
       <div class="fg">
-        <label class="fl">Arquivo *</label>
+        <label class="fl" id="doc-file-label">Arquivo *</label>
         <input class="fi" type="file" id="doc-file" accept="*/*">
       </div>
       <div class="fg">
@@ -1034,7 +1034,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       <div class="fg">
         <label class="fl">Pertence ao cliente (opcional)</label>
         <select class="fi" id="doc-client">
-          <option value="">Uso interno (agência)</option>
+          <option value="">Uso interno</option>
         </select>
       </div>
       <div class="fg">
@@ -1050,7 +1050,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-doc')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveDoc()">Fazer upload</button>
+      <button class="btn btn-primary" onclick="saveDoc()"><span id="doc-save-label">Fazer upload</span></button>
     </div>
   </div>
 </div>
@@ -1268,7 +1268,7 @@ const ROLE_PERMISSIONS = {
     'clients.view','clients.create','clients.edit','clients.delete',
     'sales.view','sales.create','sales.edit','sales.delete',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
-    'docs.view','docs.create','docs.delete',
+    'docs.view','docs.create','docs.edit','docs.delete',
     'settings.view','settings.edit','plans.manage',
     'users.view','users.create','users.edit_roles','users.delete',
     'affiliates.view','affiliates.manage','commissions.view','commissions.manage'
@@ -1278,7 +1278,7 @@ const ROLE_PERMISSIONS = {
     'clients.view','clients.create','clients.edit','clients.delete',
     'sales.view','sales.create','sales.edit','sales.delete',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
-    'docs.view','docs.create','docs.delete',
+    'docs.view','docs.create','docs.edit','docs.delete',
     'settings.view','settings.edit','plans.manage',
     'users.view','users.create','users.edit_roles','users.delete',
     'affiliates.view','affiliates.manage','commissions.view','commissions.manage'
@@ -1286,12 +1286,13 @@ const ROLE_PERMISSIONS = {
   gestor: [
     'dashboard.gestor',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
-    'docs.view',
+    'docs.view','docs.create','docs.edit',
     'users.view_operational','users.create_editor'
   ],
   editor: [
     'dashboard.editor',
-    'demands.view_all','demands.create','demands.edit_operational','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client'
+    'demands.view_all','demands.create','demands.edit_operational','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
+    'docs.view','docs.create','docs.edit'
   ],
   affiliate: [
     'dashboard.affiliate',
@@ -1310,7 +1311,7 @@ const ROLE_PAGES = {
   ceo:       ['dashboard','clients','demands','sales','affiliates','team','docs','settings','profile'],
   manager:   ['dashboard','clients','demands','sales','affiliates','team','docs','settings','profile'],
   gestor:    ['dashboard','demands','team','docs','profile'],
-  editor:    ['dashboard','demands','profile'],
+  editor:    ['dashboard','demands','docs','profile'],
   affiliate: ['dashboard','clients','sales','docs','profile'],
   client:    ['dashboard','demands','docs','profile']
 };
@@ -1508,7 +1509,7 @@ function showAccountStatusNotice(status,email){
   const supportMessage=isPaused
     ? `Olá, suporte Magemind. Minha conta está pausada e preciso de ajuda para regularizar o acesso. E-mail: ${email||'não informado'}.`
     : `Olá, suporte Magemind. Minha conta está inativa e preciso de ajuda para reativar o acesso. E-mail: ${email||'não informado'}.`;
-  const supportPhone=normalizeWhatsAppPhone(getAgencyPhone());
+  const supportPhone='554899391390';
   link.href=`https://wa.me/${supportPhone}?text=${encodeURIComponent(supportMessage)}`;
   alert.className=`account-status-alert visible ${statusText==='pausada'?'paused':'inactive'}`;
   document.getElementById('auth-screen').style.display='flex';
@@ -1975,7 +1976,7 @@ async function loadAllData(){
       const {data:clientsMin, error:clientsErr} = await supa
         .from('demand_client_directory').select('*').order('name');
       if(clientsErr) console.error('[Magemind] Falha ao carregar o diretório seguro de clientes:', clientsErr);
-      DB.clients = (clientsMin||[]).filter(c=>!c.converted_to_team).map(c=>({id:c.id, name:c.name, email:'', phone:'', notes:'', type:'', status:'Ativo', since:'', plan:'', affiliateId:null}));
+      DB.clients = (clientsMin||[]).filter(c=>!c.converted_to_team).map(c=>({id:c.id, name:c.name, email:'', phone:'', notes:'', type:'', status:c.status||'Inativo', since:'', plan:'', affiliateId:null}));
 
       // Diretório operacional sem e-mail, telefone, comissão ou vínculo de cliente.
       const {data:teamMin, error:teamErr} = await supa
@@ -1999,13 +2000,10 @@ async function loadAllData(){
       if(demandsErr) console.error('[Magemind] Falha ao carregar demandas para Gestor/Editor:', demandsErr);
       DB.demands = (demands||[]).map(mapDemand);
 
-      if(role==='gestor'){
-        const {data:docs} = await supa.from('docs')
-          .select('*').in('visibility',['internal','public']).order('created_at',{ascending:false});
-        DB.docs = (docs||[]).map(mapDoc);
-      } else {
-        DB.docs = [];
-      }
+      const {data:docs,error:docsErr} = await supa.from('docs')
+        .select('*').neq('visibility','restricted').order('created_at',{ascending:false});
+      if(docsErr) console.error('[Magemind] Falha ao carregar documentos operacionais:',docsErr);
+      DB.docs = (docs||[]).map(mapDoc);
 
       DB.sales = []; DB.commissions = [];
 
@@ -2283,7 +2281,7 @@ function updateSidebarUser(){
     const c = DB.clients.find(x=>x.id===u.clientId);
     const plan = DB.plans.find(p=>p.id===c?.plan);
     document.getElementById('sb-role').textContent = plan ? plan.name : 'Cliente';
-    // Mostra botão WhatsApp com número das configurações da agência
+    // Mostra o botão do WhatsApp configurado para o atendimento.
     const waBtn = document.getElementById('sb-whatsapp-btn');
     const waLink = document.getElementById('sb-whatsapp-link');
     if(waBtn && waLink){
@@ -2370,7 +2368,7 @@ function goTo(page){
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
   const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
-  const S = {dashboard:'Visão geral da agência',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
+  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2890,7 +2888,7 @@ function loadTeam(){
   renderTeam();
 }
 function renderTeam(){
-  const staff = DB.users.filter(u=>u.role!=='client');
+  const staff = DB.users.filter(u=>isGestor()?u.role==='editor':u.role!=='client');
   document.getElementById('team-body').innerHTML = staff.length ? staff.map(u=>{
     const isProtected = isProtectedCEO(u);
     const canManage = canEditTeamMember(u);
@@ -3497,7 +3495,7 @@ function openNewDemand(status){
   document.getElementById('md-btn-label').textContent = 'Criar demanda';
   const dc = document.getElementById('d-client');
   if(canSelectDemandClient()){
-    dc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    dc.innerHTML = DB.clients.filter(c=>c.status==='Ativo').sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
     document.getElementById('d-client-wrap').style.display='flex';
     document.getElementById('d-assignee-wrap').style.display= canChangeDemandAssignee() ? 'flex' : 'none';
   } else {
@@ -3523,6 +3521,7 @@ async function saveDemand(){
   if(!title){ toast('Digite o título da demanda','err'); return; }
 
   const clientId  = canSelectDemandClient() ? document.getElementById('d-client').value : DB.me.clientId;
+  if(canSelectDemandClient()&&!clientId){ toast('Nenhum cliente ativo disponível para esta demanda','err'); return; }
   // O responsável usa o UUID do profile e só é enviado quando a permissão
   // operacional correspondente está ativa.
   const assigneeId= canChangeDemandAssignee() ? (document.getElementById('d-assignee')?.value||null) : null;
@@ -3861,28 +3860,45 @@ async function removeSale(id){
 }
 
 /* ═══ DOCS ═══ */
+let editDocId=null;
+let currentDocCategory='Todos';
+let currentDocClient='';
+function docsVisibleBase(){
+  if(isOperationalStaff()) return DB.docs;
+  return DB.docs.filter(d=>!d.client||d.client===DB.me.clientId||isAffiliate());
+}
+function renderFilteredDocs(){
+  let list=docsVisibleBase();
+  if(currentDocCategory!=='Todos') list=list.filter(d=>d.cat===currentDocCategory);
+  if(currentDocClient) list=list.filter(d=>d.client===currentDocClient);
+  renderDocs(list);
+}
 function loadDocs(){
   const da = document.getElementById('docs-actions');
   const canUpload = hasPermission('docs.create');
   da.innerHTML = canUpload
-    ? `<button class="btn btn-primary" onclick="openModal('modal-doc')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload</button>` : '';
-  document.getElementById('doc-filters').style.display = isAdmin() ? 'flex' : 'none';
-  if(isAdmin()){
+    ? `<button class="btn btn-primary" onclick="openNewDoc()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload</button>` : '';
+  currentDocCategory='Todos'; currentDocClient='';
+  const filterBar=document.getElementById('doc-filters');
+  filterBar.style.display = isOperationalStaff() ? 'flex' : 'none';
+  if(isOperationalStaff()){
     const cats = ['Todos','Roteiro','Copy','Prospecção','Briefing','Relatório','Jurídico','Design','Outros'];
-    document.getElementById('doc-filters').innerHTML = cats.map((c,i)=>`<div class="chip${i===0?' on':''}" onclick="filterDocs(this,'${c}')">${c}</div>`).join('');
+    const clients=DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name));
+    filterBar.innerHTML = cats.map((c,i)=>`<div class="chip${i===0?' on':''}" onclick="filterDocs(this,'${c}')">${c}</div>`).join('')+
+      `<select class="fi" aria-label="Filtrar documentos por cliente" onchange="filterDocsByClient(this.value)" style="width:auto;min-width:190px;font-size:12px;padding:6px 10px"><option value="">Todos os clientes</option>${clients.map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('')}</select>`;
   }
-  // DB.docs já vem filtrado por cargo/visibilidade desde loadAllData(); aqui só cuidamos do caso admin+client legado
-  const base = isAdmin() ? DB.docs : DB.docs.filter(d=>!d.client||d.client===DB.me.clientId||isEditor()||isAffiliate());
-  renderDocs(base);
+  renderFilteredDocs();
 }
 function filterDocs(el,cat){
   document.querySelectorAll('#doc-filters .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on');
-  const base = isAdmin() ? DB.docs : DB.docs.filter(d=>!d.client||d.client===DB.me.clientId||isEditor()||isAffiliate());
-  renderDocs(cat==='Todos' ? base : base.filter(d=>d.cat===cat));
+  currentDocCategory=cat;
+  renderFilteredDocs();
 }
+function filterDocsByClient(clientId){ currentDocClient=clientId; renderFilteredDocs(); }
 function renderDocs(list){
   const grid = document.getElementById('docs-grid');
   const canDel = hasPermission('docs.delete');
+  const canEdit = hasPermission('docs.edit');
   if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:32px;opacity:.3;margin-bottom:10px">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2)">Nenhum documento</div></div>'; return; }
   grid.innerHTML = list.map(d=>`
     <div class="doc-card" onclick="openDoc('${escapeHTML(d.id)}')">
@@ -3891,8 +3907,33 @@ function renderDocs(list){
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span class="badge b-violet" style="font-size:10px">${escapeHTML(d.cat)}</span></div>
       <div class="doc-meta">${escapeHTML(d.size||'')} ${d.date?'· '+escapeHTML(d.date):''}</div>
       ${d.client?`<div class="doc-meta">📎 ${escapeHTML(cn(d.client))}</div>`:'<div class="doc-meta">📁 Interno</div>'}
-      ${canDel?`<button class="btn btn-danger btn-xs" style="margin-top:4px" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}
+      <div style="display:flex;gap:6px;margin-top:4px">${canEdit?`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditDoc('${d.id}')">Editar</button>`:''}${canDel?`<button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeDoc('${d.id}')">Remover</button>`:''}</div>
     </div>`).join('');
+}
+function openNewDoc(){
+  if(!hasPermission('docs.create')){ toast('Sem permissão para criar documentos','err'); return; }
+  editDocId=null;
+  openModal('modal-doc');
+  document.getElementById('doc-modal-title').textContent='Upload de arquivo';
+  document.getElementById('doc-modal-sub').textContent='Enviar para biblioteca';
+  document.getElementById('doc-file-label').textContent='Arquivo *';
+  document.getElementById('doc-save-label').textContent='Fazer upload';
+  document.getElementById('doc-file').value=''; document.getElementById('doc-name').value='';
+  document.getElementById('doc-cat').value='Roteiro'; document.getElementById('doc-client').value='';
+  document.getElementById('doc-visibility').value='internal';
+}
+function openEditDoc(id){
+  if(!hasPermission('docs.edit')){ toast('Sem permissão para editar documentos','err'); return; }
+  const doc=DB.docs.find(item=>item.id===id); if(!doc) return;
+  editDocId=id;
+  openModal('modal-doc');
+  document.getElementById('doc-modal-title').textContent='Editar documento';
+  document.getElementById('doc-modal-sub').textContent=doc.name;
+  document.getElementById('doc-file-label').textContent='Substituir arquivo (opcional)';
+  document.getElementById('doc-save-label').textContent='Salvar alterações';
+  document.getElementById('doc-file').value=''; document.getElementById('doc-name').value=doc.name;
+  document.getElementById('doc-cat').value=doc.cat; document.getElementById('doc-client').value=doc.client||'';
+  document.getElementById('doc-visibility').value=doc.visibility||'internal';
 }
 async function openDoc(id){
   const d = DB.docs.find(x=>x.id===id); if(!d) return;
@@ -3914,6 +3955,7 @@ async function saveDoc(){
   const name = document.getElementById('doc-name').value.trim();
   if(!name){ toast('Digite um nome para o documento','err'); return; }
   const file = fileInput?.files?.[0]||null;
+  if(!editDocId&&!file){ toast('Selecione um arquivo','err'); return; }
   if(file && file.size>5*1024*1024){ toast('Arquivo muito grande (máx. 5MB)','err'); return; }
   await _saveDocWithFile(name,file);
 }
@@ -3922,25 +3964,37 @@ async function _saveDocWithFile(name,file){
   const cat = document.getElementById('doc-cat').value;
   const clientId = document.getElementById('doc-client').value||null;
   const visibility = document.getElementById('doc-visibility')?.value||'internal';
-  const sizeLabel = file ? `${(file.size/1024).toFixed(0)} KB` : '—';
-  let storagePath = null;
+  if(visibility==='client'&&!clientId){ toast('Selecione o cliente para usar a visibilidade Cliente vinculado','err'); return; }
+  const currentDoc=editDocId?DB.docs.find(item=>item.id===editDocId):null;
+  let sizeLabel = currentDoc?.size||'—';
+  let storagePath = currentDoc?.storagePath||null;
+  let fileName = currentDoc?.fileName||null;
+  let uploadedPath = null;
   if(file){
     const ext = (file.name.split('.').pop()||'bin').replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,10);
-    storagePath = `docs/${DB.me.id}_${Date.now()}_${crypto.randomUUID()}.${ext}`;
-    const {error:storageError} = await supa.storage.from('magemind-docs').upload(storagePath,file,{upsert:false,contentType:file.type||undefined});
+    uploadedPath = `docs/${DB.me.id}_${Date.now()}_${crypto.randomUUID()}.${ext}`;
+    const {error:storageError} = await supa.storage.from('magemind-docs').upload(uploadedPath,file,{upsert:false,contentType:file.type||undefined});
     if(storageError){ toast('Erro no upload: '+storageError.message,'err'); return; }
+    storagePath=uploadedPath; sizeLabel=`${(file.size/1024).toFixed(0)} KB`; fileName=file.name;
   }
-  const {data:docRow,error} = await supa.from('docs').insert({
+  const docPayload={
     name, category:cat, icon:catIcons[cat]||'📄',
     client_id:clientId, file_size:sizeLabel, file_url:null, storage_path:storagePath,
-    file_name:file?.name||null, visibility
-  }).select().single();
+    file_name:fileName, visibility
+  };
+  const query=editDocId?supa.from('docs').update(docPayload).eq('id',editDocId):supa.from('docs').insert(docPayload);
+  const {data:docRow,error} = await query.select().single();
   if(error){
-    if(storagePath) await supa.storage.from('magemind-docs').remove([storagePath]);
+    if(uploadedPath) await supa.storage.from('magemind-docs').remove([uploadedPath]);
     toast('Erro ao salvar: '+error.message,'err'); return;
   }
-  DB.docs.push(mapDoc(docRow));
-  closeModal('modal-doc'); toast('Documento adicionado! ✓','ok'); loadDocs();
+  if(editDocId){
+    const oldPath=currentDoc?.storagePath;
+    const idx=DB.docs.findIndex(item=>item.id===editDocId); if(idx>=0) DB.docs[idx]=mapDoc(docRow);
+    if(uploadedPath&&oldPath&&oldPath!==uploadedPath) await supa.storage.from('magemind-docs').remove([oldPath]);
+  } else DB.docs.push(mapDoc(docRow));
+  const edited=Boolean(editDocId); editDocId=null;
+  closeModal('modal-doc'); toast(edited?'Documento atualizado! ✓':'Documento adicionado! ✓','ok'); loadDocs();
 }
 async function removeDoc(id){
   if(!confirm('Remover documento?')) return;
@@ -4414,8 +4468,10 @@ async function removePlan(id){
 function openModal(id){
   if(id==='modal-doc'){
     const dc = document.getElementById('doc-client');
-    dc.innerHTML = '<option value="">Uso interno (agência)</option>'+
-      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    dc.innerHTML = '<option value="">Uso interno</option>'+
+      DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    const restricted=document.querySelector('#doc-visibility option[value="restricted"]');
+    if(restricted) restricted.disabled=!isAdmin();
   }
   document.getElementById(id).classList.add('open');
 }
@@ -4428,6 +4484,7 @@ function closeModal(id){
   if(id==='modal-client')  editClientId = null;
   if(id==='modal-sale')    editSaleId = null;
   if(id==='modal-team')    editTeamId = null;
+  if(id==='modal-doc')     editDocId = null;
   if(id==='modal-withdrawal-review') currentWithdrawalReviewId = null;
 }
 
