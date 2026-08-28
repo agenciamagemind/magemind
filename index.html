@@ -341,6 +341,12 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .auth-options{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .remember-option{display:inline-flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;cursor:pointer;user-select:none}
 .remember-option input,.push-category input{width:16px;height:16px;accent-color:var(--violet2);cursor:pointer}
+.account-status-alert{display:none;padding:12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;line-height:1.55}
+.account-status-alert.visible{display:block}
+.account-status-alert.paused{border-color:var(--amberborder);background:var(--amberbg)}
+.account-status-alert.inactive{border-color:var(--roseborder);background:var(--rosebg)}
+.account-status-alert strong{display:block;color:var(--text);font-size:13px;margin-bottom:8px}
+.account-status-alert a{display:inline-flex;align-items:center;gap:7px;margin-top:10px;color:#fff;background:#168c52;border-radius:7px;padding:8px 11px;text-decoration:none;font-weight:700}
 .push-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
 .push-settings-title{display:flex;gap:10px;align-items:center}
 .push-settings-title svg{color:var(--violet3);flex-shrink:0}
@@ -368,6 +374,11 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
     <div class="auth-tabs">
       <div class="auth-tab active" onclick="authTab('login')">Entrar</div>
       <div class="auth-tab" onclick="authTab('reg')">Cadastrar</div>
+    </div>
+    <div class="account-status-alert" id="account-status-alert" role="alert" aria-live="assertive">
+      <strong id="account-status-text"></strong>
+      <span>O suporte pode verificar sua situação e orientar os próximos passos.</span><br>
+      <a id="account-status-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Falar com o suporte no WhatsApp</a>
     </div>
     <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
       <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" placeholder="seu@email.com"></div>
@@ -428,7 +439,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="topbar-left">
-        <div class="topbar-title" id="tb-title">Dashboard</div>
+        <div class="topbar-title" id="tb-title">Menu</div>
         <div class="topbar-crumb" id="tb-crumb">Bem-vindo de volta</div>
       </div>
       <div class="topbar-right">
@@ -461,7 +472,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
             <div class="ph-title" id="dash-greeting">Olá 👋</div>
-            <div class="ph-sub">Resumo da agência hoje</div>
+            <div class="ph-sub" id="dash-summary-sub">Resumo da agência hoje</div>
           </div>
         </div>
         <div class="stats stats-4" style="margin-bottom:16px" id="dash-stats"></div>
@@ -811,8 +822,8 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         </div>
         <div class="fg"><label class="fl">Entrega</label><input class="fi" type="date" id="d-date"></div>
       </div>
-      <div class="fg"><label class="fl">Descrição</label><textarea class="fi" id="d-desc" placeholder="Detalhes, briefing ou referências..."></textarea></div>
-      <input type="hidden" id="d-refs" value="">
+      <div class="fg"><label class="fl">Descrição</label><textarea class="fi" id="d-desc" placeholder="Detalhes e briefing da demanda..."></textarea></div>
+      <div class="fg"><label class="fl">Referências</label><textarea class="fi" id="d-refs" placeholder="Links, materiais, exemplos ou orientações de referência..."></textarea></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-demand')">Cancelar</button>
@@ -946,6 +957,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         Ele deixará de aparecer em <strong>Equipe</strong> e passará a aparecer em <strong>Clientes</strong>.
         Histórico operacional antigo (demandas atribuídas, comissões etc.) <strong>não será apagado</strong> — apenas o cargo e o vínculo de acesso mudam.
       </div>
+      <div class="fg"><label class="fl">WhatsApp do cliente *</label><input class="fi" id="ctc-phone" placeholder="(11) 99999-9999"></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-convert-to-client')">Cancelar</button>
@@ -1470,6 +1482,37 @@ function clientWhatsAppButton(client){
     <span>${escapeHTML(String(client.phone).trim())}</span>
   </a>`;
 }
+function clientRecordBelongsToTeam(client){
+  const email=String(client?.email||'').trim().toLowerCase();
+  return DB.users.some(user=>user.role!=='client' && (
+    user.clientId===client?.id || (email && String(user.email||'').trim().toLowerCase()===email)
+  ));
+}
+function removeTeamProfilesFromClientCache(){
+  DB.clients=DB.clients.filter(client=>!clientRecordBelongsToTeam(client));
+}
+function hideAccountStatusNotice(){
+  const alert=document.getElementById('account-status-alert');
+  if(alert) alert.className='account-status-alert';
+}
+function showAccountStatusNotice(status,email){
+  const isPaused=status==='Pausado';
+  const alert=document.getElementById('account-status-alert');
+  const text=document.getElementById('account-status-text');
+  const link=document.getElementById('account-status-whatsapp');
+  if(!alert||!text||!link) return;
+  const statusText=isPaused?'pausada':'inativa';
+  text.textContent=isPaused
+    ? 'Sua conta está pausada, entre em contato com o nosso suporte'
+    : 'Sua conta está inativa, entre em contato com o nosso suporte';
+  const supportMessage=isPaused
+    ? `Olá, suporte Magemind. Minha conta está pausada e preciso de ajuda para regularizar o acesso. E-mail: ${email||'não informado'}.`
+    : `Olá, suporte Magemind. Minha conta está inativa e preciso de ajuda para reativar o acesso. E-mail: ${email||'não informado'}.`;
+  const supportPhone=normalizeWhatsAppPhone(getAgencyPhone());
+  link.href=`https://wa.me/${supportPhone}?text=${encodeURIComponent(supportMessage)}`;
+  alert.className=`account-status-alert visible ${statusText==='pausada'?'paused':'inactive'}`;
+  document.getElementById('auth-screen').style.display='flex';
+}
 function localDateInputValue(date){
   const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
@@ -1605,6 +1648,7 @@ function authTab(t){
 }
 
 async function doLogin(){
+  hideAccountStatusNotice();
   const email = document.getElementById('li-email').value.trim();
   const pass  = document.getElementById('li-pass').value;
   if(!email||!pass){ toast('Preencha email e senha','err'); return; }
@@ -1745,6 +1789,7 @@ function clearSessionState(){
 }
 
 async function doLogout(){
+  hideAccountStatusNotice();
   await supa.auth.signOut();
   clearSessionState();
 
@@ -1763,6 +1808,19 @@ async function afterLogin(authUser){
   _loginInFlight = true;
   cleanupRealtimeSubscriptions(); // defesa extra contra canais de uma sessão anterior ainda vivos
   try {
+    const {data:accessRows,error:accessErr}=await supa.rpc('get_my_access_status');
+    if(accessErr) console.error('afterLogin: erro ao consultar status de acesso:',accessErr);
+    const access=Array.isArray(accessRows)?accessRows[0]:accessRows;
+    if(access?.profile_role==='client' && (['Pausado','Inativo'].includes(access.client_status)||access.profile_active===false)){
+      showAccountStatusNotice(access.client_status==='Pausado'?'Pausado':'Inativo',authUser.email);
+      await supa.auth.signOut();
+      return;
+    }
+    if(access?.profile_role!=='client' && access?.profile_active===false){
+      toast('Seu perfil está inativo. Acione nossa equipe para reativar.','err');
+      await supa.auth.signOut();
+      return;
+    }
     const {data:prof, error:profErr} = await supa.from('profiles').select('*').eq('id',authUser.id).maybeSingle();
     if(profErr){
       toast('Erro ao buscar perfil: '+profErr.message,'err');
@@ -1777,24 +1835,11 @@ async function afterLogin(authUser){
       return;
     }
 
-    // AJUSTE 1 — bloqueia acesso de perfil inativo (equipe e cliente).
-    // Vale tanto para membros internos (profiles.active) quanto para
-    // clientes com login próprio (checamos também clients.status quando
-    // existir vínculo client_id, para cobrir o caso de o cliente ter sido
-    // inativado só na tabela clients).
     if(prof.active === false){
-      toast('Seu perfil está inativo. Acione nossa equipe para reativar.','err');
+      if(prof.role==='client') showAccountStatusNotice('Inativo',authUser.email);
+      else toast('Seu perfil está inativo. Acione nossa equipe para reativar.','err');
       await supa.auth.signOut();
       return;
-    }
-    if(prof.client_id){
-      const {data:linkedClient, error:clientStatusErr} = await supa.from('clients').select('status').eq('id',prof.client_id).maybeSingle();
-      if(clientStatusErr) console.error('afterLogin: erro ao checar status do cliente vinculado:', clientStatusErr);
-      if(linkedClient && linkedClient.status === 'Inativo'){
-        toast('Seu perfil está inativo. Acione nossa equipe para reativar.','err');
-        await supa.auth.signOut();
-        return;
-      }
     }
 
     DB.me = {
@@ -1859,6 +1904,7 @@ async function loadAllData(){
         photo:p.photo||null, clientId:p.client_id||null,
         active:p.active!==false, commissionRate:p.commission_rate||0
       }));
+      removeTeamProfilesFromClientCache();
 
       const {data:demands} = await supa.from('demands')
         .select('*, profiles!demands_assignee_id_fkey(name,photo,av), clients(name)')
@@ -2236,7 +2282,7 @@ function updateSidebarUser(){
 
 function buildNav(){
   const staffItems = [
-    {id:'dashboard', icon:ico('home'),     label:'Dashboard'},
+    {id:'dashboard', icon:ico('home'),     label:'Menu'},
     {id:'clients',   icon:ico('users'),    label:'Clientes', badge:DB.clients.filter(c=>c.status==='Ativo').length},
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
@@ -2246,23 +2292,23 @@ function buildNav(){
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
   ];
   const gestorItems = [
-    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
+    {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'team',      icon:ico('users'),label:'Equipe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
   ];
   const editorItems = [
-    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
+    {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
   ];
   const affiliateItems = [
-    {id:'dashboard', icon:ico('home'),   label:'Dashboard'},
+    {id:'dashboard', icon:ico('home'),   label:'Menu'},
     {id:'clients',   icon:ico('users'),  label:'Meus Clientes'},
     {id:'sales',     icon:ico('dollar'), label:'Finanças'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
   ];
   const clientItems = [
-    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
+    {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
   ];
@@ -2294,7 +2340,7 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Dashboard',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
+  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
   const S = {dashboard:'Visão geral da agência',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
@@ -2336,6 +2382,8 @@ function showDashCards(visibleIds){
 }
 
 function loadDash(){
+  const summary=document.getElementById('dash-summary-sub');
+  if(summary) summary.style.display=isOperationalStaff()?'':'none';
   if(isCEO()||isManager()) return loadDashFull();
   if(isGestor()) return loadDashGestor();
   if(isEditor()) return loadDashEditor();
@@ -2577,7 +2625,7 @@ function renderClients(filter){
   if(filter!==undefined) currentClientFilter=filter;
   const q    = (document.getElementById('client-search')?.value||'').toLowerCase();
   const sort = document.getElementById('client-sort')?.value || 'recent';
-  let list   = DB.clients;
+  let list   = DB.clients.filter(c=>!clientRecordBelongsToTeam(c));
   if(currentClientFilter&&currentClientFilter!=='Todos')
     list = list.filter(c=>c.type===currentClientFilter||c.status===currentClientFilter);
   if(q) list = list.filter(c=>
@@ -3034,17 +3082,20 @@ function openConvertTeamToClient(){
   if(!canManageRole(u)){ toast('Sem permissão','err'); return; }
   convertTargetTeamId = editTeamId;
   document.getElementById('ctc-sub').textContent = u.name;
+  document.getElementById('ctc-phone').value = u.phone||'';
   openModal('modal-convert-to-client');
 }
 async function confirmConvertTeamToClient(){
   const u = DB.users.find(x=>x.id===convertTargetTeamId); if(!u) return;
   if(!canManageRole(u)){ toast('Sem permissão','err'); return; }
+  const phone=document.getElementById('ctc-phone').value.trim();
+  if(!normalizeWhatsAppPhone(phone)){ toast('Informe um WhatsApp válido para o cliente','err'); return; }
   try{
-    const {data,error} = await supa.rpc('admin_convert_team_to_client',{p_user_id:u.id});
+    const {data,error} = await supa.rpc('admin_convert_team_to_client',{p_user_id:u.id,p_phone:phone});
     if(error){ toast('Erro: '+error.message,'err'); return; }
     const clientRow=Array.isArray(data)?data[0]:data;
     if(!clientRow){ toast('Erro: cliente convertido não retornado','err'); return; }
-    u.role='client'; u.clientId=clientRow.id;
+    u.role='client'; u.clientId=clientRow.id; u.phone=phone;
     DB.clients.unshift(mapClient(clientRow));
     closeModal('modal-convert-to-client'); closeModal('modal-team');
     toast(`${u.name} agora é Cliente ✓`,'ok');
@@ -3670,7 +3721,7 @@ async function openNewSale(){
   const {data:freshClients} = await supa.from('clients').select('*').is('archived_at',null).order('name');
   if(freshClients && freshClients.length){
     // Mescla com cache sem duplicar
-    freshClients.forEach(fc=>{
+    freshClients.filter(fc=>!fc.converted_to_team&&!clientRecordBelongsToTeam(fc)).forEach(fc=>{
       if(!DB.clients.find(c=>c.id===fc.id)) DB.clients.push(mapClient(fc));
     });
     // Reordena cache por nome

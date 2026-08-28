@@ -62,7 +62,6 @@ Deno.serve(async (req) => {
     const patch = body.clientPatch && typeof body.clientPatch === "object"
       ? body.clientPatch as Record<string, unknown>
       : null;
-    const desiredClientActive = String(patch?.status || currentClient?.status || "Ativo") !== "Inativo";
     if (authUserId) {
       const { data: authRecord, error: authReadError } = await admin.auth.admin.getUserById(authUserId);
       if (authReadError || !authRecord.user) return json({ error: "Acesso de autenticação não encontrado" }, 404);
@@ -72,7 +71,9 @@ Deno.serve(async (req) => {
         ? admin.auth.admin.updateUserById(authUserId, {
             email: newEmail,
             email_confirm: true,
-            ban_duration: desiredClientActive ? "none" : "876000h",
+            // O status do cliente e profiles.active bloqueiam dados via RLS.
+            // Manter o Auth disponível permite exibir o motivo do bloqueio.
+            ban_duration: "none",
           })
         : admin.auth.admin.updateUserById(authUserId, { email: newEmail, email_confirm: true });
       const { error: authUpdateError } = await authUpdate;
@@ -122,4 +123,3 @@ Deno.serve(async (req) => {
     return json({ error: error instanceof Error ? error.message : "Erro inesperado" }, 500);
   }
 });
-
