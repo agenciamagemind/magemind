@@ -1329,16 +1329,19 @@ function isStaffRole(){ return isOperationalStaff(); }
 function hasPermission(perm){
   const role = getRole();
   if(!role) return false;
-  if(role==='client' && clientHasMonthlyPlan() && perm==='demands.create') return true;
+  if(role==='client' && clientHasDemandManagementPlan() && perm==='demands.create') return true;
   return (ROLE_PERMISSIONS[role]||[]).includes(perm);
 }
 
-function clientHasMonthlyPlan(){
+function clientHasDemandManagementPlan(){
   if(!isClient()||!DB.me?.clientId) return false;
   const client=DB.clients.find(item=>item.id===DB.me.clientId);
   if(!client) return false;
   const planIds=(client.planIds?.length?client.planIds:[client.plan]).filter(Boolean);
-  return planIds.some(id=>DB.plans.find(plan=>plan.id===id)?.type==='Mensal');
+  return planIds.some(id=>{
+    const plan=DB.plans.find(item=>item.id===id);
+    return plan?.active!==false && ['Semanal','Diario','Mensal'].includes(plan?.type);
+  });
 }
 
 function canAccessPage(page){
@@ -1418,7 +1421,7 @@ function canEditDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
   if(isEditor()) return hasPermission('demands.edit_operational');
-  if(isClient()) return clientHasMonthlyPlan() && demand.client===DB.me.clientId;
+  if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
@@ -1427,7 +1430,7 @@ function canMoveDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isGestor()) return true;
   if(isEditor()) return hasPermission('demands.move');
-  if(isClient()) return clientHasMonthlyPlan() && demand.client===DB.me.clientId;
+  if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
@@ -1438,7 +1441,7 @@ function canChangeDemandAssignee(){
 
 /* CEO, Gerente, Gestor e Editor podem excluir demandas. */
 function canDeleteDemand(){
-  return hasPermission('demands.delete') || (isClient()&&clientHasMonthlyPlan());
+  return hasPermission('demands.delete') || (isClient()&&clientHasDemandManagementPlan());
 }
 
 /* ═══ HELPERS DE TEMPO ═══ */
