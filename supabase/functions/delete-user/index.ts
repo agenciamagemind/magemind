@@ -74,26 +74,24 @@ Deno.serve(async (req) => {
         return json({ error: "Gestores podem excluir apenas perfis de Editores" }, 403);
       }
 
-      // Afiliados com movimentacao financeira sao arquivados. O perfil fica
-      // inativo, sai da operacao e os lancamentos permanecem auditaveis.
-      if (target.role === "affiliate") {
-        const [{ count: commissionCount, error: commissionError }, { count: withdrawalCount, error: withdrawalError }] = await Promise.all([
-          admin.from("affiliate_commissions").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
-          admin.from("affiliate_withdrawals").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
-        ]);
-        if (commissionError || withdrawalError) {
-          return json({ error: "Falha ao verificar o histórico financeiro do afiliado" }, 500);
+      // Any profile may participate in Indique & Ganhe. Financial history is
+      // always archived instead of deleted, independently of the team role.
+      const [{ count: commissionCount, error: commissionError }, { count: withdrawalCount, error: withdrawalError }] = await Promise.all([
+        admin.from("affiliate_commissions").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
+        admin.from("affiliate_withdrawals").select("id", { count: "exact", head: true }).eq("affiliate_id", targetId),
+      ]);
+      if (commissionError || withdrawalError) {
+        return json({ error: "Falha ao verificar o histórico financeiro do Indique & Ganhe" }, 500);
+      }
+      if ((commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
+        const { error: banError } = await admin.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
+        if (banError) return json({ error: "Falha ao bloquear o acesso do participante" }, 500);
+        const { error: archiveError } = await callerClient.rpc("admin_archive_affiliate", { p_affiliate_id: targetId });
+        if (archiveError) {
+          await admin.auth.admin.updateUserById(targetId, { ban_duration: "none" });
+          return json({ error: "Arquivamento cancelado sem perda de acesso: " + archiveError.message }, 409);
         }
-        if ((commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
-          const { error: banError } = await admin.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
-          if (banError) return json({ error: "Falha ao bloquear o acesso do afiliado" }, 500);
-          const { error: archiveError } = await callerClient.rpc("admin_archive_affiliate", { p_affiliate_id: targetId });
-          if (archiveError) {
-            await admin.auth.admin.updateUserById(targetId, { ban_duration: "none" });
-            return json({ error: "Arquivamento cancelado sem perda de acesso: " + archiveError.message }, 409);
-          }
-          return json({ ok: true, archived: true, preserved_history: true });
-        }
+        return json({ ok: true, archived: true, preserved_history: true });
       }
 
       // Deleting Auth first is failure-safe: the FK cascade removes profiles,

@@ -11,7 +11,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 
-const creatableRoles = ["manager", "gestor", "editor", "affiliate"];
+const creatableRoles = ["manager", "gestor", "editor"];
 const canCreateRole = (callerRole: string, role: string) => {
   if (["ceo", "manager"].includes(callerRole)) return creatableRoles.includes(role);
   return callerRole === "gestor" && role === "editor";
@@ -56,16 +56,12 @@ Deno.serve(async (req) => {
   const password = typeof body.password === "string" ? body.password : "";
   const phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 40) : "";
   const role = typeof body.role === "string" ? body.role : "";
-  const commissionRate = role === "affiliate" ? Number(body.commission_rate) : 0;
+  const commissionRate = 0;
   const active = body.active !== false;
 
   if (!name || !email || !password || !role) return json({ error: "Campos obrigatórios ausentes" }, 400);
   if (password.length < 8) return json({ error: "A senha deve ter ao menos 8 caracteres" }, 400);
   if (!canCreateRole(callerProfile.role, role)) return json({ error: "Sem permissão para criar este cargo" }, 403);
-  if (role === "affiliate" && (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100)) {
-    return json({ error: "A comissão deve estar entre 0% e 100%" }, 400);
-  }
-
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,
@@ -105,4 +101,3 @@ Deno.serve(async (req) => {
 
   return json({ user_id: userId, active });
 });
-

@@ -300,6 +300,35 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .payout-section .tbl-container{max-height:290px;overflow:auto}
 .payout-section-title{font:600 14px 'Poppins',sans-serif}
 .payout-section-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.referral-view{display:none;flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+.referral-view.active{display:block}
+.referral-mode{display:flex;gap:4px;padding:4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px}
+.referral-mode button{border:0;background:transparent;color:var(--text3);font:600 11px 'Manrope',sans-serif;padding:6px 10px;border-radius:5px;cursor:pointer}
+.referral-mode button.active{background:var(--bg5);color:var(--text)}
+.referral-hero{margin:16px 24px 0;padding:22px;border:1px solid var(--violetborder);border-radius:8px;background:linear-gradient(120deg,rgba(139,92,246,.14),rgba(6,182,212,.07) 58%,rgba(236,72,153,.08));display:flex;justify-content:space-between;align-items:center;gap:20px}
+.referral-hero-title{font:700 20px 'Poppins',sans-serif;max-width:560px}
+.referral-hero-copy{font-size:12px;color:var(--text2);max-width:640px;margin-top:6px;line-height:1.65}
+.referral-rate{font:700 26px 'Poppins',sans-serif;color:var(--violet3);white-space:nowrap}
+.referral-member-shell{position:relative;flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+.referral-dashboard{min-height:620px}
+.referral-gate{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(8,8,15,.3);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.referral-gate-card{width:min(460px,100%);padding:28px;background:rgba(15,15,26,.97);border:1px solid var(--border3);border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.55);text-align:center}
+.referral-gate-icon{width:48px;height:48px;margin:0 auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--violetbg);border:1px solid var(--violetborder);color:var(--violet3)}
+.referral-gate-title{font:700 20px 'Poppins',sans-serif}
+.referral-gate-copy{font-size:13px;color:var(--text2);line-height:1.7;margin:10px 0 20px}
+.referral-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 24px 0}
+.referral-panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-width:0}
+.referral-panel-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.referral-panel-title{font:600 13px 'Poppins',sans-serif}
+.referral-panel-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.referral-wallet{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.referral-wallet-item{padding:18px;background:var(--bg2)}
+.referral-wallet-label{font-size:10px;color:var(--text3);text-transform:uppercase}
+.referral-wallet-value{font:700 20px 'Poppins',sans-serif;margin-top:4px}
+.referral-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase}
+.referral-status.pending{color:var(--amber);background:var(--amberbg);border:1px solid var(--amberborder)}
+.referral-status.approved{color:var(--emerald);background:var(--emeraldbg);border:1px solid var(--emeraldborder)}
+.referral-status.rejected{color:var(--rose);background:var(--rosebg);border:1px solid var(--roseborder)}
 .payout-empty{padding:30px 18px;text-align:center;color:var(--text3);font-size:12px}
 .payout-person{display:flex;align-items:center;gap:9px;min-width:170px}
 .payout-status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
@@ -334,6 +363,12 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
   .wallet-shell .btn{grid-column:1/-1;width:100%}
   .payout-section{margin:14px 14px 0}
   .payout-section .tbl-container{overflow-x:auto}
+  .referral-hero{margin:14px 14px 0;padding:18px;align-items:flex-start;flex-direction:column}
+  .referral-grid{margin:14px 14px 0;grid-template-columns:1fr}
+  .referral-wallet{grid-template-columns:1fr}
+  .referral-gate{padding:44px 14px 14px;align-items:flex-start}
+  .referral-gate-card{padding:22px 18px}
+  .referral-mode{width:100%}.referral-mode button{flex:1}
   #pg-sales.affiliate-finance #sales-stats{grid-template-columns:1fr}
 }
 .profile-av-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0}
@@ -587,7 +622,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="table-wrap" style="padding-top:12px">
           <div class="tbl-container">
             <table>
-              <thead><tr id="clients-table-head"><th>Cliente</th><th>Observações</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Afiliado</th><th>Cadastro</th><th>Ações</th></tr></thead>
+              <thead><tr id="clients-table-head"><th>Cliente</th><th>Observações</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Indique &amp; Ganhe</th><th>Cadastro</th><th>Ações</th></tr></thead>
               <tbody id="clients-body"></tbody>
             </table>
           </div>
@@ -734,25 +769,42 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         </div>
       </div>
 
-      <!-- AFILIADOS -->
+      <!-- INDIQUE & GANHE -->
       <div class="page" id="pg-affiliates">
         <div class="ph">
           <div class="ph-info">
-            <div class="ph-title">Afiliados</div>
-            <div class="ph-sub">Parceiros, indicações e comissões</div>
+            <div class="ph-title">Indique &amp; Ganhe</div>
+            <div class="ph-sub">Indique clientes, acompanhe comissões e transforme conexões em resultado</div>
           </div>
+          <div class="ph-actions"><div class="referral-mode" id="referral-mode" style="display:none"><button id="referral-mode-admin" onclick="setReferralMode('admin')">Administração</button><button id="referral-mode-mine" onclick="setReferralMode('mine')">Minha participação</button></div></div>
         </div>
-        <div class="stats stats-4" style="margin:16px 24px 0" id="payout-admin-stats"></div>
-        <div class="payout-section">
-          <div class="payout-section-head"><div><div class="payout-section-title">Aprovação de saques</div><div class="payout-section-sub">Fila financeira visível exclusivamente para CEO e Gerente</div></div><span class="payout-status pending" id="payout-queue-count">0 em análise</span></div>
-          <div class="tbl-container"><table><thead><tr><th>Afiliado</th><th>Valor</th><th>PIX</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="payout-approval-body"></tbody></table></div>
+        <div class="referral-view" id="referral-admin-view">
+          <div class="payout-section">
+            <div class="payout-section-head"><div><div class="payout-section-title">Solicitações de participação</div><div class="payout-section-sub">Aprove quem poderá indicar clientes e receber comissões</div></div><span class="payout-status pending" id="referral-request-count">0 em análise</span></div>
+            <div class="tbl-container"><table><thead><tr><th>Perfil</th><th>Tipo de conta</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="referral-requests-body"></tbody></table></div>
+          </div>
+          <div class="stats stats-4" style="margin:16px 24px 0" id="payout-admin-stats"></div>
+          <div class="payout-section">
+            <div class="payout-section-head"><div><div class="payout-section-title">Aprovação de saques</div><div class="payout-section-sub">Fila financeira visível exclusivamente para CEO e Gerente</div></div><span class="payout-status pending" id="payout-queue-count">0 em análise</span></div>
+            <div class="tbl-container"><table><thead><tr><th>Participante</th><th>Valor</th><th>PIX</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="payout-approval-body"></tbody></table></div>
+          </div>
+          <div class="table-wrap"><div class="tbl-container"><table><thead><tr><th>Participante</th><th>Perfil</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Status</th></tr></thead><tbody id="affiliates-body"></tbody></table></div></div>
         </div>
-        <div class="table-wrap">
-          <div class="tbl-container">
-            <table>
-              <thead><tr><th>Afiliado</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Ações</th></tr></thead>
-              <tbody id="affiliates-body"></tbody>
-            </table>
+        <div class="referral-view" id="referral-member-view">
+          <div class="referral-member-shell">
+            <div class="referral-dashboard">
+              <div class="referral-hero"><div><div class="referral-hero-title">Boas indicações merecem bons retornos.</div><div class="referral-hero-copy">Apresente a Magemind para negócios que combinam com o nosso trabalho. Quando uma indicação virar venda, sua comissão aparece aqui com histórico claro e saque por PIX.</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Sua comissão</div><div class="referral-rate" id="referral-member-rate">0%</div></div></div>
+              <div class="stats stats-4" style="margin-top:16px" id="referral-member-stats"></div>
+              <div class="referral-grid">
+                <div class="referral-panel"><div class="referral-panel-head"><div><div class="referral-panel-title">Sua carteira</div><div class="referral-panel-sub">Saldo e movimentação do Indique &amp; Ganhe</div></div><button class="btn btn-primary btn-sm" id="referral-request-withdrawal" onclick="openWithdrawalRequest()">Solicitar saque</button></div><div class="referral-wallet"><div class="referral-wallet-item"><div class="referral-wallet-label">Disponível</div><div class="referral-wallet-value" id="referral-wallet-available">R$ 0,00</div></div><div class="referral-wallet-item"><div class="referral-wallet-label">Em análise</div><div class="referral-wallet-value" id="referral-wallet-review">R$ 0,00</div></div><div class="referral-wallet-item"><div class="referral-wallet-label">Recebido</div><div class="referral-wallet-value" id="referral-wallet-paid">R$ 0,00</div></div></div></div>
+                <div class="referral-panel"><div class="referral-panel-head"><div><div class="referral-panel-title">Como funciona</div><div class="referral-panel-sub">Um processo simples, sem letra miúda criativa</div></div></div><div style="padding:18px;font-size:12px;color:var(--text2);line-height:1.8">Indique um potencial cliente à equipe Magemind. Quando ele for cadastrado como sua indicação, você acompanha a evolução por aqui. Vendas fechadas geram comissão e o saldo aprovado pode ser solicitado por PIX.</div></div>
+              </div>
+              <div class="referral-grid">
+                <div class="referral-panel"><div class="referral-panel-head"><div><div class="referral-panel-title">Clientes indicados</div><div class="referral-panel-sub">Somente os dados essenciais aparecem aqui</div></div></div><div class="tbl-container"><table><thead><tr><th>Cliente</th><th>Demandas</th><th>Comissão</th><th>Status</th></tr></thead><tbody id="referral-member-clients-body"></tbody></table></div></div>
+                <div class="referral-panel"><div class="referral-panel-head"><div><div class="referral-panel-title">Histórico de saques</div><div class="referral-panel-sub">Todas as solicitações e seus status</div></div></div><div class="tbl-container"><table><thead><tr><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody id="referral-member-withdrawals-body"></tbody></table></div></div>
+              </div>
+            </div>
+            <div class="referral-gate" id="referral-gate"></div>
           </div>
         </div>
       </div>
@@ -912,7 +964,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <div class="fg"><label class="fl">Status</label>
           <select class="fi" id="c-status"><option>Ativo</option><option>Pausado</option><option>Inativo</option></select>
         </div>
-        <div class="fg"><label class="fl">Afiliado responsável</label>
+        <div class="fg"><label class="fl">Participante do Indique &amp; Ganhe</label>
           <select class="fi" id="c-affiliate"><option value="">Nenhum</option></select>
         </div>
       </div>
@@ -987,7 +1039,6 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           <option value="manager">Gerente</option>
           <option value="gestor">Gestor</option>
           <option value="editor">Editor</option>
-          <option value="affiliate">Afiliado</option>
         </select>
       </div>
     </div>
@@ -1037,15 +1088,11 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
       </div>
       <div class="f2">
         <div class="fg"><label class="fl">Cargo *</label>
-          <select class="fi" id="tm-role" onchange="toggleCommissionField()">
+          <select class="fi" id="tm-role">
             <option value="manager">Gerente</option>
             <option value="gestor">Gestor</option>
             <option value="editor">Editor</option>
-            <option value="affiliate">Afiliado</option>
           </select>
-        </div>
-        <div class="fg" id="tm-commission-wrap" style="display:none">
-          <label class="fl">Comissão padrão (%)</label><input class="fi" id="tm-commission" type="number" min="0" max="100" step="0.5" value="10">
         </div>
       </div>
       <div class="fg"><label class="fl">Status</label>
@@ -1095,7 +1142,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         <select class="fi" id="doc-visibility">
           <option value="internal">Interno (equipe)</option>
           <option value="client">Cliente vinculado</option>
-          <option value="affiliate">Afiliados</option>
+          <option value="affiliate">Indique &amp; Ganhe</option>
           <option value="public">Público (todos os cargos)</option>
           <option value="restricted">Restrito (só CEO/Gerente)</option>
         </select>
@@ -1303,6 +1350,10 @@ const DB = {
   withdrawals: [],
   wallet: null,
   affiliateWallets: {},
+  referralClients: [],
+  referralSales: [],
+  referralWithdrawals: [],
+  referralWallet: null,
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1314,7 +1365,7 @@ const DB = {
 const ROLES = ['ceo','manager','gestor','editor','affiliate','client'];
 
 const ROLE_LABELS = {
-  ceo:'CEO', manager:'Gerente', gestor:'Gestor', editor:'Editor', affiliate:'Afiliado', client:'Cliente'
+  ceo:'CEO', manager:'Gerente', gestor:'Gestor', editor:'Editor', affiliate:'Participante legado', client:'Cliente'
 };
 
 /* E-mail do admin master — sempre tratado como CEO fixo e protegido */
@@ -1345,22 +1396,22 @@ const ROLE_PERMISSIONS = {
     'dashboard.gestor',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
     'docs.view','docs.create','docs.edit',
-    'users.view_operational','users.create_editor'
+    'users.view_operational','users.create_editor','affiliates.view'
   ],
   editor: [
     'dashboard.editor',
     'demands.view_assigned','demands.move','demands.comment',
-    'docs.view','docs.create','docs.edit'
+    'docs.view','docs.create','docs.edit','affiliates.view'
   ],
   affiliate: [
     'dashboard.affiliate',
     'affiliate.clients.view','affiliate.sales.view','affiliate.commissions.view',
-    'docs.view_affiliate'
+    'docs.view_affiliate','affiliates.view'
   ],
   client: [
     'dashboard.client',
     'demands.view_own','demands.comment_own',
-    'docs.view_own','solutions.view','profile.view','profile.edit'
+    'docs.view_own','solutions.view','profile.view','profile.edit','affiliates.view'
   ]
 };
 
@@ -1368,10 +1419,10 @@ const ROLE_PERMISSIONS = {
 const ROLE_PAGES = {
   ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
   manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
-  gestor:    ['dashboard','demands','team','docs','profile'],
-  editor:    ['dashboard','demands','docs','profile'],
-  affiliate: ['dashboard','clients','sales','docs','profile'],
-  client:    ['dashboard','demands','solutions','docs','profile']
+  gestor:    ['dashboard','demands','affiliates','team','docs','profile'],
+  editor:    ['dashboard','demands','affiliates','docs','profile'],
+  affiliate: ['dashboard','affiliates','docs','profile'],
+  client:    ['dashboard','demands','solutions','affiliates','docs','profile']
 };
 
 /* Hierarquia numérica — usada só como referência/depuração; as regras de
@@ -1386,6 +1437,7 @@ function isManager(){ return getRole()==='manager'; }
 function isGestor(){ return getRole()==='gestor'; }
 function isEditor(){ return getRole()==='editor'; }
 function isAffiliate(){ return getRole()==='affiliate'; }
+function isReferralApproved(){ return DB.me?.affiliateStatus==='approved'; }
 function isClient(){ return getRole()==='client'; }
 /* Compat: código legado usa isAdmin() para "tem acesso amplo" — mantido
    como sinônimo de CEO/Gerente para não quebrar chamadas existentes. */
@@ -1429,8 +1481,8 @@ function isProtectedCEO(u){
 /* Quais cargos o usuário atual pode CRIAR na Equipe (independe de poder
    editar/excluir depois — criação é sempre permitida para os cargos abaixo). */
 function canCreateRole(role){
-  if(isCEO()) return ['manager','gestor','editor','affiliate'].includes(role);
-  if(isManager()) return ['manager','gestor','editor','affiliate'].includes(role);
+  if(isCEO()) return ['manager','gestor','editor'].includes(role);
+  if(isManager()) return ['manager','gestor','editor'].includes(role);
   if(isGestor()) return role==='editor';
   return false;
 }
@@ -1934,7 +1986,10 @@ async function afterLogin(authUser){
       role: authUser.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? 'ceo' : prof.role,
       av:prof.av||prof.name.slice(0,2).toUpperCase(),
       photo:prof.photo||null, clientId:prof.client_id||null,
-      commissionRate:prof.commission_rate||0
+      commissionRate:prof.commission_rate||0,
+      affiliateStatus:prof.affiliate_status||(prof.role==='affiliate'?'approved':'locked'),
+      affiliateRequestedAt:prof.affiliate_requested_at||null,
+      affiliateReviewedAt:prof.affiliate_reviewed_at||null
     };
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -1956,6 +2011,7 @@ async function loadAllData(){
   try {
     const role = getRole();
     DB.withdrawals = []; DB.wallet = null; DB.affiliateWallets = {};
+    DB.referralClients=[]; DB.referralSales=[]; DB.referralWithdrawals=[]; DB.referralWallet=null;
 
     // Planos contêm preços e dados comerciais. Gestor e Editor não recebem
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
@@ -1991,7 +2047,10 @@ async function loadAllData(){
         id:p.id, name:p.name, role:p.role, email:p.email||null, phone:p.phone||'',
         av:p.av||p.name.slice(0,2).toUpperCase(),
         photo:p.photo||null, clientId:p.client_id||null,
-        active:p.active!==false, commissionRate:p.commission_rate||0
+        active:p.active!==false, commissionRate:p.commission_rate||0,
+        affiliateStatus:p.affiliate_status||(p.role==='affiliate'?'approved':'locked'),
+        affiliateRequestedAt:p.affiliate_requested_at||null,
+        affiliateReviewedAt:p.affiliate_reviewed_at||null
       }));
       removeTeamProfilesFromClientCache();
 
@@ -2021,7 +2080,7 @@ async function loadAllData(){
       const {data:withdrawals, error:withdrawalsErr} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
       if(withdrawalsErr) console.error('[Magemind] Falha ao carregar saques:',withdrawalsErr);
       DB.withdrawals = withdrawals||[];
-      const affiliateIds = DB.users.filter(u=>u.role==='affiliate').map(u=>u.id);
+      const affiliateIds = DB.users.filter(u=>u.affiliateStatus==='approved'&&u.active!==false).map(u=>u.id);
       const walletRows = await Promise.all(affiliateIds.map(async id=>{
         const {data,error} = await supa.rpc('get_affiliate_wallet',{p_affiliate_id:id});
         if(error){ console.error('[Magemind] Falha ao carregar carteira:',error); return null; }
@@ -2161,6 +2220,7 @@ async function loadAllData(){
         .select('*').eq('to_user_id',DB.me.id).order('created_at',{ascending:false}).limit(50);
       DB.notifications = (notifs||[]).map(mapNotif);
     }
+    if(isReferralApproved()) await loadReferralData();
   } catch(e){
     console.error('loadAllData error:', e);
     toast('Erro ao carregar dados','err');
@@ -2227,9 +2287,8 @@ function setupRealtime(){
     .subscribe();
   realtimeChannels.push(notifChannel);
 
-  // Carteiras e fila de aprovação são atualizadas imediatamente para afiliado,
-  // CEO e Gerente, sem precisar recarregar a página.
-  if(isAffiliate() || isAdmin()){
+  // Carteiras e fila de aprovação são atualizadas imediatamente.
+  if(isReferralApproved() || isAdmin()){
     const withdrawalsChannel = supa.channel(`withdrawals-${DB.me.id}-${getRole()}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'affiliate_withdrawals'},()=>{
         refreshWithdrawalData().catch(e=>console.error('[Magemind] Falha no realtime de saques:',e));
@@ -2237,10 +2296,12 @@ function setupRealtime(){
     realtimeChannels.push(withdrawalsChannel);
   }
 
-  if(isAffiliate()){
+  if(isReferralApproved()){
     const scheduleFinanceReload=()=>{
       clearTimeout(affiliateFinanceReloadTimer);
-      affiliateFinanceReloadTimer=setTimeout(()=>reloadAffiliateFinance().catch(e=>console.error('[Magemind] Falha ao atualizar Finanças:',e)),300);
+      affiliateFinanceReloadTimer=setTimeout(()=>loadReferralData().then(()=>{
+        if(document.getElementById('pg-affiliates')?.classList.contains('active')&&referralMode==='mine') renderReferralMemberPanel();
+      }).catch(e=>console.error('[Magemind] Falha ao atualizar Indique & Ganhe:',e)),300);
     };
     const financeChannel=supa.channel(`affiliate-finance-${DB.me.id}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'sales'},scheduleFinanceReload)
@@ -2249,7 +2310,26 @@ function setupRealtime(){
     realtimeChannels.push(financeChannel);
   }
 
-  // Afiliado não acessa demandas — não precisa assinar realtime de demandas
+  const profileFilter=isAdmin()?undefined:`id=eq.${DB.me.id}`;
+  const profileChannel=supa.channel(`referral-profile-${DB.me.id}`)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',...(profileFilter?{filter:profileFilter}:{})},payload=>{
+      const p=payload.new||{};
+      if(p.id===DB.me.id){
+        DB.me.affiliateStatus=p.affiliate_status||'locked';
+        DB.me.affiliateRequestedAt=p.affiliate_requested_at||null;
+        DB.me.commissionRate=Number(p.commission_rate||0);
+        if(DB.me.affiliateStatus==='approved') loadReferralData().then(()=>renderReferralMemberPanel()).catch(console.error);
+        else renderReferralMemberPanel();
+      }
+      if(isAdmin()){
+        const u=DB.users.find(item=>item.id===p.id);
+        if(u){u.affiliateStatus=p.affiliate_status||'locked';u.affiliateRequestedAt=p.affiliate_requested_at||null;u.commissionRate=Number(p.commission_rate||0);}
+        if(document.getElementById('pg-affiliates')?.classList.contains('active')&&referralMode==='admin') renderReferralAdminPanel();
+      }
+    }).subscribe();
+  realtimeChannels.push(profileChannel);
+
+  // O perfil legado de participante não acessa demandas.
   if(isAffiliate()) return;
 
   const demandsChannel = supa.channel(`demands-${DB.me.id}-${getRole()}`)
@@ -2375,7 +2455,7 @@ function buildNav(){
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
     {id:'solutions', icon:ico('package'),  label:'Soluções'},
-    {id:'affiliates',icon:ico('users'),    label:'Afiliados'},
+    {id:'affiliates',icon:ico('dollar'),   label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),    label:'Equipe'},
     {id:'docs',      icon:ico('file'),     label:'Documentos'},
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
@@ -2383,23 +2463,26 @@ function buildNav(){
   const gestorItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
+    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),label:'Equipe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
   ];
   const editorItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
+    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
+    {id:'docs',      icon:ico('file'), label:'Documentos'},
   ];
   const affiliateItems = [
     {id:'dashboard', icon:ico('home'),   label:'Menu'},
-    {id:'clients',   icon:ico('users'),  label:'Meus Clientes'},
-    {id:'sales',     icon:ico('dollar'), label:'Finanças'},
+    {id:'affiliates',icon:ico('dollar'), label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
   ];
   const clientItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
     {id:'solutions',icon:ico('package'),label:'Soluções'},
+    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
   ];
   let items;
@@ -2430,8 +2513,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
-  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
+  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
+  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2738,7 +2821,7 @@ function renderClients(filter){
     </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente indicado</td></tr>';
     return;
   }
-  document.getElementById('clients-table-head').innerHTML='<th>Cliente</th><th>Observações</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Afiliado</th><th>Cadastro</th><th>Ações</th>';
+  document.getElementById('clients-table-head').innerHTML='<th>Cliente</th><th>Observações</th><th>Demandas</th><th id="clients-value-col-label">Valor</th><th>Status</th><th>WhatsApp</th><th>Planos</th><th>Indique &amp; Ganhe</th><th>Cadastro</th><th>Ações</th>';
   document.getElementById('clients-count-sub').textContent = `${DB.clients.length} clientes cadastrados`;
   const typeBadge = {Mensal:'b-violet',Avulso:'b-cyan',Mentorado:'b-pink',Equipe:'b-emerald'};
   const getPlanName = pid=>{ const p=DB.plans.find(x=>x.id===pid); return p?p.name:null; };
@@ -2951,7 +3034,7 @@ function loadTeam(){
   renderTeam();
 }
 function renderTeam(){
-  const staff = DB.users.filter(u=>isGestor()?u.role==='editor':u.role!=='client');
+  const staff = DB.users.filter(u=>isGestor()?u.role==='editor':!['client','affiliate'].includes(u.role));
   document.getElementById('team-body').innerHTML = staff.length ? staff.map(u=>{
     const isProtected = isProtectedCEO(u);
     const canManage = canEditTeamMember(u);
@@ -2961,7 +3044,7 @@ function renderTeam(){
         <div><div style="font-weight:600">${escapeHTML(u.name)}${isProtected?' <span class="badge b-violet" style="font-size:9px">PROTEGIDO</span>':''}</div><div style="font-size:11px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div>
       </div></td>
       <td><span style="font-size:12px;color:var(--cyan)">${escapeHTML(u.phone||'—')}</span></td>
-      <td><span class="badge ${u.role==='ceo'?'b-pink':u.role==='manager'?'b-violet':u.role==='gestor'?'b-cyan':u.role==='editor'?'b-cyan':'b-amber'}">${escapeHTML(ROLE_LABELS[u.role]||u.role)}</span>${u.role==='affiliate'?` <span class="badge b-emerald" style="font-size:10px">${Number(u.commissionRate)||0}% comissão</span>`:''}</td>
+      <td><span class="badge ${u.role==='ceo'?'b-pink':u.role==='manager'?'b-violet':u.role==='gestor'?'b-cyan':'b-cyan'}">${escapeHTML(ROLE_LABELS[u.role]||u.role)}</span></td>
       <td>${u.active!==false?'<span class="badge b-emerald">Ativo</span>':'<span class="badge b-muted">Inativo</span>'}</td>
       <td><div style="display:flex;gap:6px">
         ${canManage?`<button class="btn btn-ghost btn-xs" onclick="openEditTeamMember('${u.id}')">✎ Editar</button>
@@ -2972,9 +3055,9 @@ function renderTeam(){
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum usuário interno cadastrado</td></tr>';
 }
 
-const ROLE_CREATE_LABELS = {manager:'Gerente',gestor:'Gestor',editor:'Editor',affiliate:'Afiliado'};
+const ROLE_CREATE_LABELS = {manager:'Gerente',gestor:'Gestor',editor:'Editor'};
 function buildRoleOptionsForCreation(){
-  return ['manager','gestor','editor','affiliate']
+  return ['manager','gestor','editor']
     .filter(r=>canCreateRole(r))
     .map(r=>`<option value="${r}">${ROLE_CREATE_LABELS[r]}</option>`).join('');
 }
@@ -2994,7 +3077,6 @@ function openNewTeamMember(){
   const roleSel = document.getElementById('tm-role');
   roleSel.disabled = false;
   roleSel.innerHTML = buildRoleOptionsForCreation();
-  toggleCommissionField();
   openModal('modal-team');
 }
 function openEditTeamMember(id){
@@ -3021,13 +3103,7 @@ function openEditTeamMember(id){
     roleSel.innerHTML = buildRoleOptionsForCreation();
   }
   roleSel.value = u.role;
-  document.getElementById('tm-commission').value = u.commissionRate||10;
-  toggleCommissionField();
   openModal('modal-team');
-}
-function toggleCommissionField(){
-  document.getElementById('tm-commission-wrap').style.display =
-    document.getElementById('tm-role').value==='affiliate' ? 'flex' : 'none';
 }
 async function saveTeamMember(){
   const name  = document.getElementById('tm-name').value.trim();
@@ -3035,7 +3111,7 @@ async function saveTeamMember(){
   const role  = document.getElementById('tm-role').value;
   const active = document.getElementById('tm-active').value==='true';
   const phone = document.getElementById('tm-phone').value.trim();
-  const commissionRate = role==='affiliate' ? parseFloat(document.getElementById('tm-commission').value||0) : null;
+  const commissionRate = null;
   if(!name){ toast('Informe o nome','err'); return; }
   if(commissionRate!==null && (!Number.isFinite(commissionRate) || commissionRate<0 || commissionRate>100)){
     toast('A comissão deve estar entre 0% e 100%','err'); return;
@@ -3050,14 +3126,13 @@ async function saveTeamMember(){
     btn.disabled = true;
     try{
       const updateData = {name, role:finalRole, phone};
-      if(commissionRate!==null) updateData.commission_rate = commissionRate;
       const {error} = await supa.from('profiles').update(updateData).eq('id',editTeamId);
       if(error){ toast('Erro: '+error.message,'err'); return; }
       if(active !== (u.active!==false)){
         const lifecycle = await setUserActiveOnServer(editTeamId,active);
         if(!lifecycle.ok){ toast('Dados do perfil salvos, mas o acesso não mudou: '+lifecycle.error,'err'); return; }
       }
-      Object.assign(u,{name,role:finalRole,active,phone,commissionRate:commissionRate??u.commissionRate});
+      Object.assign(u,{name,role:finalRole,active,phone});
       closeModal('modal-team'); toast('Usuário atualizado ✓','ok');
       buildNav(); renderTeam();
     } finally { btn.disabled=false; }
@@ -3082,7 +3157,7 @@ async function saveTeamMember(){
     const json = await res.json();
     if(res.status===401){ await handleExpiredSession(); return; }
     if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
-    DB.users.push({id:json.user_id, name, role, email, phone, av:avatarInitials(name), photo:null, active, commissionRate:commissionRate||0});
+    DB.users.push({id:json.user_id, name, role, email, phone, av:avatarInitials(name), photo:null, active, commissionRate:0, affiliateStatus:'locked', affiliateRequestedAt:null});
     closeModal('modal-team'); toast(`${name} cadastrado como ${ROLE_LABELS[role]} ✓`,'ok');
     buildNav(); renderTeam();
   } catch(e){
@@ -3119,8 +3194,8 @@ async function toggleUserActive(id){
 async function deleteTeamMember(id){
   const u = DB.users.find(x=>x.id===id); if(!u) return;
   if(!canHardDeleteTeamMember(u)){ toast('Sem permissão para excluir este usuário','err'); return; }
-  const affiliateNotice = u.role==='affiliate'
-    ? ' Se existir histórico financeiro, o acesso será desativado e o perfil será arquivado para preservar a auditoria.'
+  const affiliateNotice = u.affiliateStatus==='approved'
+    ? ' Se existir histórico financeiro no Indique & Ganhe, o acesso será arquivado para preservar a auditoria.'
     : '';
   if(!confirm(`Remover "${u.name}"?${affiliateNotice}`)) return;
   try{
@@ -3240,24 +3315,49 @@ async function reloadAffiliateFinance(){
   if(document.getElementById('pg-clients')?.classList.contains('active')) renderClients();
   if(document.getElementById('pg-dashboard')?.classList.contains('active')) loadDashAffiliate();
 }
+async function loadReferralData(){
+  if(!isReferralApproved()){
+    DB.referralClients=[]; DB.referralSales=[]; DB.referralWithdrawals=[]; DB.referralWallet=null;
+    return;
+  }
+  const [clientResult,salesResult,withdrawalResult,walletResult]=await Promise.all([
+    supa.rpc('get_my_affiliate_client_metrics'),
+    supa.rpc('get_my_affiliate_commission_sales'),
+    supa.from('affiliate_withdrawals').select('*').eq('affiliate_id',DB.me.id).order('requested_at',{ascending:false}),
+    supa.rpc('get_affiliate_wallet')
+  ]);
+  if(clientResult.error) throw clientResult.error;
+  if(salesResult.error) throw salesResult.error;
+  if(withdrawalResult.error) throw withdrawalResult.error;
+  if(walletResult.error) throw walletResult.error;
+  DB.referralClients=(clientResult.data||[]).map(c=>({
+    id:c.client_id,name:c.client_name,status:c.client_status||'Ativo',createdAt:c.registered_at||null,
+    demandCount:Number(c.demand_count||0),commissionTotal:Number(c.commission_total||0)
+  }));
+  DB.referralSales=(salesResult.data||[]).map(s=>({
+    id:s.sale_id,client:s.client_id,clientName:s.client_name||'',value:Number(s.commission_value||0),
+    status:s.sale_status||'Pendente',date:s.sale_date||''
+  }));
+  DB.referralWithdrawals=withdrawalResult.data||[];
+  DB.referralWallet=walletResult.data?.[0]||null;
+  DB.wallet=DB.referralWallet;
+}
 async function refreshWithdrawalData(){
-  const {data:withdrawals,error} = await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
-  if(error) throw error;
-  DB.withdrawals=withdrawals||[];
-  if(isAffiliate()){
-    const {data,error:walletError}=await supa.rpc('get_affiliate_wallet');
-    if(walletError) throw walletError;
-    DB.wallet=data?.[0]||null;
-    renderAffiliateWallet();
+  if(isReferralApproved()&&(!isAdmin()||referralMode==='mine')){
+    await loadReferralData();
+    renderReferralMemberPanel();
   } else if(isAdmin()){
-    const affiliateIds=DB.users.filter(u=>u.role==='affiliate').map(u=>u.id);
+    const {data:withdrawals,error}=await supa.from('affiliate_withdrawals').select('*').order('requested_at',{ascending:false});
+    if(error) throw error;
+    DB.withdrawals=withdrawals||[];
+    const affiliateIds=DB.users.filter(u=>u.affiliateStatus==='approved'&&u.active!==false).map(u=>u.id);
     const rows=await Promise.all(affiliateIds.map(async id=>{
       const {data,error:walletError}=await supa.rpc('get_affiliate_wallet',{p_affiliate_id:id});
       if(walletError) throw walletError;
       return data?.[0]||null;
     }));
     DB.affiliateWallets={}; rows.filter(Boolean).forEach(w=>DB.affiliateWallets[w.affiliate_id]=w);
-    renderAffiliates();
+    renderReferralAdminPanel();
   }
 }
 function renderAffiliateWallet(){
@@ -3365,13 +3465,84 @@ async function performWithdrawalAction(action){
   await refreshWithdrawalData(); toast(action==='reverse'?'Pagamento estornado com auditoria ✓':action==='pay'?'Pagamento confirmado ✓':action==='approve'?'Saque aprovado ✓':'Saque recusado','ok');
 }
 
+let referralMode='admin';
+function setReferralMode(mode){
+  referralMode=isAdmin()&&mode==='admin'?'admin':'mine';
+  document.getElementById('referral-admin-view')?.classList.toggle('active',referralMode==='admin');
+  document.getElementById('referral-member-view')?.classList.toggle('active',referralMode==='mine');
+  document.getElementById('referral-mode-admin')?.classList.toggle('active',referralMode==='admin');
+  document.getElementById('referral-mode-mine')?.classList.toggle('active',referralMode==='mine');
+  if(referralMode==='admin') renderReferralAdminPanel(); else renderReferralMemberPanel();
+}
 function loadAffiliates(){
   if(!canAccessPage('affiliates')){ toast('Sem permissão','err'); return; }
-  renderAffiliates();
+  const switcher=document.getElementById('referral-mode');
+  if(switcher) switcher.style.display=isAdmin()?'flex':'none';
+  setReferralMode(isAdmin()?referralMode:'mine');
 }
-function renderAffiliates(){
+function referralStatusBadge(status){
+  const label={pending:'Em análise',approved:'Aprovado',rejected:'Recusado',locked:'Bloqueado'}[status]||'Bloqueado';
+  return `<span class="referral-status ${status}">${label}</span>`;
+}
+function renderReferralRequests(){
+  const body=document.getElementById('referral-requests-body'); if(!body)return;
+  const pending=DB.users.filter(u=>u.affiliateStatus==='pending').sort((a,b)=>new Date(a.affiliateRequestedAt||0)-new Date(b.affiliateRequestedAt||0));
+  document.getElementById('referral-request-count').textContent=`${pending.length} em análise`;
+  body.innerHTML=pending.length?pending.map(u=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av av-sm">${escapeHTML(u.av||avatarInitials(u.name))}</div><div><strong>${escapeHTML(u.name)}</strong><div style="font-size:10px;color:var(--text3)">${escapeHTML(u.email||'')}</div></div></div></td><td>${escapeHTML(ROLE_LABELS[u.role]||u.role)}</td><td style="font-size:11px;color:var(--text2)">${withdrawalDate(u.affiliateRequestedAt)}</td><td>${referralStatusBadge('pending')}</td><td><div style="display:flex;gap:6px"><button class="btn btn-danger btn-xs" onclick="reviewReferralAccess('${u.id}','reject')">Recusar</button><button class="btn btn-primary btn-xs" onclick="reviewReferralAccess('${u.id}','approve')">Aprovar</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="payout-empty">Nenhuma solicitação aguardando análise</td></tr>';
+}
+async function reviewReferralAccess(id,action){
+  if(!isAdmin()) return;
+  const person=DB.users.find(u=>u.id===id); if(!person)return;
+  if(action==='reject'&&!confirm(`Recusar a participação de ${person.name}?`))return;
+  const {data,error}=await supa.rpc('review_indique_ganhe_access',{p_profile_id:id,p_action:action});
+  if(error){toast('Erro: '+error.message,'err');return;}
+  const row=Array.isArray(data)?data[0]:data;
+  person.affiliateStatus=row?.affiliate_status||(action==='approve'?'approved':'rejected');
+  person.affiliateReviewedAt=row?.affiliate_reviewed_at||new Date().toISOString();
+  if(action==='approve') person.commissionRate=Number(row?.commission_rate||person.commissionRate||10);
+  if(id===DB.me.id){DB.me.affiliateStatus=person.affiliateStatus;DB.me.commissionRate=person.commissionRate;}
+  if(action==='approve') await refreshWithdrawalData(); else renderReferralAdminPanel();
+  populateClientAffiliateSelect();
+  toast(action==='approve'?`${person.name} foi aprovado no Indique & Ganhe`:`Participação de ${person.name} recusada`,'ok');
+}
+async function requestReferralAccess(){
+  const btn=document.getElementById('referral-request-access'); if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+  const {data,error}=await supa.rpc('request_indique_ganhe_access');
+  if(error){if(btn){btn.disabled=false;btn.textContent='Quero ganhar';}toast('Erro: '+error.message,'err');return;}
+  DB.me.affiliateStatus=data||'pending'; DB.me.affiliateRequestedAt=new Date().toISOString();
+  const own=DB.users.find(u=>u.id===DB.me.id); if(own){own.affiliateStatus=DB.me.affiliateStatus;own.affiliateRequestedAt=DB.me.affiliateRequestedAt;}
+  renderReferralMemberPanel();
+  toast('Solicitação enviada. Agora é só aguardar a análise','ok');
+}
+function renderReferralGate(){
+  const gate=document.getElementById('referral-gate'); if(!gate)return;
+  const status=DB.me?.affiliateStatus||'locked';
+  if(status==='approved'){gate.style.display='none';gate.innerHTML='';return;}
+  gate.style.display='flex';
+  const pending=status==='pending';
+  const rejected=status==='rejected';
+  gate.innerHTML=`<div class="referral-gate-card"><div class="referral-gate-icon">${ico('dollar')}</div><div class="referral-gate-title">${pending?'Sua solicitação está em análise':rejected?'Sua participação ainda não foi aprovada':'Indique. A gente fecha. Você ganha.'}</div><div class="referral-gate-copy">${pending?'CEO e Gerentes já receberam seu pedido. Assim que a participação for aprovada, este painel será liberado com carteira, indicações e saques.':rejected?'Você pode enviar uma nova solicitação. Talvez agora os astros, a agenda e o comercial estejam finalmente alinhados.':'Indique potenciais clientes para a Magemind e receba comissão quando uma venda for fechada. O acompanhamento é transparente e os saques são solicitados por PIX.'}</div>${pending?`<span class="referral-status pending">Em análise</span>`:`<button class="btn btn-primary" id="referral-request-access" onclick="requestReferralAccess()">Quero ganhar</button>`}</div>`;
+}
+function renderReferralMemberPanel(){
+  const clients=DB.referralClients||[]; const wallet=DB.referralWallet||{};
+  const earned=Number(wallet.gross_earned||0); const available=Number(wallet.available||0);
+  const sales=(DB.referralSales||[]).filter(s=>s.status==='Fechado');
+  document.getElementById('referral-member-rate').textContent=`${Number(DB.me?.commissionRate||0)}%`;
+  document.getElementById('referral-member-stats').innerHTML=`<div class="stat"><div class="stat-label">Clientes indicados</div><div class="stat-val">${clients.length}</div><div class="stat-delta delta-neutral">vínculos ativos</div></div><div class="stat"><div class="stat-label">Vendas convertidas</div><div class="stat-val">${sales.length}</div><div class="stat-delta delta-neutral">negócios fechados</div></div><div class="stat"><div class="stat-label">Comissão gerada</div><div class="stat-val financial-value">${formatCurrencyBRL(earned)}</div></div><div class="stat"><div class="stat-label">Disponível para saque</div><div class="stat-val financial-value" style="color:var(--emerald)">${formatCurrencyBRL(available)}</div></div>`;
+  document.getElementById('referral-wallet-available').textContent=formatCurrencyBRL(available);
+  document.getElementById('referral-wallet-review').textContent=formatCurrencyBRL(Number(wallet.under_review||0));
+  document.getElementById('referral-wallet-paid').textContent=formatCurrencyBRL(Number(wallet.withdrawn||0));
+  const withdraw=document.getElementById('referral-request-withdrawal'); withdraw.disabled=available<1||!isReferralApproved();
+  document.getElementById('referral-member-clients-body').innerHTML=clients.length?clients.map(c=>`<tr><td><strong>${escapeHTML(c.name)}</strong></td><td>${c.demandCount}</td><td class="financial-value" style="color:var(--emerald)">${formatCurrencyBRL(c.commissionTotal)}</td><td><span class="badge ${c.status==='Ativo'?'b-emerald':'b-muted'}">${escapeHTML(c.status)}</span></td></tr>`).join(''):'<tr><td colspan="4" class="payout-empty">Suas indicações aparecerão aqui após o vínculo pela equipe</td></tr>';
+  const rows=DB.referralWithdrawals||[];
+  document.getElementById('referral-member-withdrawals-body').innerHTML=rows.length?rows.map(row=>`<tr><td>${withdrawalDate(row.requested_at)}</td><td class="financial-value">${formatCurrencyBRL(row.amount)}</td><td>${withdrawalStatusBadge(row.status)}</td><td>${row.status==='pending'?`<button class="btn btn-ghost btn-xs" onclick="cancelWithdrawal('${row.id}')">Cancelar</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" class="payout-empty">Nenhum saque solicitado</td></tr>';
+  renderReferralGate();
+}
+function renderReferralAdminPanel(){
+  if(!isAdmin())return;
+  renderReferralRequests();
   renderWithdrawalApproval();
-  const affiliates = DB.users.filter(u=>u.role==='affiliate');
+  const affiliates = DB.users.filter(u=>u.affiliateStatus&&u.affiliateStatus!=='locked');
   document.getElementById('affiliates-body').innerHTML = affiliates.length ? affiliates.map(a=>{
     const myClients = DB.clients.filter(c=>c.affiliateId===a.id);
     const clientIds = myClients.map(c=>c.id);
@@ -3384,18 +3555,19 @@ function renderAffiliates(){
         <div class="av av-sm" style="background:linear-gradient(135deg,var(--amber),var(--pink));font-size:11px">${escapeHTML(a.av||avatarInitials(a.name))}</div>
         <div style="font-weight:600">${escapeHTML(a.name)}</div>
       </div></td>
-      <td><input class="fi" style="width:70px;padding:6px 8px" type="number" min="0" max="100" step="0.5" value="${a.commissionRate||0}" onchange="updateAffiliateCommission('${a.id}',this.value)" ${hasPermission('affiliates.manage')?'':'disabled'}></td>
+      <td>${escapeHTML(ROLE_LABELS[a.role]||a.role)}</td>
+      <td><input class="fi" style="width:70px;padding:6px 8px" type="number" min="0" max="100" step="0.5" value="${a.commissionRate||0}" onchange="updateAffiliateCommission('${a.id}',this.value)" ${a.affiliateStatus==='approved'&&hasPermission('affiliates.manage')?'':'disabled'}></td>
       <td>${myClients.length}</td>
       <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(revenue)}</td>
       <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(available)}</td>
-      <td><button class="btn btn-ghost btn-xs" onclick="goTo('team');openEditTeamMember('${a.id}')">Ver perfil</button></td>
+      <td>${referralStatusBadge(a.affiliateStatus)}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Nenhum afiliado cadastrado</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Nenhum participante cadastrado</td></tr>';
 }
 async function updateAffiliateCommission(id, value){
   if(!hasPermission('affiliates.manage')){ toast('Sem permissão','err'); return; }
   const rate = Number(value);
-  if(!Number.isFinite(rate) || rate<0 || rate>100){ toast('A comissão deve estar entre 0% e 100%','err'); renderAffiliates(); return; }
+  if(!Number.isFinite(rate) || rate<0 || rate>100){ toast('A comissão deve estar entre 0% e 100%','err'); renderReferralAdminPanel(); return; }
   const {error} = await supa.rpc('admin_update_affiliate_commission',{p_affiliate_id:id,p_rate:rate});
   if(error){ toast('Erro: '+error.message,'err'); return; }
   const u = DB.users.find(x=>x.id===id); if(u) u.commissionRate = rate;
@@ -3805,7 +3977,7 @@ function getCheckedPlanIds(){
 /* Só CEO/Gerente escolhem/alteram o afiliado responsável por um cliente */
 function populateClientAffiliateSelect(){
   const sel = document.getElementById('c-affiliate'); if(!sel) return;
-  const affiliates = DB.users.filter(u=>u.role==='affiliate');
+  const affiliates = DB.users.filter(u=>u.affiliateStatus==='approved'&&u.active!==false);
   sel.innerHTML = '<option value="">Nenhum</option>'+affiliates.map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
   sel.closest('.fg').style.display = hasPermission('affiliates.manage')||isManager() ? 'flex' : 'none';
 }
@@ -3914,7 +4086,7 @@ async function removeSale(id){
     const {error}=await supa.from('sales').update({status:'Cancelado'}).eq('id',id);
     if(error){
       const paid=/reservada|paga|saque/i.test(error.message||'');
-      toast(paid?'A comissão já foi usada em um saque. Estorne o pagamento na área Afiliados antes de cancelar a venda.':'Erro: '+error.message,'err');
+      toast(paid?'A comissão já foi usada em um saque. Estorne o pagamento em Indique & Ganhe antes de cancelar a venda.':'Erro: '+error.message,'err');
       return;
     }
     if(sale) sale.status='Cancelado';
@@ -4102,8 +4274,8 @@ function loadProfile(){
     planCard.style.display='block';
     if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
     document.getElementById('plan-content').innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--violet2)">Afiliado</span><span class="badge b-amber">Comissão ${DB.me.commissionRate||0}%</span></div>
-      <div style="font-size:13px;color:var(--text3)">Percentual de comissão padrão sobre vendas fechadas dos clientes que você indicou. Somente CEO/Gerente podem alterar esse valor (página Afiliados).</div>`;
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--violet2)">Indique &amp; Ganhe</span><span class="badge b-amber">Comissão ${DB.me.commissionRate||0}%</span></div>
+      <div style="font-size:13px;color:var(--text3)">Percentual de comissão sobre vendas fechadas dos clientes indicados. Somente CEO e Gerentes podem alterar esse valor em Indique &amp; Ganhe.</div>`;
   } else {
     planCard.style.display='none';
     if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
