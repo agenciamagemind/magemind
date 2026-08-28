@@ -360,6 +360,45 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .push-category{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;line-height:1.4;cursor:pointer}
 .push-category strong{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
 .push-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.solutions-scroll{flex:1;overflow-y:auto;padding:0 24px 28px}
+.solutions-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0 4px}
+.solutions-summary{display:flex;gap:8px;flex-wrap:wrap}
+.solution-summary-item{min-width:104px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2)}
+.solution-summary-item strong{display:block;font:700 16px 'Poppins',sans-serif;color:var(--text)}
+.solution-summary-item span{display:block;margin-top:1px;font-size:10px;color:var(--text3);text-transform:uppercase}
+.solution-section{padding-top:22px}
+.solution-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.solution-section-title{display:flex;align-items:center;gap:10px;font:700 15px 'Poppins',sans-serif}
+.solution-section-mark{width:9px;height:26px;border-radius:3px;background:var(--solution-accent,var(--violet))}
+.solution-section-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.solution-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.solution-card{position:relative;display:flex;flex-direction:column;min-height:330px;padding:18px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);overflow:hidden;transition:border-color .18s,transform .18s,box-shadow .18s}
+.solution-card:hover{border-color:color-mix(in srgb,var(--solution-accent,var(--violet)) 42%,transparent);transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.24)}
+.solution-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--solution-accent,var(--violet))}
+.solution-card.current{border-color:color-mix(in srgb,var(--emerald) 48%,transparent);box-shadow:inset 0 0 0 1px rgba(16,185,129,.1)}
+.solution-card.inactive{background:var(--bg);border-style:dashed}
+.solution-card.inactive::before{opacity:.35}
+.solution-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.solution-kind{display:inline-flex;align-items:center;min-height:24px;padding:4px 8px;border-radius:6px;background:color-mix(in srgb,var(--solution-accent,var(--violet)) 12%,transparent);color:var(--solution-accent,var(--violet));font:700 9px 'Poppins',sans-serif;text-transform:uppercase}
+.solution-current{display:inline-flex;align-items:center;gap:5px;color:var(--emerald);font:700 10px 'Poppins',sans-serif}
+.solution-name{font:700 18px/1.25 'Poppins',sans-serif;color:var(--text);overflow-wrap:anywhere}
+.solution-tagline{min-height:40px;margin-top:7px;color:var(--text2);font-size:12px;line-height:1.55}
+.solution-includes{display:flex;flex-direction:column;gap:7px;margin:15px 0 18px;padding-top:14px;border-top:1px solid var(--border)}
+.solution-include{display:grid;grid-template-columns:16px 1fr;gap:7px;color:var(--text2);font-size:11px;line-height:1.4}
+.solution-check{color:var(--solution-accent,var(--violet));font-weight:800}
+.solution-price{margin-top:auto}
+.solution-price-old{color:var(--text3);font-size:10px;text-decoration:line-through}
+.solution-price-main{font:700 21px 'Poppins',sans-serif;color:var(--text);letter-spacing:0}
+.solution-price-note{font-size:10px;color:var(--text3)}
+.solution-actions{display:flex;gap:7px;margin-top:14px}
+.solution-actions .btn{min-height:36px;flex:1}
+.solution-whatsapp{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:40px;margin-top:14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:#168c52;color:#fff;text-decoration:none;font:700 11px 'Poppins',sans-serif;transition:background .16s,transform .16s}
+.solution-whatsapp:hover{background:#1aa661;transform:translateY(-1px)}
+.solution-custom-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:24px;padding:19px 20px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2)}
+.solution-custom-cta strong{display:block;font:700 15px 'Poppins',sans-serif}
+.solution-custom-cta span{display:block;margin-top:3px;color:var(--text2);font-size:11px}
+.solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
+.solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260828-1">
 </head>
@@ -643,6 +682,27 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
         </div>
       </div>
 
+      <!-- SOLUCOES -->
+      <div class="page" id="pg-solutions">
+        <div class="ph">
+          <div class="ph-info">
+            <div class="ph-title">Soluções</div>
+            <div class="ph-sub" id="solutions-page-subtitle">Planos, pacotes e serviços Magemind</div>
+          </div>
+          <div class="ph-actions" id="solutions-page-actions"></div>
+        </div>
+        <div class="solutions-scroll">
+          <div class="solutions-toolbar" id="solutions-admin-toolbar" style="display:none">
+            <div class="solutions-summary" id="solutions-summary"></div>
+          </div>
+          <div id="solutions-catalog"></div>
+          <div class="solution-custom-cta" id="solutions-custom-cta">
+            <div><strong>Precisa de algo desenhado para a sua operação?</strong><span>Monte um pacote, plano ou serviço com escopo personalizado.</span></div>
+            <a class="btn btn-primary btn-sm" id="solutions-custom-link" href="#" target="_blank" rel="noopener noreferrer">Solicitar personalizado</a>
+          </div>
+        </div>
+      </div>
+
       <!-- DOCUMENTOS -->
       <div class="page" id="pg-docs">
         <div class="ph">
@@ -706,7 +766,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
           </div>
         </div>
         <div style="padding:0 24px;overflow-y:auto;flex:1">
-          <div class="settings-grid" style="grid-template-columns:1fr 1fr;gap:16px;max-width:unset">
+          <div class="settings-grid" style="grid-template-columns:minmax(0,720px);gap:16px;max-width:unset">
             <div class="settings-card">
               <div class="settings-card-title">🏢 Dados da empresa</div>
               <div style="display:flex;flex-direction:column;gap:12px">
@@ -715,13 +775,6 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
                 <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cfg-phone" placeholder="5511999999999"></div>
                 <button class="btn btn-primary btn-sm" onclick="saveAgencySettings()">Salvar alterações</button>
               </div>
-            </div>
-            <div class="settings-card" style="grid-column:1/-1">
-              <div class="settings-card-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <span>📦 Planos e Pacotes</span>
-                <button class="btn btn-primary btn-sm" onclick="openNewPlan()">+ Criar pacote</button>
-              </div>
-              <div id="plans-list-admin" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
             </div>
           </div>
         </div>
@@ -1110,40 +1163,45 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 <!-- MENU DE CONTEXTO: Demandas do Kanban -->
 <div class="demand-context-menu" id="demand-context-menu" role="menu" aria-label="Ações da demanda"></div>
 
-<!-- MODAL: Planos e Pacotes -->
+<!-- MODAL: Solucao -->
 <div class="overlay" id="modal-plans" onclick="if(event.target===this)closeModal('modal-plans')">
   <div class="modal" style="width:640px">
     <div class="m-head">
-      <div><div class="m-title" id="mp-title">Criar pacote</div><div class="m-sub">Configure os planos disponíveis</div></div>
+      <div><div class="m-title" id="mp-title">Criar solução</div><div class="m-sub">Configure a apresentação e a disponibilidade comercial</div></div>
       <div class="m-close" onclick="closeModal('modal-plans')">✕</div>
     </div>
     <div class="m-body">
       <div class="f2">
-        <div class="fg"><label class="fl">Nome do pacote *</label><input class="fi" id="p-name" placeholder="Ex: PLANO GROWTH"></div>
-        <div class="fg"><label class="fl">Tipo</label>
-          <select class="fi" id="p-type">
-            <option value="Avulso">Avulso (por unidade)</option>
-            <option value="Semanal">Plano Semanal</option>
-            <option value="Diario">Plano Diário (Infinite+)</option>
-            <option value="Mensal">Mensal (recorrente)</option>
-            <option value="Personalizado">Personalizado</option>
+        <div class="fg"><label class="fl">Nome da solução *</label><input class="fi" id="p-name" placeholder="Ex: PLANO GROWTH"></div>
+        <div class="fg"><label class="fl">Tipo da solução</label>
+          <select class="fi" id="p-category">
+            <option value="closed_package">Pacote fechado</option>
+            <option value="weekly_monthly">Plano mensal com entrega semanal</option>
+            <option value="infinite_plus">Plano Infinite+</option>
+            <option value="other">Outro serviço</option>
           </select>
         </div>
       </div>
       <div class="f3">
         <div class="fg"><label class="fl">Preço original (R$)</label><input class="fi" id="p-price-orig" type="number" placeholder="Ex: 600"></div>
-        <div class="fg"><label class="fl">Preço promocional (R$)</label><input class="fi" id="p-price" type="number" placeholder="Ex: 450"></div>
-        <div class="fg"><label class="fl">Qtd. Criativos</label><input class="fi" id="p-qty" type="number" placeholder="Ex: 6"></div>
+        <div class="fg"><label class="fl">Preço atual (R$)</label><input class="fi" id="p-price" type="number" min="0" placeholder="0 para sob consulta"></div>
+        <div class="fg"><label class="fl">Volume / entregas</label><input class="fi" id="p-qty" type="number" min="0" placeholder="Ex: 6"></div>
       </div>
-      <div class="fg"><label class="fl">Subtítulo / Tagline</label><input class="fi" id="p-tagline" placeholder="Ex: Pacote enxuto para quem quer mais testes"></div>
+      <div class="fg"><label class="fl">Apresentação curta</label><input class="fi" id="p-tagline" placeholder="Ex: Consistência e volume para acelerar seus testes"></div>
       <div class="fg"><label class="fl">Inclui (um por linha)</label><textarea class="fi" id="p-includes" placeholder="Imagem e vídeo&#10;Qualquer formato&#10;Entrega em até 24h" style="min-height:80px"></textarea></div>
-      <div class="fg"><label class="fl">Ativo</label>
-        <select class="fi" id="p-active"><option value="1">Sim — aparece para clientes</option><option value="0">Não — desativado</option></select>
+      <div class="f2">
+        <div class="fg"><label class="fl">Disponibilidade</label>
+          <select class="fi" id="p-custom" onchange="syncSolutionFormState()"><option value="0">Catálogo de soluções</option><option value="1">Plano personalizado de cliente</option></select>
+        </div>
+        <div class="fg"><label class="fl">Status</label>
+          <select class="fi" id="p-active"><option value="1">Ativa</option><option value="0">Desativada</option></select>
+        </div>
       </div>
+      <div class="secure-note" id="p-custom-note" style="display:none"><span>i</span><span>Planos personalizados nunca aparecem em Soluções para os clientes. Somente o cliente vinculado poderá vê-lo em Meu Perfil.</span></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-plans')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePlan()">Salvar pacote</button>
+      <button class="btn btn-primary" onclick="savePlan()">Salvar solução</button>
     </div>
   </div>
 </div>
@@ -1269,7 +1327,7 @@ const ROLE_PERMISSIONS = {
     'sales.view','sales.create','sales.edit','sales.delete',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
     'docs.view','docs.create','docs.edit','docs.delete',
-    'settings.view','settings.edit','plans.manage',
+    'settings.view','settings.edit','solutions.view','solutions.manage','plans.manage',
     'users.view','users.create','users.edit_roles','users.delete',
     'affiliates.view','affiliates.manage','commissions.view','commissions.manage'
   ],
@@ -1279,7 +1337,7 @@ const ROLE_PERMISSIONS = {
     'sales.view','sales.create','sales.edit','sales.delete',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.delete','demands.change_assignee','demands.change_client',
     'docs.view','docs.create','docs.edit','docs.delete',
-    'settings.view','settings.edit','plans.manage',
+    'settings.view','settings.edit','solutions.view','solutions.manage','plans.manage',
     'users.view','users.create','users.edit_roles','users.delete',
     'affiliates.view','affiliates.manage','commissions.view','commissions.manage'
   ],
@@ -1302,18 +1360,18 @@ const ROLE_PERMISSIONS = {
   client: [
     'dashboard.client',
     'demands.view_own','demands.comment_own',
-    'docs.view_own','profile.view','profile.edit'
+    'docs.view_own','solutions.view','profile.view','profile.edit'
   ]
 };
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','affiliates','team','docs','settings','profile'],
-  manager:   ['dashboard','clients','demands','sales','affiliates','team','docs','settings','profile'],
+  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
+  manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings','profile'],
   gestor:    ['dashboard','demands','team','docs','profile'],
   editor:    ['dashboard','demands','docs','profile'],
   affiliate: ['dashboard','clients','sales','docs','profile'],
-  client:    ['dashboard','demands','docs','profile']
+  client:    ['dashboard','demands','solutions','docs','profile']
 };
 
 /* Hierarquia numérica — usada só como referência/depuração; as regras de
@@ -1902,11 +1960,13 @@ async function loadAllData(){
     // Planos contêm preços e dados comerciais. Gestor e Editor não recebem
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
     if(role!=='gestor' && role!=='editor'){
-      const {data:plans} = await supa.from('plans').select('*').order('created_at');
+      const {data:plans} = await supa.from('plans').select('*').order('sort_order').order('created_at');
       DB.plans = (plans||[]).map(p=>({
         id:p.id, name:p.name, type:p.type, qty:p.qty,
         priceOrig:p.price_orig, price:p.price,
-        tagline:p.tagline||'', includes:p.includes||'', active:p.active
+        tagline:p.tagline||'', includes:p.includes||'', active:p.active,
+        solutionCategory:p.solution_category||solutionCategoryFromLegacyType(p.type),
+        custom:p.is_custom===true||p.type==='Personalizado', sortOrder:p.sort_order||0
       }));
     } else {
       DB.plans = [];
@@ -2058,7 +2118,7 @@ async function loadAllData(){
       const cid = DB.me.clientId;
 
       const {data:ownClient} = await supa.from('clients')
-        .select('*, plans(id,name,type,qty,price_orig,price,tagline,includes,active)')
+        .select('*, plans(*)')
         .eq('id', cid).maybeSingle();
       if(ownClient){
         DB.clients = [mapClient(ownClient)];
@@ -2067,7 +2127,9 @@ async function loadAllData(){
           DB.plans.push({
             id:pl.id, name:pl.name, type:pl.type, qty:pl.qty,
             priceOrig:pl.price_orig, price:pl.price,
-            tagline:pl.tagline||'', includes:pl.includes||'', active:pl.active
+            tagline:pl.tagline||'', includes:pl.includes||'', active:pl.active,
+            solutionCategory:pl.solution_category||solutionCategoryFromLegacyType(pl.type),
+            custom:pl.is_custom===true||pl.type==='Personalizado', sortOrder:pl.sort_order||0
           });
         }
         const {data:ownPlanLinks,error:ownPlanLinksError}=await supa.from('client_plans').select('plan_id').eq('client_id',cid);
@@ -2312,6 +2374,7 @@ function buildNav(){
     {id:'clients',   icon:ico('users'),    label:'Clientes', badge:DB.clients.filter(c=>c.status==='Ativo').length},
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
+    {id:'solutions', icon:ico('package'),  label:'Soluções'},
     {id:'affiliates',icon:ico('users'),    label:'Afiliados'},
     {id:'team',      icon:ico('users'),    label:'Equipe'},
     {id:'docs',      icon:ico('file'),     label:'Documentos'},
@@ -2336,6 +2399,7 @@ function buildNav(){
   const clientItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
+    {id:'solutions',icon:ico('package'),label:'Soluções'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
   ];
   let items;
@@ -2366,8 +2430,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
-  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
+  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Afiliados',team:'Equipe',docs:'Documentos',settings:'Configurações',profile:'Meu Perfil'};
+  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Parceiros e indicações',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Configurações do sistema',profile:'Dados pessoais e segurança'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2387,9 +2451,9 @@ function goTo(page){
 
   updateSidebarUser();
   const loaders = {
-    dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales,
+    dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
     affiliates:loadAffiliates, team:loadTeam, docs:loadDocs,
-    settings:()=>{ renderPlansAdmin(); loadAgencySettings(); }, profile:loadProfile
+    settings:loadAgencySettings, profile:loadProfile
   };
   if(loaders[page]) loaders[page]();
 }
@@ -4023,15 +4087,17 @@ function loadProfile(){
   if(isClient()){
     planCard.style.display='block';
     if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
-    const c = DB.clients.find(x=>x.id===u.clientId);
-    const pd = DB.plans.find(p=>p.id===c?.plan);
-    document.getElementById('plan-content').innerHTML = pd ? `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--violet2)">${escapeHTML(pd.name)}</span><span class="badge b-violet">Plano atual</span></div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">${escapeHTML(pd.tagline)}</div>
-      ${pd.includes.split('\n').map(i=>`<div style="font-size:13px;margin-bottom:6px;color:var(--text2)">✓ ${escapeHTML(i)}</div>`).join('')}
-      <div style="margin-top:12px;font-size:13px;color:var(--text3)">Valor: <strong class="financial-value" style="color:var(--emerald)">${formatCurrencyBRL(pd.price)}</strong></div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="toast('Mensagem enviada para nosso time!','ok')">📩 Solicitar upgrade</button>`
-      : `<div style="font-size:13px;color:var(--text3)">Nenhum plano definido.</div>`;
+    const currentPlans=getCurrentClientPlans();
+    document.getElementById('plan-content').innerHTML=currentPlans.length?`
+      <div style="display:flex;flex-direction:column;gap:15px">${currentPlans.map((pd,index)=>`
+        <div style="padding-bottom:${index<currentPlans.length-1?'15px':'0'};border-bottom:${index<currentPlans.length-1?'1px solid var(--border)':'0'}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px"><span style="font-family:'Poppins',sans-serif;font-size:19px;font-weight:700;color:var(--violet2)">${escapeHTML(pd.name)}</span><span class="badge ${pd.custom?'b-pink':'b-violet'}">${pd.custom?'Plano personalizado':'Plano atual'}</span></div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">${escapeHTML(pd.tagline||'Plano configurado para a sua conta.')}</div>
+          ${String(pd.includes||'').split('\n').map(item=>item.trim()).filter(Boolean).map(item=>`<div style="font-size:12px;margin-bottom:5px;color:var(--text2)">✓ ${escapeHTML(item)}</div>`).join('')}
+          <div style="margin-top:11px;font-size:12px;color:var(--text3)">${Number(pd.price)>0?`Valor: <strong class="financial-value" style="color:var(--emerald)">${formatCurrencyBRL(pd.price)}</strong>`:'Investimento definido com o atendimento'}</div>
+        </div>`).join('')}</div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:15px" onclick="goTo('solutions')">Ver outras soluções</button>`
+      : `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap"><div><div style="font-size:13px;color:var(--text2);font-weight:600">Nenhum plano definido</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Explore os pacotes, planos e serviços disponíveis.</div></div><button class="btn btn-primary btn-sm" onclick="goTo('solutions')">Conhecer soluções</button></div>`;
   } else if(isAffiliate()){
     planCard.style.display='block';
     if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
@@ -4379,96 +4445,162 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
   }
 }
 
-/* ═══ PLANS (configurações) ═══ */
-function renderPlansAdmin(){
-  const grid = document.getElementById('plans-list-admin'); if(!grid) return;
-  if(!DB.plans.length){ grid.innerHTML='<div style="color:var(--text3);font-size:13px">Nenhum pacote cadastrado.</div>'; return; }
-  const typeLabel = {Avulso:'📦 Avulso',Semanal:'📅 Semanal',Diario:'🚀 Diário (Infinite+)'};
-  grid.innerHTML = DB.plans.map(p=>`
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px;display:flex;flex-direction:column;gap:6px;position:relative">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div>
-          <div style="font-weight:700;font-size:13px;color:var(--text)">${escapeHTML(p.name)}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${escapeHTML(typeLabel[p.type]||p.type)} · ${Number(p.qty)||0} criativo${p.qty>1?'s':''}</div>
-        </div>
-        <span class="badge ${p.active?'b-emerald':'b-muted'}" style="flex-shrink:0">${p.active?'Ativo':'Off'}</span>
-      </div>
-      <div style="font-size:12px;color:var(--text3);line-height:1.4">${escapeHTML(p.tagline)}</div>
-      <div style="margin-top:4px">
-        ${p.priceOrig>p.price?`<span class="financial-value" style="font-size:11px;color:var(--text3);text-decoration:line-through">${formatCurrencyBRL(p.priceOrig)}</span> `:''}
-        <span class="financial-value" style="font-size:15px;font-weight:700;color:var(--emerald)">${formatCurrencyBRL(p.price)}</span>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="btn btn-ghost btn-xs" style="flex:1;justify-content:center" onclick="openEditPlan('${p.id}')">✎ Editar</button>
-        <button class="btn btn-ghost btn-xs" style="flex:1;justify-content:center" onclick="togglePlan('${p.id}')">${p.active?'Desativar':'Ativar'}</button>
-        <button class="btn btn-danger btn-xs" onclick="removePlan('${p.id}')">✕</button>
-      </div>
-    </div>`).join('');
+/* ═══ SOLUCOES ═══ */
+const SOLUTION_CATEGORIES = [
+  {id:'closed_package',label:'Pacotes fechados',short:'Pacote fechado',sub:'Escopos definidos para necessidades pontuais.',accent:'var(--violet)'},
+  {id:'weekly_monthly',label:'Planos mensais com entrega semanal',short:'Plano semanal',sub:'Cadência semanal durante todo o mês.',accent:'var(--cyan)'},
+  {id:'infinite_plus',label:'Planos Infinite+',short:'Infinite+',sub:'Entregas todos os dias para operações de alto volume.',accent:'var(--emerald)'},
+  {id:'other',label:'Outros',short:'Outro serviço',sub:'Tráfego, sites, reputação e soluções especializadas.',accent:'var(--amber)'}
+];
+
+function solutionCategoryFromLegacyType(type){
+  if(type==='Avulso') return 'closed_package';
+  if(type==='Semanal'||type==='Mensal') return 'weekly_monthly';
+  if(type==='Diario') return 'infinite_plus';
+  return 'other';
+}
+function solutionLegacyType(category,custom){
+  if(custom) return 'Personalizado';
+  return {closed_package:'Avulso',weekly_monthly:'Semanal',infinite_plus:'Diario',other:'Outro'}[category]||'Outro';
+}
+function getClientPlanIds(client){
+  return [...new Set([...(client?.planIds||[]),client?.plan].filter(Boolean))];
+}
+function getCurrentClientPlans(){
+  if(!isClient()) return [];
+  const client=DB.clients.find(item=>item.id===DB.me.clientId);
+  const ids=new Set(getClientPlanIds(client));
+  return DB.plans.filter(plan=>ids.has(plan.id));
+}
+function solutionWhatsAppLink(solutionName,custom=false){
+  const email=DB.me?.email||'não informado';
+  const message=custom
+    ? `Olá, equipe Magemind! Meu e-mail de acesso é ${email} e quero montar um serviço personalizado para a minha operação. Podem me ajudar?`
+    : `Olá, equipe Magemind! Meu e-mail de acesso é ${email} e quero contratar a solução ${solutionName}. Podem me ajudar?`;
+  return `https://wa.me/${getAgencyPhone()}?text=${encodeURIComponent(message)}`;
+}
+function solutionPriceHTML(plan){
+  const price=Number(plan.price)||0;
+  if(price<=0) return `<div class="solution-price-main">Sob consulta</div><div class="solution-price-note">Escopo e investimento definidos no atendimento</div>`;
+  return `${Number(plan.priceOrig)>price?`<div class="solution-price-old">${formatCurrencyBRL(plan.priceOrig)}</div>`:''}<div class="solution-price-main">${formatCurrencyBRL(price)}</div><div class="solution-price-note">Investimento da solução</div>`;
+}
+function solutionCardHTML(plan,currentPlanIds,adminView){
+  const category=SOLUTION_CATEGORIES.find(item=>item.id===(plan.solutionCategory||solutionCategoryFromLegacyType(plan.type)))||SOLUTION_CATEGORIES[3];
+  const current=currentPlanIds.has(plan.id);
+  const includes=String(plan.includes||'').split('\n').map(item=>item.trim()).filter(Boolean);
+  const privatePlan=plan.custom===true||plan.type==='Personalizado';
+  return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}" style="--solution-accent:${category.accent}">
+    <div class="solution-card-top">
+      <span class="solution-kind">${escapeHTML(privatePlan?'Personalizado':category.short)}</span>
+      ${current?'<span class="solution-current">✓ Esse é o seu plano atual</span>':(adminView?`<span class="badge ${plan.active?'b-emerald':'b-muted'}">${plan.active?'Ativa':'Desativada'}</span>`:'')}
+    </div>
+    <h3 class="solution-name">${escapeHTML(plan.name)}</h3>
+    <p class="solution-tagline">${escapeHTML(plan.tagline||'Solução Magemind configurada para esta necessidade.')}</p>
+    <div class="solution-includes">${includes.length?includes.map(item=>`<div class="solution-include"><span class="solution-check">✓</span><span>${escapeHTML(item)}</span></div>`).join(''):'<div class="solution-include"><span class="solution-check">✓</span><span>Escopo definido durante o atendimento</span></div>'}</div>
+    <div class="solution-price">${solutionPriceHTML(plan)}</div>
+    ${adminView?`<div class="solution-actions"><button class="btn btn-ghost btn-xs" onclick="openEditPlan('${plan.id}')">Editar</button><button class="btn btn-ghost btn-xs" onclick="togglePlan('${plan.id}')">${plan.active?'Desativar':'Ativar'}</button><button class="btn btn-danger btn-xs" style="flex:0 0 auto" aria-label="Excluir solução" title="Excluir solução" onclick="removePlan('${plan.id}')">✕</button></div>`:`<a class="solution-whatsapp" href="${solutionWhatsAppLink(plan.name)}" target="_blank" rel="noopener noreferrer">Contratar pelo WhatsApp <span aria-hidden="true">↗</span></a>`}
+  </article>`;
+}
+function renderSolutionSection(category,plans,currentPlanIds,adminView){
+  if(!adminView&&!plans.length) return '';
+  return `<section class="solution-section" style="--solution-accent:${category.accent}">
+    <div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>${escapeHTML(category.label)}</div><div class="solution-section-sub">${escapeHTML(category.sub)}</div></div><span class="badge b-muted">${plans.length}</span></div>
+    <div class="solution-grid">${plans.length?plans.map(plan=>solutionCardHTML(plan,currentPlanIds,adminView)).join(''):'<div class="solution-empty">Nenhuma solução cadastrada nesta categoria.</div>'}</div>
+  </section>`;
+}
+function loadSolutions(){
+  if(!hasPermission('solutions.view')) return;
+  const adminView=isAdmin();
+  const actions=document.getElementById('solutions-page-actions');
+  const toolbar=document.getElementById('solutions-admin-toolbar');
+  const summary=document.getElementById('solutions-summary');
+  const customCta=document.getElementById('solutions-custom-cta');
+  document.getElementById('solutions-page-subtitle').textContent=adminView?'Crie, organize e publique o catálogo comercial da Magemind':'Encontre a solução certa para o próximo passo da sua operação';
+  actions.innerHTML=adminView?`<button class="btn btn-ghost btn-sm" onclick="openNewPlan(true)">Plano personalizado</button><button class="btn btn-primary btn-sm" onclick="openNewPlan(false)">Criar solução</button>`:'';
+  toolbar.style.display=adminView?'flex':'none';
+  customCta.style.display=adminView?'none':'flex';
+  if(!adminView) document.getElementById('solutions-custom-link').href=solutionWhatsAppLink('',true);
+  if(adminView){
+    summary.innerHTML=`<div class="solution-summary-item"><strong>${DB.plans.filter(plan=>!plan.custom).length}</strong><span>Soluções</span></div><div class="solution-summary-item"><strong>${DB.plans.filter(plan=>!plan.custom&&plan.active).length}</strong><span>Ativas</span></div><div class="solution-summary-item"><strong>${DB.plans.filter(plan=>plan.custom).length}</strong><span>Personalizadas</span></div>`;
+  }
+  const currentPlanIds=new Set(getCurrentClientPlans().map(plan=>plan.id));
+  const publicPlans=DB.plans.filter(plan=>adminView?!(plan.custom||plan.type==='Personalizado'):(plan.active&&!(plan.custom||plan.type==='Personalizado'))).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  let html=SOLUTION_CATEGORIES.map(category=>renderSolutionSection(category,publicPlans.filter(plan=>(plan.solutionCategory||solutionCategoryFromLegacyType(plan.type))===category.id),currentPlanIds,adminView)).join('');
+  if(adminView){
+    const customPlans=DB.plans.filter(plan=>plan.custom||plan.type==='Personalizado');
+    if(customPlans.length) html+=`<section class="solution-section" style="--solution-accent:var(--pink)"><div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>Planos personalizados</div><div class="solution-section-sub">Visíveis somente no perfil dos clientes vinculados.</div></div><span class="solution-private-note">Acesso privado</span></div><div class="solution-grid">${customPlans.map(plan=>solutionCardHTML(plan,currentPlanIds,true)).join('')}</div></section>`;
+  }
+  document.getElementById('solutions-catalog').innerHTML=html||'<div class="solution-empty" style="margin-top:22px">Nenhuma solução disponível no momento.</div>';
 }
 
-function openNewPlan(){
-  editPlanId = null;
-  document.getElementById('mp-title').textContent = 'Criar pacote';
-  ['p-name','p-tagline','p-includes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('p-qty').value=''; document.getElementById('p-price').value='';
-  document.getElementById('p-price-orig').value=''; document.getElementById('p-type').value='Avulso';
+function syncSolutionFormState(){
+  const custom=document.getElementById('p-custom').value==='1';
+  document.getElementById('p-custom-note').style.display=custom?'flex':'none';
+  document.getElementById('p-category').disabled=custom;
+}
+function openNewPlan(custom=false){
+  if(!hasPermission('solutions.manage')){ toast('Sem permissão para gerenciar soluções','err'); return; }
+  editPlanId=null;
+  document.getElementById('mp-title').textContent=custom?'Criar plano personalizado':'Criar solução';
+  ['p-name','p-tagline','p-includes','p-qty','p-price','p-price-orig'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-category').value='closed_package';
+  document.getElementById('p-custom').value=custom?'1':'0';
   document.getElementById('p-active').value='1';
-  openModal('modal-plans');
+  syncSolutionFormState(); openModal('modal-plans');
 }
 function openEditPlan(id){
-  editPlanId = id;
-  const p = DB.plans.find(x=>x.id===id); if(!p) return;
-  document.getElementById('mp-title').textContent = 'Editar pacote';
-  document.getElementById('p-name').value       = p.name;
-  document.getElementById('p-tagline').value    = p.tagline;
-  document.getElementById('p-includes').value   = p.includes;
-  document.getElementById('p-qty').value        = p.qty;
-  document.getElementById('p-price').value      = p.price;
-  document.getElementById('p-price-orig').value = p.priceOrig||'';
-  document.getElementById('p-type').value       = p.type;
-  document.getElementById('p-active').value     = p.active ? '1' : '0';
-  openModal('modal-plans');
+  if(!hasPermission('solutions.manage')) return;
+  editPlanId=id;
+  const p=DB.plans.find(item=>item.id===id); if(!p) return;
+  const custom=p.custom===true||p.type==='Personalizado';
+  document.getElementById('mp-title').textContent=custom?'Editar plano personalizado':'Editar solução';
+  document.getElementById('p-name').value=p.name;
+  document.getElementById('p-tagline').value=p.tagline;
+  document.getElementById('p-includes').value=p.includes;
+  document.getElementById('p-qty').value=p.qty||'';
+  document.getElementById('p-price').value=p.price||'';
+  document.getElementById('p-price-orig').value=p.priceOrig||'';
+  document.getElementById('p-category').value=p.solutionCategory||solutionCategoryFromLegacyType(p.type);
+  document.getElementById('p-custom').value=custom?'1':'0';
+  document.getElementById('p-active').value=p.active?'1':'0';
+  syncSolutionFormState(); openModal('modal-plans');
 }
 async function savePlan(){
-  const name  = document.getElementById('p-name').value.trim();
-  if(!name){ toast('Digite o nome do pacote','err'); return; }
-  const price = parseFloat(document.getElementById('p-price').value)||0;
-  if(!price){ toast('Informe o preço','err'); return; }
-  const dbData = {
-    name, type:document.getElementById('p-type').value,
-    qty:parseInt(document.getElementById('p-qty').value)||1,
-    price_orig:parseFloat(document.getElementById('p-price-orig').value)||price,
-    price,
-    tagline:document.getElementById('p-tagline').value.trim(),
-    includes:document.getElementById('p-includes').value.trim(),
-    active:document.getElementById('p-active').value==='1'
-  };
+  if(!hasPermission('solutions.manage')) return;
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){ toast('Digite o nome da solução','err'); return; }
+  const price=Math.max(0,parseFloat(document.getElementById('p-price').value)||0);
+  const custom=document.getElementById('p-custom').value==='1';
+  const category=document.getElementById('p-category').value||'other';
+  const current=editPlanId?DB.plans.find(item=>item.id===editPlanId):null;
+  const dbData={name,type:solutionLegacyType(category,custom),solution_category:category,is_custom:custom,qty:Math.max(0,parseInt(document.getElementById('p-qty').value)||0),price_orig:Math.max(0,parseFloat(document.getElementById('p-price-orig').value)||price),price,tagline:document.getElementById('p-tagline').value.trim(),includes:document.getElementById('p-includes').value.trim(),active:document.getElementById('p-active').value==='1',sort_order:current?.sortOrder??DB.plans.length,updated_at:new Date().toISOString()};
   if(editPlanId){
-    const {error} = await supa.from('plans').update(dbData).eq('id',editPlanId);
+    const {data:updated,error}=await supa.from('plans').update(dbData).eq('id',editPlanId).select().single();
     if(error){ toast('Erro: '+error.message,'err'); return; }
-    const p = DB.plans.find(x=>x.id===editPlanId);
-    if(p) Object.assign(p,{name,type:dbData.type,qty:dbData.qty,priceOrig:dbData.price_orig,price,tagline:dbData.tagline,includes:dbData.includes,active:dbData.active?1:0});
-    toast('Pacote atualizado! ✓','ok');
-  } else {
-    const {data:np, error} = await supa.from('plans').insert(dbData).select().single();
+    Object.assign(current,{name:updated.name,type:updated.type,solutionCategory:updated.solution_category,custom:updated.is_custom,qty:updated.qty,priceOrig:updated.price_orig,price:updated.price,tagline:updated.tagline||'',includes:updated.includes||'',active:updated.active,sortOrder:updated.sort_order||0});
+    toast('Solução atualizada! ✓','ok');
+  }else{
+    const {data:created,error}=await supa.from('plans').insert(dbData).select().single();
     if(error){ toast('Erro: '+error.message,'err'); return; }
-    DB.plans.push({id:np.id,name,type:dbData.type,qty:dbData.qty,priceOrig:dbData.price_orig,price,tagline:dbData.tagline,includes:dbData.includes,active:dbData.active?1:0});
-    toast('Pacote criado! ✓','ok');
+    DB.plans.push({id:created.id,name:created.name,type:created.type,solutionCategory:created.solution_category,custom:created.is_custom,qty:created.qty,priceOrig:created.price_orig,price:created.price,tagline:created.tagline||'',includes:created.includes||'',active:created.active,sortOrder:created.sort_order||0});
+    toast(custom?'Plano personalizado criado! ✓':'Solução criada! ✓','ok');
   }
-  closeModal('modal-plans'); renderPlansAdmin();
+  closeModal('modal-plans'); loadSolutions(); populateSalePlans();
 }
 async function togglePlan(id){
-  const p = DB.plans.find(x=>x.id===id); if(!p) return;
-  p.active = p.active ? 0 : 1;
-  await supa.from('plans').update({active:p.active===1}).eq('id',id);
-  toast(p.active?'Pacote ativado':'Pacote desativado','ok'); renderPlansAdmin();
+  if(!hasPermission('solutions.manage')) return;
+  const p=DB.plans.find(item=>item.id===id); if(!p) return;
+  const next=!p.active;
+  const {error}=await supa.from('plans').update({active:next,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){ toast('Erro: '+error.message,'err'); return; }
+  p.active=next; toast(next?'Solução ativada':'Solução desativada','ok'); loadSolutions(); populateSalePlans();
 }
 async function removePlan(id){
-  if(!confirm('Remover este pacote?')) return;
-  const {error} = await supa.from('plans').delete().eq('id',id);
-  if(error){ toast('Erro: '+error.message,'err'); return; }
-  DB.plans = DB.plans.filter(x=>x.id!==id);
-  toast('Pacote removido','ok'); renderPlansAdmin();
+  if(!hasPermission('solutions.manage')) return;
+  if(!confirm('Excluir esta solução? Planos vinculados a clientes ou vendas não podem ser excluídos.')) return;
+  const {error}=await supa.from('plans').delete().eq('id',id);
+  if(error){ toast('Não foi possível excluir: '+error.message,'err'); return; }
+  DB.plans=DB.plans.filter(item=>item.id!==id); toast('Solução excluída','ok'); loadSolutions();
 }
 
 /* ═══ MODALS ═══ */
@@ -4651,6 +4783,7 @@ function ico(n){
     users:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
     grid:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
     dollar:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
+    package:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>`,
     file:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
     settings:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
   };
@@ -4675,7 +4808,7 @@ function saveAgencySettings(){
 }
 function getAgencyPhone(){
   const cfg = JSON.parse(localStorage.getItem('mm_agency_cfg') || '{}');
-  return cfg.phone || '';
+  return cfg.phone || '554899391390';
 }
 
 window.addEventListener('load', ()=>{

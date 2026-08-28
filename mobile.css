@@ -124,7 +124,11 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   #pg-settings .settings-grid,#profile-cards-row{grid-template-columns:1fr!important;gap:12px!important}
   .settings-card{padding:17px}
   .push-categories{grid-template-columns:1fr}
-  #plans-list-admin{grid-template-columns:1fr!important}
+  .solutions-scroll{padding:0 16px 20px}
+  .solutions-toolbar{align-items:flex-start}
+  .solution-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .solution-card{min-height:0;padding:16px}
+  .solution-custom-cta{align-items:flex-start;flex-direction:column}
 
   .overlay{z-index:600;padding-top:var(--safe-top);align-items:flex-end}
   .modal,.modal.modal-lg{width:100%!important;max-width:100vw!important;max-height:calc(96dvh - var(--safe-top));border-radius:20px 20px 0 0;border-bottom:0}
@@ -166,6 +170,12 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   #sales-period-filter>div{width:100%;margin-left:0!important;padding-left:0!important;border-left:0!important;flex-wrap:wrap}
   #sales-period-filter input[type=date]{flex:1;min-width:125px}
   .docs-grid{grid-template-columns:1fr}
+  .solution-grid{grid-template-columns:1fr}
+  .solution-section-head{align-items:flex-start}
+  .solution-section-title{font-size:13px;line-height:1.35}
+  .solution-card-top{align-items:flex-start;flex-wrap:wrap}
+  .solution-current{width:100%}
+  .solution-custom-cta .btn{width:100%}
   .dd-side{grid-template-columns:1fr}
   #det-admin-controls{grid-column:auto}
   .m-foot{flex-wrap:wrap}
