@@ -460,7 +460,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260828-1">
+<link rel="stylesheet" href="mobile.css?v=20260829-2">
 </head>
 <body>
 
@@ -1219,7 +1219,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           <div class="detail-comment-composer" id="det-comment-input">
             <div class="av av-sm" id="det-comment-av" style="margin-bottom:4px;flex-shrink:0">?</div>
             <textarea class="fi" id="new-comment" style="flex:1;resize:none" placeholder="Escreva um comentário..."></textarea>
-            <button class="btn btn-primary btn-sm" style="align-self:flex-end" onclick="addComment()">Enviar</button>
+            <button class="btn btn-primary btn-sm detail-comment-send" style="align-self:flex-end" onclick="addComment()" aria-label="Enviar comentário"><span>Enviar</span></button>
           </div>
         </section>
       </div>
@@ -1358,7 +1358,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="mobile-app.js?v=20260828-2"></script>
+<script src="mobile-app.js?v=20260829-4"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -4842,7 +4842,7 @@ async function addComment(){
   const preview = text.length>60 ? text.slice(0,57)+'...' : text;
   if(isStaffRole()) await dbPushNotifToClient(d.client,'💬','var(--cyanbg)',`Novo comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id,'comment_added');
   else              await dbPushNotif(null,'admin','💬','var(--cyanbg)',`Comentário de ${DB.me.name}`,`Em "${d.title}": ${preview}`,d.id,'comment_added');
-  renderComments(d.comments); inp.value=''; toast('Comentário enviado!','ok');
+  renderComments(d.comments); inp.value=''; window.resetMobileCommentComposer?.(); toast('Comentário enviado!','ok');
 }
 
 async function changeStatus(status){

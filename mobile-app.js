@@ -32,28 +32,78 @@
   window.buildMobileNav=function(items){
     const nav=document.getElementById('mobile-bottom-nav');
     if(!nav) return;
-    const priorities=['dashboard','demands','clients','sales','docs','team'];
-    const direct=priorities.map(id=>items.find(i=>i.id===id)).filter(Boolean).slice(0,3);
+    const direct=items.filter(item=>item.id!=='settings').slice(0,4);
+    const compactLabels={dashboard:'Menu',demands:'Demandas',clients:'Clientes',sales:'Vendas',solutions:'Soluções',affiliates:'Indique',team:'Equipe',docs:'Arquivos'};
     nav.innerHTML=direct.map(i=>`
-      <button class="mobile-tab" type="button" data-mobile-page="${i.id}" onclick="goTo('${i.id}')" aria-label="${i.label}">
-        <span class="sb-icon">${i.icon}</span><span>${i.label.replace('Minhas ','').replace('Meus ','')}</span>
+      <button class="mobile-tab" type="button" data-mobile-page="${i.id}" onclick="navigateMobile('${i.id}')" aria-label="${i.label}">
+        <span class="mobile-tab-icon">${i.icon}</span><span class="mobile-tab-label">${compactLabels[i.id]||i.label.replace('Minhas ','').replace('Meus ','')}</span>
         ${i.badge?`<span class="mobile-tab-badge">${i.badge>99?'99+':i.badge}</span>`:''}
       </button>`).join('')+`
-      <button class="mobile-tab" type="button" data-mobile-page="settings" onclick="goTo('settings')" aria-label="Abrir configurações da conta">
-        <span class="sb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1h.2a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span><span>Config.</span>
-      </button>
       <button class="mobile-tab" id="mobile-more-tab" type="button" onclick="toggleMobileMenu(true)" aria-label="Abrir mais opções">
-        <span class="sb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><span>Mais</span>
+        <span class="mobile-tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><span class="mobile-tab-label">Mais</span>
       </button>`;
+    nav.dataset.directPages=direct.map(item=>item.id).join(',');
     const current=document.querySelector('.page.active')?.id?.replace('pg-','')||'dashboard';
     window.syncMobileNavigation(current);
   };
 
-  window.syncMobileNavigation=function(page){
-    document.querySelectorAll('[data-mobile-page]').forEach(el=>el.classList.toggle('active',el.dataset.mobilePage===page));
-    const more=document.getElementById('mobile-more-tab');
-    if(more) more.classList.toggle('active',!document.querySelector(`[data-mobile-page="${page}"]`) && page!=='dashboard');
+  window.navigateMobile=function(page){
+    window.closeMobileMenu();
+    if(typeof window.goTo==='function') window.goTo(page);
+    requestAnimationFrame(()=>document.getElementById(`pg-${page}`)?.scrollTo({top:0,left:0,behavior:'auto'}));
   };
+
+  window.syncMobileNavigation=function(page){
+    document.querySelectorAll('[data-mobile-page]').forEach(el=>{
+      const active=el.dataset.mobilePage===page;
+      el.classList.toggle('active',active);
+      if(active) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current');
+    });
+    const more=document.getElementById('mobile-more-tab');
+    if(more){
+      const active=!document.querySelector(`[data-mobile-page="${page}"]`);
+      more.classList.toggle('active',active);
+      if(active) more.setAttribute('aria-current','page'); else more.removeAttribute('aria-current');
+    }
+  };
+
+  let responsiveTableFrame=0;
+  function enhanceResponsiveTables(){
+    responsiveTableFrame=0;
+    document.querySelectorAll('table').forEach(table=>{
+      table.classList.add('mobile-card-table');
+      const headerRows=table.tHead?Array.from(table.tHead.rows):[];
+      const headers=headerRows.length?Array.from(headerRows[headerRows.length-1].cells).map(cell=>cell.textContent.trim()):[];
+      Array.from(table.tBodies||[]).forEach(body=>Array.from(body.rows).forEach(row=>{
+        Array.from(row.cells).forEach((cell,index)=>{
+          const label=headers[index]||'';
+          if(label) cell.dataset.label=label; else cell.removeAttribute('data-label');
+          cell.classList.toggle('mobile-empty-cell',cell.colSpan>1||!label&&row.cells.length===1);
+        });
+      }));
+    });
+  }
+  function scheduleResponsiveTables(){
+    if(responsiveTableFrame) return;
+    responsiveTableFrame=requestAnimationFrame(enhanceResponsiveTables);
+  }
+  window.refreshResponsiveTables=scheduleResponsiveTables;
+
+  function resizeCommentTextarea(){
+    const input=document.getElementById('new-comment'); if(!input) return;
+    input.style.height='auto';
+    input.style.height=`${Math.min(120,Math.max(42,input.scrollHeight))}px`;
+  }
+  window.resetMobileCommentComposer=function(){
+    const input=document.getElementById('new-comment');
+    if(input) input.style.height='42px';
+  };
+  function syncMobileKeyboard(){
+    const active=document.activeElement;
+    const editing=active&&['INPUT','TEXTAREA','SELECT'].includes(active.tagName);
+    const viewportHeight=window.visualViewport?.height||window.innerHeight;
+    document.body.classList.toggle('mobile-keyboard-open',Boolean(editing&&window.innerHeight-viewportHeight>110));
+  }
 
   function renderInstallContent(){
     const steps=document.getElementById('install-steps');
@@ -131,6 +181,15 @@
   document.addEventListener('DOMContentLoaded',()=>{
     const guide=document.getElementById('install-guide');
     guide?.addEventListener('click',event=>{ if(event.target===guide) window.closeInstallGuide(true); });
+    const comment=document.getElementById('new-comment');
+    comment?.addEventListener('input',resizeCommentTextarea);
+    comment?.addEventListener('focus',()=>setTimeout(()=>comment.scrollIntoView({block:'nearest'}),180));
+    const tablesObserver=new MutationObserver(scheduleResponsiveTables);
+    tablesObserver.observe(document.getElementById('app')||document.body,{subtree:true,childList:true,characterData:true});
+    scheduleResponsiveTables();
+    window.visualViewport?.addEventListener('resize',syncMobileKeyboard);
+    document.addEventListener('focusin',syncMobileKeyboard);
+    document.addEventListener('focusout',()=>setTimeout(syncMobileKeyboard,80));
     if(isMobile()&&!isStandalone()&&!recentlyDismissed()) setTimeout(()=>window.openInstallGuide(false),1200);
   });
 })();
