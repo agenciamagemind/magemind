@@ -1,4 +1,4 @@
-const CACHE_NAME='magemind-shell-20260829-20';
+const CACHE_NAME='magemind-shell-20260829-21';
 const SHELL=['./','./index.html','./mobile.css','./mobile-app.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png'];
 
 self.addEventListener('install',event=>{
@@ -29,12 +29,30 @@ self.addEventListener('fetch',event=>{
 self.addEventListener('push',event=>{
   let payload={};
   try{ payload=event.data?.json()||{}; }catch(_){ payload={body:event.data?.text()||''}; }
+  const compact=(value,max,fallback='')=>{
+    const normalized=String(value||fallback).replace(/\s+/g,' ').trim();
+    if(normalized.length<=max) return normalized;
+    const sentences=normalized.match(/[^.!?]+[.!?]+/g)||[];
+    let complete='';
+    for(const sentence of sentences){
+      const candidate=(complete+' '+sentence.trim()).trim();
+      if(candidate.length>max) break;
+      complete=candidate;
+    }
+    if(complete.length>=Math.floor(max*.4)) return complete;
+    const slice=normalized.slice(0,max-1).trimEnd();
+    const boundary=slice.lastIndexOf(' ');
+    const cut=boundary>=Math.floor(max*.58)?slice.slice(0,boundary):slice;
+    return cut.replace(/[\s.,;:!?-]+$/,'')+'…';
+  };
+  const title=compact(payload.title,28,'Magemind');
+  const body=compact(payload.body,72);
   const options={
-    body:payload.body||'',icon:'./magemind-logo-192.png',badge:'./magemind-logo-192.png',
+    body,icon:'./magemind-logo-192.png',badge:'./magemind-logo-192.png',
     tag:payload.notificationId?`magemind-${payload.notificationId}`:'magemind-general',
     renotify:false,data:{url:payload.url||'./',demandId:payload.demandId||null},
   };
-  event.waitUntil(self.registration.showNotification(payload.title||'Magemind',options));
+  event.waitUntil(self.registration.showNotification(title,options));
 });
 
 self.addEventListener('notificationclick',event=>{

@@ -30,6 +30,23 @@ function preferenceColumn(eventType: string): keyof Omit<Preference, "user_id" |
   return "general";
 }
 
+function compactPushText(value: unknown, max: number, fallback = ""): string {
+  const normalized = String(value || fallback).replace(/\s+/g, " ").trim();
+  if (normalized.length <= max) return normalized;
+  const sentences = normalized.match(/[^.!?]+[.!?]+/g) || [];
+  let complete = "";
+  for (const sentence of sentences) {
+    const candidate = (complete + " " + sentence.trim()).trim();
+    if (candidate.length > max) break;
+    complete = candidate;
+  }
+  if (complete.length >= Math.floor(max * 0.4)) return complete;
+  const slice = normalized.slice(0, max - 1).trimEnd();
+  const boundary = slice.lastIndexOf(" ");
+  const cut = boundary >= Math.floor(max * 0.58) ? slice.slice(0, boundary) : slice;
+  return cut.replace(/[\s.,;:!?-]+$/, "") + "…";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
@@ -126,8 +143,8 @@ Deno.serve(async (req) => {
       }, { onConflict: "notification_id,subscription_id" });
 
       const payload = JSON.stringify({
-        title: notification.title,
-        body: notification.body || "",
+        title: compactPushText(notification.title, 28, "Magemind"),
+        body: compactPushText(notification.body, 72),
         notificationId,
         demandId: notification.link_demand_id,
         url: notification.link_demand_id ? `./?openDemand=${notification.link_demand_id}` : "./",

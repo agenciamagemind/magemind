@@ -5244,23 +5244,40 @@ function toast(msg, type='ok'){
 
 /* ═══ NOTIFICATIONS ═══ */
 const NOTIFICATION_TITLES = {
-  demand_completed:['Pronto. Pode fingir que foi fácil.','Finalizada. A espera perdeu.','Demanda concluída. Sobrevivemos.'],
-  demand_started:['Entrou em produção. Agora vai.','As engrenagens começaram a girar.','Produção iniciada. O sossego acabou.'],
-  demand_created:['Demanda nova na área.','Chegou trabalho novo. Que surpresa.','Nova demanda. A fila ganhou companhia.'],
-  demand_updated:['Mudou alguma coisa. De novo.','Demanda atualizada, porque detalhes importam.','Tem novidade nessa demanda.'],
-  demand_status:['O status mudou. O suspense continua.','Movimentação detectada. Nada fica parado.'],
-  comment_added:['Comentário novo. A paz durou pouco.','Alguém comentou. Hora de espiar.','Nova mensagem na demanda.'],
-  sale_created:['Ca-ching. O comercial aprontou de novo.','Venda registrada. Belo problema para ter.','Entrou venda. Pode comemorar discretamente.'],
-  referral_approved:['Aprovado. Pode começar a indicar.','A porta abriu. E tem comissão do outro lado.','Indique & Ganhe liberado. Agora ficou interessante.'],
-  referral_rejected:['Ainda não foi dessa vez.','Pedido analisado. O universo pediu uma nova tentativa.'],
-  withdrawal_approved:['Saque aprovado. O PIX está aquecendo.','Dinheiro a caminho. Com alguma burocracia, claro.'],
-  withdrawal_paid:['PIX enviado. A parte bonita chegou.','Pagamento feito. Pode atualizar o extrato.'],
-  withdrawal_rejected:['Saque recusado. O saldo continua fazendo companhia.'],
-  withdrawal_reversed:['PIX estornado. O saldo voltou para casa.']
+  demand_completed:['Pronto. Foi fácil, claro.','Finalizada. A espera perdeu.','Demanda concluída.'],
+  demand_started:['Entrou em produção.','A produção começou.','Agora vai.'],
+  demand_created:['Nova demanda na área.','Chegou trabalho novo.','A fila ganhou companhia.'],
+  demand_updated:['Demanda atualizada.','Detalhes mudaram. De novo.','Tem novidade na demanda.'],
+  demand_status:['Status atualizado.','A demanda se mexeu.'],
+  comment_added:['Comentário novo.','Alguém comentou.','Nova mensagem.'],
+  sale_created:['Ca-ching. Venda nova.','Venda registrada.','O comercial aprontou.'],
+  referral_approved:['Indique & Ganhe liberado','Participação aprovada','Acesso liberado'],
+  referral_rejected:['Ainda não foi dessa vez.','Pedido não aprovado.'],
+  withdrawal_approved:['Saque aprovado.','PIX a caminho.'],
+  withdrawal_paid:['PIX enviado.','Pagamento feito.'],
+  withdrawal_rejected:['Saque não aprovado.'],
+  withdrawal_reversed:['PIX estornado.']
 };
+function compactNotificationText(value,max,fallback=''){
+  const normalized=String(value||fallback).replace(/\s+/g,' ').trim();
+  if(normalized.length<=max)return normalized;
+  const sentences=normalized.match(/[^.!?]+[.!?]+/g)||[];
+  let complete='';
+  for(const sentence of sentences){
+    const candidate=(complete+' '+sentence.trim()).trim();
+    if(candidate.length>max)break;
+    complete=candidate;
+  }
+  if(complete.length>=Math.floor(max*.4))return complete;
+  const slice=normalized.slice(0,max-1).trimEnd();
+  const boundary=slice.lastIndexOf(' ');
+  const cut=boundary>=Math.floor(max*.58)?slice.slice(0,boundary):slice;
+  return cut.replace(/[\s.,;:!?-]+$/,'')+'…';
+}
 function playfulNotification(eventType,title,body){
   const choices=NOTIFICATION_TITLES[eventType];
-  return {title:choices?.[Math.floor(Math.random()*choices.length)]||title,body};
+  const selected=choices?.[Math.floor(Math.random()*choices.length)]||title;
+  return {title:compactNotificationText(selected,28,'Magemind'),body:compactNotificationText(body,72)};
 }
 async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDemandId, eventType='general'){
   const copy=playfulNotification(eventType,title,body||'');
