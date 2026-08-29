@@ -819,7 +819,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div class="payout-section-head"><div><div class="payout-section-title">Aprovação de saques</div><div class="payout-section-sub">Fila financeira visível exclusivamente para CEO e Gerente</div></div><span class="payout-status pending" id="payout-queue-count">0 em análise</span></div>
             <div class="tbl-container"><table><thead><tr><th>Participante</th><th>Valor</th><th>PIX</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="payout-approval-body"></tbody></table></div>
           </div>
-          <div class="table-wrap"><div class="tbl-container"><table><thead><tr><th>Participante</th><th>Perfil</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Status</th></tr></thead><tbody id="affiliates-body"></tbody></table></div></div>
+          <div class="table-wrap"><div class="tbl-container"><table><thead><tr><th>Participante</th><th>Perfil</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Status</th><th>Ações</th></tr></thead><tbody id="affiliates-body"></tbody></table></div></div>
         </div>
         <div class="referral-view" id="referral-member-view">
           <div class="referral-member-shell">
@@ -3737,8 +3737,9 @@ function renderReferralAdminPanel(){
       <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(revenue)}</td>
       <td class="financial-value" style="color:var(--emerald);font-weight:600">${formatCurrencyBRL(available)}</td>
       <td>${referralStatusBadge(a.affiliateStatus)}</td>
+      <td>${a.affiliateStatus==='approved'&&hasPermission('affiliates.manage')?`<button class="btn btn-danger btn-xs" type="button" onclick="removeReferralParticipant('${a.id}')" title="Remover do Indique & Ganhe"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"/></svg> Remover</button>`:'—'}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Nenhum participante cadastrado</td></tr>';
+  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Nenhum participante cadastrado</td></tr>';
 }
 async function updateAffiliateCommission(id, value){
   if(!hasPermission('affiliates.manage')){ toast('Sem permissão','err'); return; }
@@ -3748,6 +3749,24 @@ async function updateAffiliateCommission(id, value){
   if(error){ toast('Erro: '+error.message,'err'); return; }
   const u = DB.users.find(x=>x.id===id); if(u) u.commissionRate = rate;
   toast('Comissão atualizada ✓','ok');
+}
+async function removeReferralParticipant(id){
+  if(!isAdmin()||!hasPermission('affiliates.manage')){toast('Essa ação é exclusiva para CEO e Gerentes.','err');return;}
+  const person=DB.users.find(u=>u.id===id);
+  if(!person||person.affiliateStatus!=='approved'){toast('Esse participante não está mais ativo no programa.','err');renderReferralAdminPanel();return;}
+  const confirmed=confirm(`Remover ${person.name} do Indique & Ganhe?\n\nA conta continuará ativa, mas perderá o acesso ao programa e as indicações futuras serão desvinculadas. O histórico financeiro será preservado.`);
+  if(!confirmed)return;
+  const {error}=await supa.rpc('admin_remove_referral_participant',{p_profile_id:id});
+  if(error){toast('Não foi possível remover o participante: '+error.message,'err');return;}
+  person.affiliateStatus='locked';
+  person.affiliateRequestedAt=null;
+  person.commissionRate=0;
+  DB.clients.forEach(client=>{if(client.affiliateId===id)client.affiliateId=null;});
+  if(DB.affiliateWallets) delete DB.affiliateWallets[id];
+  await dbPushNotif(id,null,'🎁','var(--rosebg)','Participação encerrada','Seu acesso ao Indique & Ganhe foi encerrado pela nossa equipe. Seu histórico financeiro continua preservado para consulta e auditoria.',null,'referral_removed');
+  renderReferralAdminPanel();
+  populateClientAffiliateSelect();
+  toast(`${person.name} foi removido do Indique & Ganhe.`,'ok');
 }
 
 function getMyDemands(){
