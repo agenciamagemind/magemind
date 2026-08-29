@@ -212,8 +212,11 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 
   .topbar{height:60px;min-height:60px;padding:0 max(16px,var(--safe-right)) 0 max(16px,var(--safe-left));background:rgba(12,12,22,.96);border-bottom-color:rgba(255,255,255,.08);box-shadow:0 8px 24px rgba(0,0,0,.12)}
   .mobile-menu-btn{display:none!important}
-  .topbar-title{font-size:16px;line-height:1.2}
-  .topbar-crumb{max-width:56vw;font-size:10px}
+  .topbar-left{flex:1;min-width:0}
+  .topbar-title,.topbar-crumb{display:none}
+  .topbar-brand{align-items:center;gap:8px;min-width:0}
+  .topbar-brand img{width:36px;height:36px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 3px 7px rgba(0,0,0,.22))}
+  .topbar-brand .sb-logo-text{font-size:17px;line-height:1.2;letter-spacing:0;padding:0}
   .topbar-right{gap:8px}
   #btn-notif,#tb-cta{width:40px;height:40px;min-width:40px;padding:0;border-radius:10px}
   #tb-cta-label{display:none}
