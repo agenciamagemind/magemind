@@ -5182,7 +5182,7 @@ function friendlyErrorMessage(message){
 }
 function shouldOfferErrorSupport(message){
   const lower=String(message||'').toLowerCase();
-  if(/preencha|digite|informe|selecione|senha atual incorreta|senhas n[aã]o coincidem|m[ií]nimo 8 caracteres|arquivo muito grande|e-mail ou senha|confirme seu e-mail/.test(lower)) return false;
+  if(/preencha|digite|informe|selecione|senha atual incorreta|senhas n[aã]o coincidem|m[ií]nimo 8 caracteres|arquivo muito grande|e-mail ou senha|invalid login credentials|confirme seu e-mail|email not confirmed|already registered/.test(lower)) return false;
   if(/sem permiss[aã]o|n[aã]o tem permiss[aã]o|n[aã]o pode (editar|excluir|alterar|acessar)/.test(lower)) return false;
   return /erro|error|falha|failed|n[aã]o foi poss[ií]vel|sess[aã]o|servidor|rede|conex[aã]o|carregar|salvar|criar|excluir|upload|documento|demanda|venda|perfil/.test(lower);
 }
