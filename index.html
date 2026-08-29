@@ -13,7 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="Magemind">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="magemind-logo-180.png">
-<link rel="icon" type="image/png" sizes="512x512" href="magemind-logo-512.png">
+<link rel="icon" type="image/png" href="magemind-logo-transparent.png?v=20260829">
+<link rel="shortcut icon" type="image/png" href="magemind-logo-transparent.png?v=20260829">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Supabase SDK -->
@@ -245,10 +246,13 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .notif-time{font-size:10px;color:var(--text3);margin-top:3px}
 .notif-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);flex-shrink:0;margin-top:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r3);padding:12px 16px;font-size:13px;color:var(--text);transform:translateY(60px);opacity:0;transition:all .3s;min-width:220px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r3);padding:12px 16px;font-size:13px;color:var(--text);transform:translateY(60px);opacity:0;transition:all .3s;min-width:220px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-left:3px solid var(--emerald)}
 .toast.err{border-left:3px solid var(--rose)}
+.toast-message{line-height:1.5}
+.toast-support{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 10px;border:1px solid var(--violetborder);border-radius:6px;background:var(--violetbg);color:var(--violet3);font-size:11px;font-weight:700;text-decoration:none}
+.toast-support:hover{color:#fff;border-color:var(--violet2)}
 .auth-shell{height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
 .auth-shell::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
 .auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r4);padding:40px;width:440px;max-width:95vw;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5)}
@@ -2600,8 +2604,8 @@ function buildNav(){
   const editorItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
-    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
+    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const affiliateItems = [
@@ -4653,7 +4657,7 @@ function persistDemandField(key){
     const cfg=demandFieldMap[pending.field];
     const {error}=await supa.from('demands').update({[cfg.db]:pending.value||null}).eq('id',pending.demandId);
     if(error){
-      if(currentDemandId===pending.demandId) setDemandSaveState('error','Não foi possível salvar. Tente novamente.');
+      if(currentDemandId===pending.demandId) setDemandSaveState('error','Não salvou ainda. Tenta novamente em um instante.');
       toast('Erro ao salvar alteração: '+error.message,'err'); return;
     }
     if(demandAutosaveVersions.get(key)===pending.version){
@@ -5147,10 +5151,56 @@ function closeModal(id){
 
 /* ═══ TOAST ═══ */
 let _tt;
+function friendlyErrorMessage(message){
+  const original=String(message||'').trim();
+  const lower=original.toLowerCase();
+  if(!original) return 'Ops, alguma coisa saiu do roteiro. Tenta mais uma vez?';
+  if(/invalid login credentials|e-mail ou senha incorret|email ou senha incorret/.test(lower)) return 'E-mail ou senha não bateram. Dá uma conferida e tenta de novo.';
+  if(/email not confirmed|confirme seu e-mail/.test(lower)) return 'Falta confirmar seu e-mail. Dá uma olhada na caixa de entrada e também no spam.';
+  if(/already registered|already been registered|já est[aá] cadastrad|duplicate key/.test(lower)) return 'Esse cadastro já existe por aqui. Melhor entrar com a conta que já está criada.';
+  if(/jwt expired|sess[aã]o (expir|inv[aá]lid)|refresh token|auth session missing/.test(lower)) return 'Sua sessão tirou uma folga sem avisar. Entre de novo para continuar de onde parou.';
+  if(/failed to fetch|networkerror|erro de rede|conex[aã]o|load failed/.test(lower)) return 'A internet deu uma tropeçada. Confere a conexão e tenta novamente em alguns segundos.';
+  if(/row-level security|permission denied|sem permiss[aã]o|n[aã]o tem permiss[aã]o|n[aã]o pode (editar|excluir|alterar|acessar)/.test(lower)) return 'Opa, essa ação não está liberada para o seu perfil.';
+  if(/only the read state of a notification can be changed/.test(lower)) return 'A demanda não foi excluída porque uma notificação antiga travou o caminho. Nosso suporte resolve isso rapidinho.';
+  if(/arquivo muito grande|payload too large|maximum allowed size|exceed.*size/.test(lower)) return 'Esse arquivo veio grandão demais. Reduza para até 5 MB e manda de novo.';
+  if(/senha atual incorreta/.test(lower)) return 'A senha atual não bateu. Respira, confere com calma e tenta outra vez.';
+  if(/senhas n[aã]o coincidem/.test(lower)) return 'As duas senhas ficaram diferentes. Digite igual nos dois campos e pronto.';
+  if(/m[ií]nimo 8 caracteres/.test(lower)) return 'A senha precisa de pelo menos 8 caracteres. Capricha um pouquinho nela.';
+  if(/^preencha/i.test(original)) return `Faltou uma coisinha: ${original.replace(/^preencha\s*/i,'').replace(/[.!]+$/,'').toLowerCase()}.`;
+  if(/^digite/i.test(original)) return `Quase lá: ${original.replace(/^digite\s*/i,'digite ').replace(/[.!]+$/,'')}.`;
+  if(/^informe/i.test(original)) return `Só falta isto: ${original.replace(/^informe\s*/i,'informe ').replace(/[.!]+$/,'')}.`;
+  if(/^selecione/i.test(original)) return `Escolhe mais uma coisinha: ${original.replace(/^selecione\s*/i,'').replace(/[.!]+$/,'').toLowerCase()}.`;
+  if(/perfil de usu[aá]rio n[aã]o encontrado/.test(lower)) return 'Não achamos seu perfil por aqui. Nossa equipe pode acertar esse cadastro para você.';
+  if(/carregar|buscar perfil|restaurar sess[aã]o/.test(lower)) return 'Os dados não chegaram direitinho agora. Tenta recarregar; se continuar, chama a gente.';
+  if(/upload|enviar foto|atualizar foto|abrir este documento/.test(lower)) return 'O arquivo não quis colaborar agora. Tenta de novo e, se insistir, chama a gente.';
+  if(/criar cliente|criar usu[aá]rio|criar conta|cadastrar/.test(lower)) return 'O cadastro não fechou dessa vez. Revise os dados e, se estiver tudo certo, chama a gente.';
+  if(/demanda/.test(lower)&&/erro|n[aã]o foi poss[ií]vel|falh/.test(lower)) return 'Essa demanda não quis colaborar agora. Tenta de novo; se repetir, nossa equipe resolve.';
+  if(/venda/.test(lower)&&/erro|n[aã]o foi poss[ií]vel|falh/.test(lower)) return 'A venda não foi salva do jeito certo. Tenta mais uma vez e chama a gente se persistir.';
+  if(/documento|arquivo/.test(lower)&&/erro|n[aã]o foi poss[ií]vel|falh/.test(lower)) return 'O documento não foi salvo agora. Tenta novamente e chama a gente se ele continuar teimoso.';
+  if(/erro|error|falha|failed|invalid|violat|exception/.test(lower)) return 'Algo saiu do roteiro por aqui. Tenta mais uma vez e, se repetir, chama a gente.';
+  return /^ops[,!]/i.test(original)?original:`Ops! ${original}`;
+}
+function shouldOfferErrorSupport(message){
+  const lower=String(message||'').toLowerCase();
+  if(/preencha|digite|informe|selecione|senha atual incorreta|senhas n[aã]o coincidem|m[ií]nimo 8 caracteres|arquivo muito grande|e-mail ou senha|confirme seu e-mail/.test(lower)) return false;
+  if(/sem permiss[aã]o|n[aã]o tem permiss[aã]o|n[aã]o pode (editar|excluir|alterar|acessar)/.test(lower)) return false;
+  return /erro|error|falha|failed|n[aã]o foi poss[ií]vel|sess[aã]o|servidor|rede|conex[aã]o|carregar|salvar|criar|excluir|upload|documento|demanda|venda|perfil/.test(lower);
+}
+function errorSupportUrl(rawMessage){
+  const active=document.querySelector('.page.active')?.id?.replace('pg-','')||'login';
+  const account=DB.me?.email||document.getElementById('li-email')?.value?.trim()||'não informada';
+  const detail=String(rawMessage||'').replace(/\s+/g,' ').slice(0,280);
+  const text=`Olá! Encontrei um erro no app da Magemind e preciso de uma ajuda.\n\nConta: ${account}\nTela: ${active}\nO que apareceu: ${detail}`;
+  return `https://wa.me/${getAgencyPhone()}?text=${encodeURIComponent(text)}`;
+}
 function toast(msg, type='ok'){
   const el = document.getElementById('toast-el');
-  el.textContent = msg; el.className = `toast ${type} show`;
-  clearTimeout(_tt); _tt = setTimeout(()=>el.classList.remove('show'), 3200);
+  const raw=String(msg||'');
+  const display=type==='err'?friendlyErrorMessage(raw):raw;
+  const support=type==='err'&&shouldOfferErrorSupport(raw);
+  el.innerHTML=`<div class="toast-message">${escapeHTML(display)}</div>${support?`<a class="toast-support" href="${escapeHTML(errorSupportUrl(raw))}" target="_blank" rel="noopener noreferrer">Abrir WhatsApp ↗</a>`:''}`;
+  el.className = `toast ${type} show`;
+  clearTimeout(_tt); _tt = setTimeout(()=>el.classList.remove('show'), support?8000:4200);
 }
 
 /* ═══ NOTIFICATIONS ═══ */
