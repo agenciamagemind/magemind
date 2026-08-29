@@ -42,7 +42,7 @@ body{font-family:'Manrope',sans-serif;color:var(--text);font-size:14px;line-heig
 .shell{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:230px;min-width:230px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative;overflow:hidden}
 .sidebar::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(139,92,246,.12) 0%,transparent 70%);pointer-events:none}
-.sb-logo{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-logo{width:100%;padding:14px 16px;border:0;border-bottom:1px solid var(--border);background:transparent;color:inherit;display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer}
 .sb-logo img{width:44px;height:44px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.24))}
 .sb-logo-text,.auth-title{font-family:'Poppins',sans-serif;letter-spacing:-.65px;text-transform:lowercase;background:linear-gradient(135deg,#c4b5fd,#f9a8d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-flex;align-items:baseline;overflow:visible;padding:2px 0 4px}
 .sb-logo-text{font-size:18px;line-height:1.35}
@@ -460,7 +460,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260829-4">
+<link rel="stylesheet" href="mobile.css?v=20260829-5">
 </head>
 <body>
 
@@ -503,10 +503,10 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
 <div id="app" class="shell" style="display:none">
   <aside class="sidebar">
-    <div class="sb-logo">
+    <button class="sb-logo" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Menu">
       <img src="magemind-logo-transparent.png" alt="Magemind">
       <div class="sb-logo-text" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
-    </div>
+    </button>
     <nav class="sb-nav" id="sb-nav"></nav>
     <div class="sb-bottom" id="sb-bottom">
       <button class="sidebar-install-btn" type="button" onclick="openInstallGuide(true)">
@@ -538,10 +538,10 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="topbar-left">
-        <div class="topbar-brand mobile-only" aria-label="Magemind">
+        <button class="topbar-brand mobile-only" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Menu">
           <img src="magemind-logo-transparent.png" alt="">
           <div class="sb-logo-text" aria-hidden="true"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
-        </div>
+        </button>
         <div class="topbar-title" id="tb-title">Menu</div>
         <div class="topbar-crumb" id="tb-crumb">Bem-vindo de volta</div>
       </div>
@@ -808,7 +808,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div class="ph-title">Indique &amp; Ganhe</div>
             <div class="ph-sub">Indique clientes, acompanhe comissões e transforme conexões em resultado</div>
           </div>
-          <div class="ph-actions"><div class="referral-mode" id="referral-mode" style="display:none"><button id="referral-mode-admin" onclick="setReferralMode('admin')">Administração</button><button id="referral-mode-mine" onclick="setReferralMode('mine')">Minha participação</button></div></div>
         </div>
         <div class="referral-view" id="referral-admin-view">
           <div class="payout-section">
@@ -2608,7 +2607,7 @@ function buildNav(){
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
     {id:'solutions', icon:ico('package'),  label:'Soluções'},
-    {id:'affiliates',icon:ico('dollar'),   label:'Indique & Ganhe'},
+    {id:'affiliates',icon:ico('gift'),     label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),    label:'Equipe'},
     {id:'docs',      icon:ico('file'),     label:'Documentos'},
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
@@ -2616,7 +2615,7 @@ function buildNav(){
   const gestorItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
-    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
+    {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),label:'Equipe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
@@ -2625,12 +2624,12 @@ function buildNav(){
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
-    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
+    {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const affiliateItems = [
     {id:'dashboard', icon:ico('home'),   label:'Menu'},
-    {id:'affiliates',icon:ico('dollar'), label:'Indique & Ganhe'},
+    {id:'affiliates',icon:ico('gift'), label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
@@ -2638,7 +2637,7 @@ function buildNav(){
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
     {id:'solutions',icon:ico('package'),label:'Soluções'},
-    {id:'affiliates',icon:ico('dollar'),label:'Indique & Ganhe'},
+    {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
     {id:'settings',icon:ico('settings'),label:'Configurações'},
   ];
@@ -3635,18 +3634,14 @@ async function performWithdrawalAction(action){
 
 let referralMode='admin';
 function setReferralMode(mode){
-  referralMode=isAdmin()&&mode==='admin'?'admin':'mine';
+  referralMode=isAdmin()?'admin':'mine';
   document.getElementById('referral-admin-view')?.classList.toggle('active',referralMode==='admin');
   document.getElementById('referral-member-view')?.classList.toggle('active',referralMode==='mine');
-  document.getElementById('referral-mode-admin')?.classList.toggle('active',referralMode==='admin');
-  document.getElementById('referral-mode-mine')?.classList.toggle('active',referralMode==='mine');
   if(referralMode==='admin') renderReferralAdminPanel(); else renderReferralMemberPanel();
 }
 function loadAffiliates(){
   if(!canAccessPage('affiliates')){ toast('Sem permissão','err'); return; }
-  const switcher=document.getElementById('referral-mode');
-  if(switcher) switcher.style.display=isAdmin()?'flex':'none';
-  setReferralMode(isAdmin()?referralMode:'mine');
+  setReferralMode(isAdmin()?'admin':'mine');
 }
 function referralStatusBadge(status){
   const label={pending:'Em análise',approved:'Aprovado',rejected:'Recusado',locked:'Bloqueado'}[status]||'Bloqueado';
@@ -3682,6 +3677,10 @@ async function reviewReferralAccess(id,action){
   toast(action==='approve'?`${person.name} foi aprovado no Indique & Ganhe`:`Participação de ${person.name} recusada`,'ok');
 }
 async function requestReferralAccess(){
+  if(isAdmin()){
+    toast('Seu acesso aqui já é de administrador. Solicitações e saques ficam sob sua gestão.','err');
+    return;
+  }
   const btn=document.getElementById('referral-request-access'); if(btn){btn.disabled=true;btn.textContent='Enviando...';}
   const {data,error}=await supa.rpc('request_indique_ganhe_access');
   if(error){if(btn){btn.disabled=false;btn.textContent='Quero ganhar';}toast('Erro: '+error.message,'err');return;}
@@ -3692,12 +3691,13 @@ async function requestReferralAccess(){
 }
 function renderReferralGate(){
   const gate=document.getElementById('referral-gate'); if(!gate)return;
+  if(isAdmin()){gate.style.display='none';gate.innerHTML='';return;}
   const status=DB.me?.affiliateStatus||'locked';
   if(status==='approved'){gate.style.display='none';gate.innerHTML='';return;}
   gate.style.display='flex';
   const pending=status==='pending';
   const rejected=status==='rejected';
-  gate.innerHTML=`<div class="referral-gate-card"><div class="referral-gate-icon">${ico('dollar')}</div><div class="referral-gate-title">${pending?'Sua solicitação está em análise':rejected?'Sua participação ainda não foi aprovada':'Indique. A gente fecha. Você ganha.'}</div><div class="referral-gate-copy">${pending?'Nossa equipe já recebeu seu pedido. Assim que sua solicitação for aprovada, você receberá uma notificação e este painel será liberado.':rejected?'Você pode enviar uma nova solicitação. Talvez agora os astros, a agenda e o comercial estejam finalmente alinhados.':'Indique potenciais clientes para a Magemind e receba comissão quando uma venda for fechada. O acompanhamento é transparente e os saques são solicitados por PIX.'}</div>${pending?`<span class="referral-status pending">Em análise</span>`:`<button class="btn btn-primary" id="referral-request-access" onclick="requestReferralAccess()">Quero ganhar</button>`}</div>`;
+  gate.innerHTML=`<div class="referral-gate-card"><div class="referral-gate-icon">${ico('gift')}</div><div class="referral-gate-title">${pending?'Sua solicitação está em análise':rejected?'Sua participação ainda não foi aprovada':'Indique. A gente fecha. Você ganha.'}</div><div class="referral-gate-copy">${pending?'Nossa equipe já recebeu seu pedido. Assim que sua solicitação for aprovada, você receberá uma notificação e este painel será liberado.':rejected?'Você pode enviar uma nova solicitação. Talvez agora os astros, a agenda e o comercial estejam finalmente alinhados.':'Indique potenciais clientes para a Magemind e receba comissão quando uma venda for fechada. O acompanhamento é transparente e os saques são solicitados por PIX.'}</div>${pending?`<span class="referral-status pending">Em análise</span>`:`<button class="btn btn-primary" id="referral-request-access" onclick="requestReferralAccess()">Quero ganhar</button>`}</div>`;
 }
 function renderReferralMemberPanel(){
   const clients=DB.referralClients||[]; const wallet=DB.referralWallet||{};
@@ -5377,6 +5377,7 @@ function ico(n){
     users:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
     grid:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
     dollar:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
+    gift:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13"/><path d="M7.5 8C6.1 8 5 6.9 5 5.5S6.1 3 7.5 3C10 3 12 8 12 8s2-5 4.5-5C17.9 3 19 4.1 19 5.5S17.9 8 16.5 8h-9z"/></svg>`,
     package:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>`,
     file:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
     settings:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
