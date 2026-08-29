@@ -460,7 +460,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260829-3">
+<link rel="stylesheet" href="mobile.css?v=20260829-4">
 </head>
 <body>
 
@@ -508,7 +508,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <div class="sb-logo-text" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
     </div>
     <nav class="sb-nav" id="sb-nav"></nav>
-    <div class="sb-bottom">
+    <div class="sb-bottom" id="sb-bottom">
       <button class="sidebar-install-btn" type="button" onclick="openInstallGuide(true)">
         <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 17v3h14v-3"/></svg></span>
         Instalar aplicativo
@@ -561,6 +561,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div id="notif-empty" style="padding:24px;text-align:center;color:var(--text3);font-size:12px;display:none">Nenhuma notificação</div>
           </div>
         </div>
+        <button class="topbar-profile mobile-only" type="button" onclick="goTo('settings')" aria-label="Abrir configurações do perfil" title="Meu perfil">
+          <span class="av" id="topbar-av">?</span>
+        </button>
         <button class="btn btn-primary" id="tb-cta" style="display:none" onclick="ctaAction()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           <span id="tb-cta-label">Ação</span>
@@ -902,6 +905,13 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 </div>
               </div>
             </div>
+            <div class="settings-card mobile-only mobile-install-settings" id="mobile-install-settings">
+              <div class="mobile-install-settings-copy">
+                <span class="mobile-settings-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 17v3h14v-3"/></svg></span>
+                <div><div class="settings-card-title">Instalar aplicativo</div><div class="push-status">Adicione a Magemind à tela inicial para abrir em tela cheia.</div></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" type="button" onclick="openInstallGuide(true)">Ver instruções</button>
+            </div>
             <div class="settings-card" id="push-settings-card">
               <div class="push-settings-head">
                 <div class="push-settings-title">
@@ -919,7 +929,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               </div>
               <div class="push-settings-actions">
                 <button class="btn btn-primary btn-sm" id="push-enable-button" type="button" onclick="enablePushNotifications()">Ativar notificações</button>
-                <button class="btn btn-ghost btn-sm" type="button" onclick="openInstallGuide(true)">Ver instalação do app</button>
+                <button class="btn btn-ghost btn-sm push-install-inline" type="button" onclick="openInstallGuide(true)">Ver instalação do app</button>
               </div>
             </div>
             <button class="btn btn-danger btn-sm" onclick="doLogout()" style="align-self:flex-start">Sair da conta</button>
@@ -2553,7 +2563,10 @@ function updateSidebarUser(){
   const u = DB.me;
   if(!u) return;
   const avEl = document.getElementById('sb-av');
-  avEl.innerHTML = safeImageUrl(u.photo) ? `<img src="${safeImageUrl(u.photo)}" alt="">` : escapeHTML(u.av);
+  const avatarMarkup = safeImageUrl(u.photo) ? `<img src="${safeImageUrl(u.photo)}" alt="">` : escapeHTML(u.av);
+  avEl.innerHTML = avatarMarkup;
+  const topbarAv = document.getElementById('topbar-av');
+  if(topbarAv) topbarAv.innerHTML = avatarMarkup;
   document.getElementById('sb-name').textContent = u.name;
   if(isClient()){
     const c = DB.clients.find(x=>x.id===u.clientId);
@@ -2567,14 +2580,17 @@ function updateSidebarUser(){
       if(phone){
         waLink.href = `https://wa.me/${phone}`;
         waBtn.style.display = 'block';
+        document.getElementById('sb-bottom')?.classList.add('mobile-whatsapp-visible');
       } else {
         waBtn.style.display = 'none';
+        document.getElementById('sb-bottom')?.classList.remove('mobile-whatsapp-visible');
       }
     }
   } else {
     document.getElementById('sb-role').textContent = ROLE_LABELS[getRole()] || 'Equipe';
     const waBtn = document.getElementById('sb-whatsapp-btn');
     if(waBtn) waBtn.style.display = 'none';
+    document.getElementById('sb-bottom')?.classList.remove('mobile-whatsapp-visible');
   }
   updateNotifBadge();
   const cmtAv = document.getElementById('det-comment-av');
@@ -2636,7 +2652,7 @@ function buildNav(){
   items = items.filter(i=>canAccessPage(i.id));
   document.getElementById('sb-nav').innerHTML = items.map(i=>`
     <div class="sb-item" id="nav-${i.id}" onclick="goTo('${i.id}')">
-      <span class="sb-icon">${i.icon}</span>${i.label}
+      <span class="sb-icon">${i.icon}</span><span class="sb-label" data-mobile-label="${escapeHTML(i.id==='demands'?'Demandas':i.label)}">${escapeHTML(i.label)}</span>
       ${i.badge ? `<span class="sb-badge${i.warn?' warn':''}">${i.badge}</span>` : ''}
     </div>`).join('');
   if(typeof buildMobileNav==='function') buildMobileNav(items);
@@ -5425,6 +5441,6 @@ async function clearDB(){
   }
 }
 </script>
-<script src="push-notifications.js?v=20260828-1"></script>
+<script src="push-notifications.js?v=20260829-2"></script>
 </body>
 </html>

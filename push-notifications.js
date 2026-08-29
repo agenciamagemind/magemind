@@ -82,6 +82,9 @@
       return;
     }
     try{
+      if(matchMedia('(max-width:900px)').matches){
+        preferences={...preferences,demand_updates:true,comments:true,sales:true,team_activity:true,general:true};
+      }
       const permission=await Notification.requestPermission();
       if(permission!=='granted'){
         toast(permission==='denied'?'Permissão bloqueada no navegador.':'Ativação cancelada.','err');
