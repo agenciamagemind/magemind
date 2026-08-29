@@ -234,9 +234,9 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .mobile-tab.active::before{top:0;width:24px;height:2px;box-shadow:none}
   .mobile-tab-badge{top:5px;left:calc(50% + 7px)}
 
-  .sidebar{inset:auto 8px calc(var(--mobile-nav-h) + var(--safe-bottom) + 8px) 8px;width:auto;min-width:0;height:auto;max-height:calc(100dvh - var(--mobile-nav-h) - var(--safe-top) - 24px);padding-top:0;border:1px solid var(--border2);border-radius:16px;background:rgba(15,15,26,.985);transform:translateY(calc(100% + var(--mobile-nav-h) + 28px));box-shadow:0 -24px 70px rgba(0,0,0,.56)}
+  .sidebar{inset:50% 8px auto 8px;width:auto;min-width:0;height:auto;max-height:calc(100dvh - var(--mobile-nav-h) - var(--safe-top) - 24px);padding-top:0;border:1px solid var(--border2);border-radius:16px;background:rgba(15,15,26,.985);transform:translateY(100vh);box-shadow:0 -24px 70px rgba(0,0,0,.56)}
   .sidebar::before{top:7px;left:50%;width:42px;height:4px;border-radius:99px;transform:translateX(-50%);background:var(--border3)}
-  .sidebar.mobile-open{transform:none}
+  .sidebar.mobile-open{transform:translateY(-50%)}
   .sb-logo{padding:24px 18px 12px}
   .sb-logo img{width:38px;height:38px}
   .sb-logo-text{font-size:17px}
