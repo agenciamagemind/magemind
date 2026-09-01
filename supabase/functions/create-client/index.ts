@@ -13,8 +13,11 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const cleanText = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
+const phoneDigits = (value: unknown) =>
+  typeof value === "string" ? value.replace(/\D/g, "").slice(0, 15) : "";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -55,7 +58,8 @@ Deno.serve(async (req) => {
   const name = cleanText(body.name, 160);
   const email = cleanText(body.email, 320).toLowerCase();
   const password = typeof body.password === "string" ? body.password : "";
-  const phone = cleanText(body.phone, 40);
+  const rawPhone = cleanText(body.phone, 40);
+  const phone = phoneDigits(rawPhone);
   const status = cleanText(body.status, 30) || "Ativo";
   const notes = cleanText(body.notes, 3000);
   const type = cleanText(body.type, 60) || "Mensal";
@@ -63,7 +67,14 @@ Deno.serve(async (req) => {
   const affiliateId = typeof body.affiliate_id === "string" && body.affiliate_id ? body.affiliate_id : null;
   const customerSince = body.customer_since || null;
 
-  if (!name || !email || !password) return json({ error: "Nome, e-mail e senha são obrigatórios" }, 400);
+  if (!name) return json({ error: "Faltou informar o nome do cliente." }, 400);
+  if (!email) return json({ error: "Faltou informar o e-mail do cliente." }, 400);
+  if (!emailPattern.test(email)) return json({ error: "O e-mail do cliente parece incompleto. Confira e tente de novo." }, 400);
+  if (!phone) return json({ error: "Faltou informar o número de WhatsApp do cliente." }, 400);
+  if (rawPhone !== phone || !/^\d{10,15}$/.test(phone)) {
+    return json({ error: "O WhatsApp do cliente deve conter somente de 10 a 15 números." }, 400);
+  }
+  if (!password) return json({ error: "Faltou definir a senha de acesso do cliente." }, 400);
   if (password.length < 8) return json({ error: "A senha deve ter ao menos 8 caracteres" }, 400);
   if (planIds.some((id) => !uuidPattern.test(id)) || (affiliateId && !uuidPattern.test(affiliateId))) {
     return json({ error: "Plano ou afiliado inválido" }, 400);
@@ -149,4 +160,3 @@ Deno.serve(async (req) => {
 
   return json({ ok: true, client: createdClient, user_id: userId });
 });
-

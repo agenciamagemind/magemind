@@ -11,6 +11,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneDigits = (value: unknown) =>
+  typeof value === "string" ? value.replace(/\D/g, "").slice(0, 15) : "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -62,6 +64,15 @@ Deno.serve(async (req) => {
     const patch = body.clientPatch && typeof body.clientPatch === "object"
       ? body.clientPatch as Record<string, unknown>
       : null;
+    if (type === "client" && patch) {
+      const rawPhone = typeof patch.phone === "string" ? patch.phone.trim() : "";
+      const phone = phoneDigits(rawPhone);
+      if (!phone) return json({ error: "Faltou informar o número de WhatsApp do cliente." }, 400);
+      if (rawPhone !== phone || !/^\d{10,15}$/.test(phone)) {
+        return json({ error: "O WhatsApp do cliente deve conter somente de 10 a 15 números." }, 400);
+      }
+      patch.phone = phone;
+    }
     if (authUserId) {
       const { data: authRecord, error: authReadError } = await admin.auth.admin.getUserById(authUserId);
       if (authReadError || !authRecord.user) return json({ error: "Acesso de autenticação não encontrado" }, 404);

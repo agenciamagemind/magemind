@@ -12,10 +12,13 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 const creatableRoles = ["manager", "gestor", "editor"];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const canCreateRole = (callerRole: string, role: string) => {
   if (["ceo", "manager"].includes(callerRole)) return creatableRoles.includes(role);
   return callerRole === "gestor" && role === "editor";
 };
+const phoneDigits = (value: unknown) =>
+  typeof value === "string" ? value.replace(/\D/g, "").slice(0, 15) : "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -54,12 +57,20 @@ Deno.serve(async (req) => {
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 160) : "";
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase().slice(0, 320) : "";
   const password = typeof body.password === "string" ? body.password : "";
-  const phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 40) : "";
+  const rawPhone = typeof body.phone === "string" ? body.phone.trim().slice(0, 40) : "";
+  const phone = phoneDigits(rawPhone);
   const role = typeof body.role === "string" ? body.role : "";
   const commissionRate = 0;
   const active = body.active !== false;
 
-  if (!name || !email || !password || !role) return json({ error: "Campos obrigatórios ausentes" }, 400);
+  if (!name) return json({ error: "Faltou informar o nome do usuário." }, 400);
+  if (!email) return json({ error: "Faltou informar o e-mail do usuário." }, 400);
+  if (!emailPattern.test(email)) return json({ error: "O e-mail do usuário parece incompleto. Confira e tente de novo." }, 400);
+  if (!password) return json({ error: "Faltou definir a senha provisória." }, 400);
+  if (!role) return json({ error: "Faltou selecionar o cargo do usuário." }, 400);
+  if (rawPhone && (rawPhone !== phone || !/^\d{10,15}$/.test(phone))) {
+    return json({ error: "O WhatsApp deve conter somente de 10 a 15 números." }, 400);
+  }
   if (password.length < 8) return json({ error: "A senha deve ter ao menos 8 caracteres" }, 400);
   if (!canCreateRole(callerProfile.role, role)) return json({ error: "Sem permissão para criar este cargo" }, 403);
   const { data: created, error: createError } = await admin.auth.admin.createUser({

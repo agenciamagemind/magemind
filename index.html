@@ -168,6 +168,7 @@ tbody td:first-child{padding-left:20px}
 .fl{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)}
 .fi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;font-family:'Manrope',sans-serif;width:100%}
 .fi:focus{border-color:var(--violetborder)}
+.fi[aria-invalid="true"]{border-color:var(--red);box-shadow:0 0 0 2px rgba(239,68,68,.12)}
 .fi::placeholder{color:var(--text4)}
 select.fi{cursor:pointer}
 select.fi option{background:var(--bg3);color:var(--text)}
@@ -494,7 +495,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="fg"><label class="fl">Sobrenome *</label><input class="fi" id="rg-sobre" placeholder="Sobrenome"></div>
       </div>
       <div class="fg"><label class="fl">Email *</label><input class="fi" id="rg-email" type="email" placeholder="seu@email.com"></div>
-      <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" placeholder="(11) 99999-9999"></div>
+      <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
       <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><input class="fi" id="rg-pass" type="password" placeholder="••••••••"></div>
       <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doRegister()">Criar minha conta</button>
     </div>
@@ -855,7 +856,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div style="display:flex;flex-direction:column;gap:12px">
                 <div class="fg"><label class="fl">Nome</label><input class="fi" id="cfg-nome" placeholder="Minha empresa"></div>
                 <div class="fg"><label class="fl">Email</label><input class="fi" id="cfg-email" placeholder="contato@empresa.com"></div>
-                <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cfg-phone" placeholder="5511999999999"></div>
+                <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="cfg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="5511999999999" oninput="sanitizePhoneInput(this)"></div>
                 <button class="btn btn-primary btn-sm" onclick="saveAgencySettings()">Salvar alterações</button>
               </div>
             </div>
@@ -993,7 +994,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="fg"><label class="fl">Email *</label><input class="fi" id="c-email" type="email" placeholder="email@cliente.com"><div id="c-email-hint" style="display:none;font-size:11px;color:var(--text3);margin-top:4px">Alterar o e-mail aqui atualiza login, perfil e cadastro juntos.</div></div>
       </div>
       <div class="f2">
-        <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="c-phone" placeholder="(11) 99999-9999"></div>
+        <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="c-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
         <div class="fg" id="c-pass-wrap"><label class="fl">Senha de acesso *</label><input class="fi" id="c-pass" type="password" placeholder="Senha para o cliente"></div>
       </div>
       <div class="fg">
@@ -1101,7 +1102,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         Ele deixará de aparecer em <strong>Equipe</strong> e passará a aparecer em <strong>Clientes</strong>.
         Histórico operacional antigo (demandas atribuídas, comissões etc.) <strong>não será apagado</strong> — apenas o cargo e o vínculo de acesso mudam.
       </div>
-      <div class="fg"><label class="fl">WhatsApp do cliente *</label><input class="fi" id="ctc-phone" placeholder="(11) 99999-9999"></div>
+      <div class="fg"><label class="fl">WhatsApp do cliente *</label><input class="fi" id="ctc-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-convert-to-client')">Cancelar</button>
@@ -1124,7 +1125,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </div>
       <div class="f2">
         <div class="fg" id="tm-pass-wrap"><label class="fl">Senha provisória *</label><input class="fi" id="tm-pass" type="text" placeholder="Mínimo 8 caracteres"></div>
-        <div class="fg"><label class="fl">Telefone (opcional)</label><input class="fi" id="tm-phone" placeholder="(00) 00000-0000"></div>
+        <div class="fg"><label class="fl">WhatsApp (opcional)</label><input class="fi" id="tm-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
       </div>
       <div class="f2">
         <div class="fg"><label class="fl">Cargo *</label>
@@ -1628,6 +1629,26 @@ function fmtDate(ts){ return ts ? new Date(ts).toLocaleDateString('pt-BR',{day:'
 function fDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
 const brlFormatter = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});
 function formatCurrencyBRL(value){ return brlFormatter.format(Number(value)||0).replace(/\u00a0/g,' '); }
+function phoneDigits(value){ return String(value||'').replace(/\D/g,'').slice(0,15); }
+function sanitizePhoneInput(input){
+  if(!input) return '';
+  const digits=phoneDigits(input.value);
+  if(input.value!==digits) input.value=digits;
+  return digits;
+}
+function isValidPhoneDigits(value){ return /^\d{10,15}$/.test(phoneDigits(value)); }
+function isValidEmailAddress(value){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||'').trim()); }
+function fieldError(id,message){
+  const input=document.getElementById(id);
+  if(input){
+    input.focus({preventScroll:false});
+    input.setAttribute('aria-invalid','true');
+    input.addEventListener('input',()=>input.removeAttribute('aria-invalid'),{once:true});
+  }
+  toast(message,'err');
+  return false;
+}
+function clearFieldError(id){ document.getElementById(id)?.removeAttribute('aria-invalid'); }
 function normalizeWhatsAppPhone(value){
   const raw=String(value||'').trim();
   if(!raw) return '';
@@ -1957,10 +1978,17 @@ async function doRegister(){
   const nome  = document.getElementById('rg-nome').value.trim();
   const sobre = document.getElementById('rg-sobre').value.trim();
   const email = document.getElementById('rg-email').value.trim();
-  const phone = document.getElementById('rg-phone').value.trim();
+  const phone = phoneDigits(document.getElementById('rg-phone').value);
   const pass  = document.getElementById('rg-pass').value;
-  if(!nome||!email||!phone||!pass){ toast('Preencha todos os campos','err'); return; }
-  if(pass.length<8){ toast('Senha: mínimo 8 caracteres','err'); return; }
+  ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass'].forEach(clearFieldError);
+  if(!nome) return fieldError('rg-nome','Faltou informar o seu nome.');
+  if(!sobre) return fieldError('rg-sobre','Faltou informar o seu sobrenome.');
+  if(!email) return fieldError('rg-email','Faltou informar o seu e-mail.');
+  if(!isValidEmailAddress(email)) return fieldError('rg-email','Esse e-mail parece incompleto. Confira e tente de novo.');
+  if(!phone) return fieldError('rg-phone','Faltou informar o número do WhatsApp.');
+  if(!isValidPhoneDigits(phone)) return fieldError('rg-phone','O WhatsApp precisa ter entre 10 e 15 números.');
+  if(!pass) return fieldError('rg-pass','Faltou criar a sua senha.');
+  if(pass.length<8) return fieldError('rg-pass','A senha precisa ter pelo menos 8 caracteres.');
 
   if(email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
     toast('Esta conta não pode ser criada pelo cadastro público.','err');
@@ -3058,8 +3086,13 @@ function openEditClient(id){
 async function saveClient(){
   const name   = document.getElementById('c-name').value.trim();
   const email  = document.getElementById('c-email').value.trim();
-  const phone  = document.getElementById('c-phone').value.trim();
-  if(!name||!email||!phone){ toast('Preencha nome, email e WhatsApp','err'); return; }
+  const phone  = phoneDigits(document.getElementById('c-phone').value);
+  ['c-name','c-email','c-phone','c-pass'].forEach(clearFieldError);
+  if(!name) return fieldError('c-name','Faltou informar o nome do cliente.');
+  if(!email) return fieldError('c-email','Faltou informar o e-mail do cliente.');
+  if(!isValidEmailAddress(email)) return fieldError('c-email','O e-mail do cliente parece incompleto. Confira e tente de novo.');
+  if(!phone) return fieldError('c-phone','Faltou informar o número de WhatsApp do cliente.');
+  if(!isValidPhoneDigits(phone)) return fieldError('c-phone','O WhatsApp do cliente precisa ter entre 10 e 15 números.');
   const planIds      = getCheckedPlanIds();
   const primaryPlan  = planIds[0] || null; // mantém clients.plan_id (legado) apontando pro primeiro selecionado
   const status       = document.getElementById('c-status').value;
@@ -3106,7 +3139,8 @@ async function saveClient(){
   } else {
     // ── NOVO CLIENTE via Edge Function ──
     const pass = document.getElementById('c-pass').value;
-    if(!pass){ toast('Defina uma senha para o cliente','err'); return; }
+    if(!pass) return fieldError('c-pass','Faltou definir a senha de acesso do cliente.');
+    if(pass.length<8) return fieldError('c-pass','A senha do cliente precisa ter pelo menos 8 caracteres.');
     if(btn){ btn.disabled=true; btn.textContent='Criando...'; }
     try {
       const sessionResult = await supa.auth.getSession();
@@ -3268,9 +3302,11 @@ async function saveTeamMember(){
   const email = document.getElementById('tm-email').value.trim();
   const role  = document.getElementById('tm-role').value;
   const active = document.getElementById('tm-active').value==='true';
-  const phone = document.getElementById('tm-phone').value.trim();
+  const phone = phoneDigits(document.getElementById('tm-phone').value);
   const commissionRate = null;
-  if(!name){ toast('Informe o nome','err'); return; }
+  ['tm-name','tm-email','tm-pass','tm-phone'].forEach(clearFieldError);
+  if(!name) return fieldError('tm-name','Faltou informar o nome do usuário.');
+  if(phone&&!isValidPhoneDigits(phone)) return fieldError('tm-phone','O WhatsApp precisa ter entre 10 e 15 números.');
   if(commissionRate!==null && (!Number.isFinite(commissionRate) || commissionRate<0 || commissionRate>100)){
     toast('A comissão deve estar entre 0% e 100%','err'); return;
   }
@@ -3300,7 +3336,10 @@ async function saveTeamMember(){
   // Criação: exige e-mail + senha e chama a Edge Function que cria o auth user com service role.
   // (ver checklist / instruções de deploy da função "create-user")
   const pass = document.getElementById('tm-pass').value;
-  if(!email || !pass || pass.length<8){ toast('E-mail e senha (mín. 8 caracteres) são obrigatórios','err'); return; }
+  if(!email) return fieldError('tm-email','Faltou informar o e-mail do usuário.');
+  if(!isValidEmailAddress(email)) return fieldError('tm-email','O e-mail do usuário parece incompleto. Confira e tente de novo.');
+  if(!pass) return fieldError('tm-pass','Faltou definir a senha provisória.');
+  if(pass.length<8) return fieldError('tm-pass','A senha provisória precisa ter pelo menos 8 caracteres.');
   if(role==='client'){ toast('Clientes são criados na área Clientes, não em Equipe','err'); return; }
   if(!canCreateRole(role)){ toast('Você não tem permissão para criar esse cargo','err'); return; }
   btn.disabled = true;
@@ -3414,8 +3453,10 @@ function openConvertTeamToClient(){
 async function confirmConvertTeamToClient(){
   const u = DB.users.find(x=>x.id===convertTargetTeamId); if(!u) return;
   if(!canManageRole(u)){ toast('Sem permissão','err'); return; }
-  const phone=document.getElementById('ctc-phone').value.trim();
-  if(!normalizeWhatsAppPhone(phone)){ toast('Informe um WhatsApp válido para o cliente','err'); return; }
+  const phone=phoneDigits(document.getElementById('ctc-phone').value);
+  clearFieldError('ctc-phone');
+  if(!phone) return fieldError('ctc-phone','Faltou informar o número de WhatsApp do cliente.');
+  if(!isValidPhoneDigits(phone)) return fieldError('ctc-phone','O WhatsApp do cliente precisa ter entre 10 e 15 números.');
   try{
     const {data,error} = await supa.rpc('admin_convert_team_to_client',{p_user_id:u.id,p_phone:phone});
     if(error){ toast('Erro: '+error.message,'err'); return; }
@@ -5194,6 +5235,7 @@ function friendlyErrorMessage(message){
   const original=String(message||'').trim();
   const lower=original.toLowerCase();
   if(!original) return 'Ops, alguma coisa saiu do roteiro. Tenta mais uma vez?';
+  if(/^(faltou|esse e-mail|o e-mail|o whatsapp|a senha)/i.test(original)) return original;
   if(/invalid login credentials|e-mail ou senha incorret|email ou senha incorret/.test(lower)) return 'E-mail ou senha não bateram. Dá uma conferida e tenta de novo.';
   if(/email not confirmed|confirme seu e-mail/.test(lower)) return 'Falta confirmar seu e-mail. Dá uma olhada na caixa de entrada e também no spam.';
   if(/already registered|already been registered|já est[aá] cadastrad|duplicate key/.test(lower)) return 'Esse cadastro já existe por aqui. Melhor entrar com a conta que já está criada.';
@@ -5205,6 +5247,7 @@ function friendlyErrorMessage(message){
   if(/senha atual incorreta/.test(lower)) return 'A senha atual não bateu. Respira, confere com calma e tenta outra vez.';
   if(/senhas n[aã]o coincidem/.test(lower)) return 'As duas senhas ficaram diferentes. Digite igual nos dois campos e pronto.';
   if(/m[ií]nimo 8 caracteres/.test(lower)) return 'A senha precisa de pelo menos 8 caracteres. Capricha um pouquinho nela.';
+  if(/^preencha (todos|os campos)/i.test(original)) return 'Alguns campos obrigatórios ainda estão vazios. Confira os campos destacados.';
   if(/^preencha/i.test(original)) return `Faltou uma coisinha: ${original.replace(/^preencha\s*/i,'').replace(/[.!]+$/,'').toLowerCase()}.`;
   if(/^digite/i.test(original)) return `Quase lá: ${original.replace(/^digite\s*/i,'digite ').replace(/[.!]+$/,'')}.`;
   if(/^informe/i.test(original)) return `Só falta isto: ${original.replace(/^informe\s*/i,'informe ').replace(/[.!]+$/,'')}.`;
