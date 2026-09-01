@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Magemind</title>
 <meta name="description" content="Gestão operacional da Magemind">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://tsawxmlfvnvepzgcztfc.supabase.co; media-src 'self' blob: https://tsawxmlfvnvepzgcztfc.supabase.co; connect-src 'self' https://tsawxmlfvnvepzgcztfc.supabase.co wss://tsawxmlfvnvepzgcztfc.supabase.co; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
 <meta name="theme-color" content="#0f0f1a">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
@@ -103,6 +105,14 @@ body{font-family:'Manrope',sans-serif;color:var(--text);font-size:14px;line-heig
 .delta-up{color:var(--emerald)}
 .delta-neutral{color:var(--text3)}
 .table-wrap{overflow:auto;flex:1;padding:0 24px 24px}
+.firewall-toolbar{padding:0 24px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.firewall-toolbar .fi{width:auto;min-width:180px}
+.firewall-table .risk-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;background:var(--emerald)}
+.firewall-table .risk-dot.medium{background:var(--amber)}
+.firewall-table .risk-dot.high{background:var(--rose)}
+.firewall-context{font-size:11px;color:var(--text3);margin-top:2px}
+.firewall-ip{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:var(--violet3)}
+.firewall-empty{padding:46px 20px;text-align:center;color:var(--text3)}
 .tbl-container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden}
 table{width:100%;border-collapse:collapse}
 thead th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;white-space:nowrap}
@@ -842,6 +852,24 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </div>
 
       <!-- CONFIGURAÇÕES -->
+      <div class="page" id="pg-firewall">
+        <div class="ph">
+          <div class="ph-info">
+            <div class="ph-title">Firewall</div>
+            <div class="ph-sub">Acessos, tentativas e bloqueios registrados pelo servidor</div>
+          </div>
+          <div class="ph-actions"><button class="btn btn-ghost btn-sm" type="button" onclick="loadFirewall(true)">Atualizar</button></div>
+        </div>
+        <div class="stats stats-4" id="firewall-stats"></div>
+        <div class="firewall-toolbar">
+          <input class="fi" id="firewall-search" type="search" placeholder="Buscar conta ou IP" oninput="renderFirewall()">
+          <select class="fs" id="firewall-outcome" onchange="renderFirewall()"><option value="all">Todos os resultados</option><option value="success">Acessos válidos</option><option value="failure">Falhas</option><option value="blocked">Bloqueados</option></select>
+          <select class="fs" id="firewall-period" onchange="renderFirewall()"><option value="24">Últimas 24 horas</option><option value="168">Últimos 7 dias</option><option value="720">Últimos 30 dias</option><option value="all">Todo o histórico carregado</option></select>
+        </div>
+        <div class="table-wrap firewall-table"><div class="tbl-container"><table><thead><tr><th>Data e hora</th><th>Conta</th><th>Evento</th><th>IP e localização</th><th>Dispositivo</th><th>Risco</th></tr></thead><tbody id="firewall-body"></tbody></table></div></div>
+      </div>
+
+      <!-- CONFIGURAÇÕES -->
       <div class="page" id="pg-settings">
         <div class="ph" style="padding-bottom:16px">
           <div class="ph-info">
@@ -1414,6 +1442,7 @@ const DB = {
   referralSales: [],
   referralWithdrawals: [],
   referralWallet: null,
+  securityLogs: [],
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1477,7 +1506,7 @@ const ROLE_PERMISSIONS = {
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings'],
+  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','firewall','settings'],
   manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings'],
   gestor:    ['dashboard','demands','affiliates','team','docs','settings'],
   editor:    ['dashboard','demands','affiliates','docs','settings'],
@@ -1934,25 +1963,45 @@ async function doLogin(){
   const btn = document.querySelector('#auth-login .btn-primary');
   if(btn){ btn.disabled=true; btn.textContent='Entrando...'; }
   try {
-    const {data, error} = await supa.auth.signInWithPassword({email, password:pass});
-    if(error){
-      if(error.message.toLowerCase().includes('email not confirmed')){
-        toast('Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada (e spam).','err');
-      } else if(error.message.toLowerCase().includes('invalid login credentials')){
-        toast('E-mail ou senha incorretos.','err');
-      } else {
-        toast('Erro: '+error.message,'err');
-      }
-      return;
-    }
-    if(!data?.user){ toast('Resposta inválida do servidor','err'); return; }
+    const data = await secureAuthRequest('login',{email,password:pass});
+    if(!data?.session||!data?.user){ toast('Resposta inválida do servidor','err'); return; }
+    const {error:setError}=await supa.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
+    if(setError) throw setError;
     await afterLogin(data.user);
   } catch(e){
-    toast('Erro inesperado: '+(e.message||e),'err');
+    toast(e.message||'Não foi possível entrar agora.','err');
     console.error('doLogin error:', e);
   } finally {
     if(btn){ btn.disabled=false; btn.textContent='Acessar o painel'; }
   }
+}
+
+function browserSecurityContext(){
+  return {
+    timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',
+    locale:navigator.language||'',
+    path:location.pathname+location.hash
+  };
+}
+async function secureAuthRequest(action,payload){
+  const response=await fetch(`${SUPA_URL}/functions/v1/secure-auth`,{
+    method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`},
+    body:JSON.stringify({action,...payload,...browserSecurityContext()})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error||'Não foi possível concluir a autenticação.');
+  return data;
+}
+let lastSecurityEventKey='';
+let lastSecurityEventAt=0;
+async function recordSecurityAccess(eventType,extra={}){
+  if(!DB.me) return;
+  const key=`${eventType}:${extra.path||location.hash||location.pathname}`;
+  if(key===lastSecurityEventKey&&Date.now()-lastSecurityEventAt<30000) return;
+  lastSecurityEventKey=key;lastSecurityEventAt=Date.now();
+  try{
+    await supa.functions.invoke('record-access',{body:{eventType,...browserSecurityContext(),visibilityState:document.visibilityState,...extra}});
+  }catch(error){ console.error('Falha ao registrar evento de segurança:',error); }
 }
 
 /* Espera o profile do usuário recém-criado existir (o trigger roda no mesmo
@@ -2002,24 +2051,7 @@ async function doRegister(){
 
     // O trigger on_auth_user_created cria profile+client automaticamente no banco.
     // Enviamos o telefone também no metadata, caso o trigger já leia raw_user_meta_data.phone.
-    const {data, error} = await supa.auth.signUp({
-      email,
-      password: pass,
-      options: { data: { name: fullName, phone } }  // passado ao trigger via raw_user_meta_data
-    });
-
-    if(error){
-      // Supabase retorna "User already registered" quando email já existe
-      // MAS com "Confirm email" ativo retorna sucesso falso (sem erro, sem session).
-      // Tratamos os dois casos.
-      if(error.message.toLowerCase().includes('already registered') ||
-         error.message.toLowerCase().includes('user already')){
-        toast('Este e-mail já está cadastrado. Faça login.','err');
-      } else {
-        toast('Erro: '+error.message,'err');
-      }
-      return;
-    }
+    const data = await secureAuthRequest('signup',{email,password:pass,name:fullName,phone});
 
     // Com confirmação de e-mail ativa: data.session = null, data.user existe.
     // Com confirmação desativada: data.session existe, podemos logar direto.
@@ -2031,13 +2063,18 @@ async function doRegister(){
       return;
     }
 
+    if(data.session){
+      const {error:setError}=await supa.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
+      if(setError) throw setError;
+    }
+
     // Garante que o WhatsApp seja salvo em clients.phone e profiles.phone.
     // Em vez de um delay fixo (que pode falhar se o trigger demorar mais que
     // o esperado), fazemos um retry curto aguardando o profile/client existir,
     // e usamos a RPC set_my_phone (SECURITY DEFINER) — necessária porque a
     // política de RLS de UPDATE em "clients" só permite CEO/Gerente; um
     // cliente comum não teria permissão para dar update direto na tabela.
-    await syncMyPhoneAfterSignup(uid, phone);
+    if(data.session) await syncMyPhoneAfterSignup(uid, phone);
 
     if(!data.session){
       // Confirmação de e-mail ativada no projeto
@@ -2078,6 +2115,7 @@ function clearSessionState(){
 
 async function doLogout(){
   hideAccountStatusNotice();
+  await recordSecurityAccess('logout');
   await supa.auth.signOut();
   clearSessionState();
 
@@ -2153,6 +2191,7 @@ async function afterLogin(authUser){
     await loadAllData();
     await loadAvatarDirectory();
     initApp();
+    recordSecurityAccess('session_access');
     setTimeout(()=>maybeShowAvatarOnboarding(),650);
     document.dispatchEvent(new CustomEvent('magemind:session-ready'));
   } catch(e){
@@ -2638,6 +2677,7 @@ function buildNav(){
     {id:'affiliates',icon:ico('gift'),     label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),    label:'Equipe'},
     {id:'docs',      icon:ico('file'),     label:'Documentos'},
+    {id:'firewall',  icon:ico('shield'),   label:'Firewall'},
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
   ];
   const gestorItems = [
@@ -2688,6 +2728,7 @@ function buildNav(){
 function goTo(page){
   if(page==='profile') page='settings';
   if(!canAccessPage(page)){
+    recordSecurityAccess('access_denied',{path:String(page),reason:'Página fora das permissões do perfil'});
     toast('Você não tem permissão para acessar esta página','err');
     page = 'dashboard';
   }
@@ -2698,8 +2739,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',settings:'Configurações'};
-  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',settings:'Dados pessoais, segurança e preferências'};
+  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2720,10 +2761,11 @@ function goTo(page){
   updateSidebarUser();
   const loaders = {
     dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
-    affiliates:loadAffiliates, team:loadTeam, docs:loadDocs,
+    affiliates:loadAffiliates, team:loadTeam, docs:loadDocs, firewall:loadFirewall,
     settings:loadAgencySettings
   };
   if(loaders[page]) loaders[page]();
+  recordSecurityAccess('page_view',{path:page});
   refreshAvatarDirectoryIfStale();
 }
 function ctaAction(){}
@@ -5416,6 +5458,70 @@ async function markAllRead(){
 }
 document.addEventListener('click', e=>{ const w=document.getElementById('notif-wrapper'); if(w&&!w.contains(e.target)) closeNotifPanel(); });
 
+/* ═══ FIREWALL / AUDITORIA DE ACESSOS ═══ */
+const SECURITY_EVENT_LABELS={
+  login_success:'Login realizado',login_failure:'Tentativa de login',signup_success:'Cadastro realizado',
+  signup_failure:'Tentativa de cadastro',session_access:'Sessão aberta',page_view:'Página acessada',
+  logout:'Saída da conta',access_denied:'Acesso negado',rate_limited:'Tentativas bloqueadas'
+};
+async function loadFirewall(force=false){
+  if(!isCEO()) return;
+  if(!force&&DB.securityLogs.length){renderFirewall();return;}
+  const body=document.getElementById('firewall-body');
+  if(body) body.innerHTML='<tr><td colspan="6" class="firewall-empty">Carregando movimentações...</td></tr>';
+  const {data,error}=await supa.from('security_access_logs').select('*').order('occurred_at',{ascending:false}).limit(500);
+  if(error){
+    console.error('loadFirewall:',error);
+    if(body) body.innerHTML='<tr><td colspan="6" class="firewall-empty">Não foi possível carregar os acessos agora.</td></tr>';
+    return;
+  }
+  DB.securityLogs=data||[];
+  renderFirewall();
+}
+function securityDate(value){
+  if(!value)return '—';
+  return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+}
+function renderFirewall(){
+  if(!isCEO())return;
+  const search=(document.getElementById('firewall-search')?.value||'').trim().toLowerCase();
+  const outcome=document.getElementById('firewall-outcome')?.value||'all';
+  const period=document.getElementById('firewall-period')?.value||'24';
+  const cutoff=period==='all'?0:Date.now()-Number(period)*3600000;
+  const list=DB.securityLogs.filter(row=>{
+    if(outcome!=='all'&&row.outcome!==outcome)return false;
+    if(cutoff&&new Date(row.occurred_at).getTime()<cutoff)return false;
+    const haystack=`${row.email_snapshot||''} ${row.ip_address||''} ${row.browser||''} ${row.operating_system||''} ${row.country_code||''}`.toLowerCase();
+    return !search||haystack.includes(search);
+  });
+  const last24=DB.securityLogs.filter(row=>new Date(row.occurred_at).getTime()>=Date.now()-86400000);
+  const uniqueIps=new Set(last24.map(row=>row.ip_address).filter(Boolean)).size;
+  const failures=last24.filter(row=>row.outcome==='failure').length;
+  const blocked=last24.filter(row=>row.outcome==='blocked').length;
+  const stats=document.getElementById('firewall-stats');
+  if(stats)stats.innerHTML=`
+    <div class="stat"><div class="stat-label">Eventos em 24h</div><div class="stat-val">${last24.length}</div><div class="stat-delta delta-neutral">movimentações registradas</div></div>
+    <div class="stat"><div class="stat-label">IPs distintos</div><div class="stat-val" style="color:var(--violet2)">${uniqueIps}</div><div class="stat-delta delta-neutral">últimas 24 horas</div></div>
+    <div class="stat"><div class="stat-label">Tentativas falhas</div><div class="stat-val" style="color:var(--amber)">${failures}</div><div class="stat-delta delta-neutral">credenciais recusadas</div></div>
+    <div class="stat"><div class="stat-label">Bloqueios</div><div class="stat-val" style="color:var(--rose)">${blocked}</div><div class="stat-delta delta-neutral">limite ou permissão</div></div>`;
+  const body=document.getElementById('firewall-body');
+  if(!body)return;
+  body.innerHTML=list.length?list.map(row=>{
+    const profile=DB.users.find(user=>user.id===row.user_id)||(DB.me?.id===row.user_id?DB.me:null);
+    const account=row.email_snapshot||profile?.name||'Visitante não identificado';
+    const location=[row.country_code,row.timezone].filter(Boolean).join(' · ')||'Local não informado';
+    const device=[row.browser,row.operating_system,row.device_type].filter(Boolean).join(' · ')||'Dispositivo não identificado';
+    return `<tr>
+      <td><strong>${escapeHTML(securityDate(row.occurred_at))}</strong><div class="firewall-context">${escapeHTML(row.path||'')}</div></td>
+      <td><div style="display:flex;align-items:center;gap:9px"><div class="av av-xs">${profile?avatarHTML(profile,profile.name,''):escapeHTML(avatarInitials(account))}</div><div><strong>${escapeHTML(account)}</strong><div class="firewall-context">${escapeHTML(row.session_fingerprint?'Sessão '+row.session_fingerprint.slice(0,8):'Sem sessão')}</div></div></div></td>
+      <td><span class="badge ${row.outcome==='success'?'b-emerald':row.outcome==='blocked'?'b-rose':'b-amber'}">${escapeHTML(SECURITY_EVENT_LABELS[row.event_type]||row.event_type)}</span>${row.reason?`<div class="firewall-context">${escapeHTML(row.reason)}</div>`:''}</td>
+      <td><div class="firewall-ip">${escapeHTML(row.ip_address||'IP indisponível')}</div><div class="firewall-context">${escapeHTML(location)}</div></td>
+      <td>${escapeHTML(device)}<div class="firewall-context">${escapeHTML(row.locale||'')}</div></td>
+      <td><span><i class="risk-dot ${escapeHTML(row.risk_level||'low')}"></i>${escapeHTML(row.risk_level==='high'?'Alto':row.risk_level==='medium'?'Médio':'Baixo')}</span></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="firewall-empty">Nenhum acesso corresponde aos filtros.</td></tr>';
+}
+
 /* ═══ DELEGAÇÃO DE EVENTOS — Demandas ═══
    Garante que botões de demanda continuam funcionando após qualquer
    re-renderização de innerHTML (kanban, lista, modais). */
@@ -5459,6 +5565,7 @@ function ico(n){
     gift:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13"/><path d="M7.5 8C6.1 8 5 6.9 5 5.5S6.1 3 7.5 3C10 3 12 8 12 8s2-5 4.5-5C17.9 3 19 4.1 19 5.5S17.9 8 16.5 8h-9z"/></svg>`,
     package:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>`,
     file:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+    shield:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>`,
     settings:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
   };
   return icons[n]||'';
