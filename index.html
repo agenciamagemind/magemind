@@ -1970,7 +1970,7 @@ async function doLogin(){
     await afterLogin(data.user);
   } catch(e){
     toast(e.message||'Não foi possível entrar agora.','err');
-    console.error('doLogin error:', e);
+    if(!/senha incorretos|confirme seu e-mail|muitas tentativas/i.test(String(e.message||''))) console.error('doLogin error:', e);
   } finally {
     if(btn){ btn.disabled=false; btn.textContent='Acessar o painel'; }
   }
