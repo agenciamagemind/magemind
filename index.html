@@ -264,11 +264,10 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .toast-message{line-height:1.5}
 .toast-support{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 10px;border:1px solid var(--violetborder);border-radius:6px;background:var(--violetbg);color:var(--violet3);font-size:11px;font-weight:700;text-decoration:none}
 .toast-support:hover{color:#fff;border-color:var(--violet2)}
-.auth-shell{height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px;background:#050505;position:relative;overflow:auto}
-.auth-stage{isolation:isolate;width:min(1240px,100%);min-height:min(760px,calc(100dvh - 32px));position:relative;display:grid;grid-template-columns:minmax(380px,.9fr) minmax(420px,1.1fr);align-items:center;gap:clamp(48px,7vw,112px);padding:clamp(24px,3vw,46px) clamp(36px,6vw,88px);overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:#111 url('magemind-auth-creatives.webp') center/cover no-repeat;box-shadow:0 30px 90px rgba(0,0,0,.58)}
-.auth-stage::before{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(0,0,0,.66) 0%,rgba(0,0,0,.48) 46%,rgba(0,0,0,.34) 100%)}
-.auth-stage::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.3;background-image:repeating-radial-gradient(circle at 0 0,rgba(255,255,255,.16) 0,rgba(255,255,255,.16) .6px,transparent .8px,transparent 3px);mix-blend-mode:soft-light}
-.auth-card{grid-column:1;background:rgba(3,3,4,.96);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:clamp(28px,3vw,38px);width:100%;max-width:450px;position:relative;box-shadow:0 24px 72px rgba(0,0,0,.62);backdrop-filter:blur(12px)}
+.auth-shell{height:100dvh;display:flex;align-items:center;justify-content:center;background:#050505;position:relative;overflow:auto}
+.auth-stage{isolation:isolate;width:100%;min-height:100dvh;position:relative;display:grid;grid-template-columns:minmax(380px,.88fr) minmax(420px,1.12fr);align-items:center;gap:clamp(56px,8vw,140px);padding:clamp(30px,4vh,48px) clamp(48px,9vw,172px);overflow:hidden;background:#111 url('magemind-auth-creatives.webp') center/cover no-repeat}
+.auth-stage::before{content:'';position:absolute;inset:0;z-index:-1;background:rgba(0,0,0,.46);pointer-events:none}
+.auth-card{grid-column:1;background:rgba(3,3,4,.97);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:clamp(28px,3vw,38px);width:100%;max-width:430px;position:relative;box-shadow:0 28px 80px rgba(0,0,0,.68)}
 .auth-logo{text-align:center;margin-bottom:22px;display:flex;flex-direction:column;align-items:center;gap:5px}
 .auth-logo img{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.38))}
 .auth-title{font-size:24px;line-height:1.1}
@@ -288,11 +287,10 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .auth-help{display:flex;align-items:center;justify-content:center;width:100%;margin-top:18px;padding-top:17px;border-top:1px solid rgba(255,255,255,.11);color:#aaa;font-size:11px;text-decoration:none;transition:color .15s}
 .auth-help strong{margin-left:4px;color:#fff;font-weight:700}
 .auth-help:hover{color:#fff}
-.auth-brand-panel{grid-column:2;max-width:560px;color:#fff;text-shadow:0 3px 24px rgba(0,0,0,.8)}
-.auth-brand-kicker{font:700 13px 'Poppins',sans-serif;text-transform:uppercase;letter-spacing:0;color:rgba(255,255,255,.72);margin-bottom:13px}
-.auth-phrase{min-height:154px;display:flex;align-items:center;font:700 clamp(34px,4.2vw,58px)/1.08 'Poppins',sans-serif;letter-spacing:0;transition:opacity .22s ease,transform .22s ease;text-wrap:balance}
+.auth-brand-panel{grid-column:2;width:min(100%,560px);color:#fff;text-shadow:0 4px 28px rgba(0,0,0,.88)}
+.auth-phrase{min-height:112px;display:flex;flex-direction:column;justify-content:center;font:600 clamp(28px,2.7vw,42px)/1.18 'Poppins',sans-serif;letter-spacing:0;transition:opacity .22s ease,transform .22s ease}
+.auth-phrase-line{display:block;white-space:nowrap}
 .auth-phrase.changing{opacity:0;transform:translateY(7px)}
-.auth-brand-caption{max-width:400px;margin-top:18px;font-size:13px;line-height:1.65;color:rgba(255,255,255,.7)}
 .rev-period-btn.active{background:var(--violet)!important;color:#fff!important;border-color:var(--violet)!important;}
 
 .auth-shortcut{flex:1;padding:8px;text-align:center;border-radius:var(--r2);cursor:pointer;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text2);transition:all .15s}
@@ -491,7 +489,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260903-7">
+<link rel="stylesheet" href="mobile.css?v=20260903-8">
 </head>
 <body>
 
@@ -534,9 +532,10 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
     </div>
     <div class="auth-brand-panel">
-      <div class="auth-brand-kicker">Magemind desde 2022</div>
-      <div class="auth-phrase" id="auth-phrase">Dont be the copy, be the reference.</div>
-      <div class="auth-brand-caption">Criativos que transformam atenção em movimento e marcas em referência.</div>
+      <div class="auth-phrase" id="auth-phrase">
+        <span class="auth-phrase-line">Dont be the copy,</span>
+        <span class="auth-phrase-line">be the reference.</span>
+      </div>
     </div>
   </div>
 </div>
@@ -1985,10 +1984,10 @@ function authTab(t){
 }
 
 const AUTH_PHRASES = [
-  'Dont be the copy, be the reference.',
-  'Qualidade é o mínimo, entregamos resultados.',
-  'Produzindo criativos desde 2022.',
-  'Vamos alavancar suas vendas!'
+  ['Dont be the copy,','be the reference.'],
+  ['Qualidade é o mínimo,','entregamos resultados.'],
+  ['Produzindo criativos','desde 2022.'],
+  ['Vamos alavancar','suas vendas!']
 ];
 let authPhraseIndex = 0;
 setInterval(()=>{
@@ -1997,7 +1996,9 @@ setInterval(()=>{
   phrase.classList.add('changing');
   setTimeout(()=>{
     authPhraseIndex = (authPhraseIndex + 1) % AUTH_PHRASES.length;
-    phrase.textContent = AUTH_PHRASES[authPhraseIndex];
+    const lines = phrase.querySelectorAll('.auth-phrase-line');
+    lines[0].textContent = AUTH_PHRASES[authPhraseIndex][0];
+    lines[1].textContent = AUTH_PHRASES[authPhraseIndex][1];
     phrase.classList.remove('changing');
   },220);
 },3000);

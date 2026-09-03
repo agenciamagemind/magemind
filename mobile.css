@@ -436,17 +436,15 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 /* Navegação mobile: perfil no topo, menu enxuto e alvos de toque integrais */
 @media(max-width:900px){
   .auth-shell{height:100dvh;min-height:100dvh;padding:0;align-items:flex-start;background:#050505;overflow-y:auto}
-  .auth-stage{width:100%;min-height:100dvh;grid-template-columns:minmax(0,1fr);align-content:center;justify-items:center;gap:24px;padding:calc(24px + var(--safe-top)) max(16px,var(--safe-right)) calc(28px + var(--safe-bottom)) max(16px,var(--safe-left));border:0;border-radius:0;background-position:center}
-  .auth-stage::before{background:rgba(0,0,0,.58)}
+  .auth-stage{width:100%;min-height:100dvh;grid-template-columns:minmax(0,1fr);align-content:center;justify-items:center;gap:24px;padding:calc(24px + var(--safe-top)) max(16px,var(--safe-right)) calc(28px + var(--safe-bottom)) max(16px,var(--safe-left));background-position:center}
+  .auth-stage::before{background:rgba(0,0,0,.56)}
   .auth-stage.register-mode{min-height:max(100dvh,980px);align-content:start}
   .auth-card{grid-column:1;width:min(100%,440px);max-width:440px;padding:26px 22px;border-radius:8px}
   .auth-logo{margin-bottom:18px}
   .auth-logo img{width:68px;height:68px}
   .auth-title{font-size:22px}
   .auth-brand-panel{grid-column:1;width:min(100%,440px);max-width:440px;text-align:center}
-  .auth-brand-kicker{margin-bottom:8px;font-size:10px}
-  .auth-phrase{min-height:58px;justify-content:center;font-size:26px;line-height:1.15}
-  .auth-brand-caption{display:none}
+  .auth-phrase{min-height:58px;align-items:center;justify-content:center;font-size:23px;line-height:1.18}
 
   .topbar-profile{display:flex!important;width:40px;height:40px;min-width:40px;padding:2px;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;flex-shrink:0;touch-action:manipulation}
   .topbar-profile:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
