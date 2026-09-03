@@ -264,15 +264,35 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .toast-message{line-height:1.5}
 .toast-support{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 10px;border:1px solid var(--violetborder);border-radius:6px;background:var(--violetbg);color:var(--violet3);font-size:11px;font-weight:700;text-decoration:none}
 .toast-support:hover{color:#fff;border-color:var(--violet2)}
-.auth-shell{height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
-.auth-shell::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
-.auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r4);padding:40px;width:440px;max-width:95vw;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5)}
-.auth-logo{text-align:center;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.auth-logo img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.28))}
-.auth-title{font-size:25px;line-height:1.1}
-.auth-tabs{display:flex;background:var(--bg3);border-radius:var(--r2);padding:3px;margin-bottom:20px;border:1px solid var(--border)}
-.auth-tab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:all .15s;color:var(--text3)}
-.auth-tab.active{background:var(--violet);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.4)}
+.auth-shell{height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px;background:#050505;position:relative;overflow:auto}
+.auth-stage{isolation:isolate;width:min(1240px,100%);min-height:min(760px,calc(100dvh - 32px));position:relative;display:grid;grid-template-columns:minmax(380px,.9fr) minmax(420px,1.1fr);align-items:center;gap:clamp(48px,7vw,112px);padding:clamp(24px,3vw,46px) clamp(36px,6vw,88px);overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:#111 url('magemind-auth-creatives.webp') center/cover no-repeat;box-shadow:0 30px 90px rgba(0,0,0,.58)}
+.auth-stage::before{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(0,0,0,.66) 0%,rgba(0,0,0,.48) 46%,rgba(0,0,0,.34) 100%)}
+.auth-stage::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.3;background-image:repeating-radial-gradient(circle at 0 0,rgba(255,255,255,.16) 0,rgba(255,255,255,.16) .6px,transparent .8px,transparent 3px);mix-blend-mode:soft-light}
+.auth-card{grid-column:1;background:rgba(3,3,4,.96);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:clamp(28px,3vw,38px);width:100%;max-width:450px;position:relative;box-shadow:0 24px 72px rgba(0,0,0,.62);backdrop-filter:blur(12px)}
+.auth-logo{text-align:center;margin-bottom:22px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.auth-logo img{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.38))}
+.auth-title{font-size:24px;line-height:1.1}
+.auth-tabs{display:flex;background:#101012;border-radius:7px;padding:3px;margin-bottom:20px;border:1px solid rgba(255,255,255,.12)}
+.auth-tab{flex:1;min-height:36px;padding:8px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:5px;transition:background .15s,color .15s;color:#777;display:flex;align-items:center;justify-content:center}
+.auth-tab.active{background:#fff;color:#080808;box-shadow:none}
+.auth-card .fl{color:#8c8c94;letter-spacing:0}
+.auth-card .fi{min-height:44px;background:#0c0c0e;border-color:rgba(255,255,255,.14);border-radius:7px;color:#fff}
+.auth-card .fi:focus{border-color:rgba(255,255,255,.45);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.auth-card .btn-primary{min-height:45px;border-radius:7px;background:#fff;color:#080808;box-shadow:none}
+.auth-card .btn-primary:hover{background:#e9e9e9;color:#080808;box-shadow:none;transform:translateY(-1px)}
+.auth-card .btn-primary:disabled{background:#a5a5a5;color:#333;transform:none}
+.auth-card .remember-option{color:#a4a4aa}
+.auth-card .remember-option input{accent-color:#fff}
+.auth-forgot{font-size:12px;color:#ddd;cursor:pointer;text-decoration:none}
+.auth-forgot:hover{color:#fff;text-decoration:underline}
+.auth-help{display:flex;align-items:center;justify-content:center;width:100%;margin-top:18px;padding-top:17px;border-top:1px solid rgba(255,255,255,.11);color:#aaa;font-size:11px;text-decoration:none;transition:color .15s}
+.auth-help strong{margin-left:4px;color:#fff;font-weight:700}
+.auth-help:hover{color:#fff}
+.auth-brand-panel{grid-column:2;max-width:560px;color:#fff;text-shadow:0 3px 24px rgba(0,0,0,.8)}
+.auth-brand-kicker{font:700 13px 'Poppins',sans-serif;text-transform:uppercase;letter-spacing:0;color:rgba(255,255,255,.72);margin-bottom:13px}
+.auth-phrase{min-height:154px;display:flex;align-items:center;font:700 clamp(34px,4.2vw,58px)/1.08 'Poppins',sans-serif;letter-spacing:0;transition:opacity .22s ease,transform .22s ease;text-wrap:balance}
+.auth-phrase.changing{opacity:0;transform:translateY(7px)}
+.auth-brand-caption{max-width:400px;margin-top:18px;font-size:13px;line-height:1.65;color:rgba(255,255,255,.7)}
 .rev-period-btn.active{background:var(--violet)!important;color:#fff!important;border-color:var(--violet)!important;}
 
 .auth-shortcut{flex:1;padding:8px;text-align:center;border-radius:var(--r2);cursor:pointer;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text2);transition:all .15s}
@@ -471,43 +491,52 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260829-6">
+<link rel="stylesheet" href="mobile.css?v=20260903-7">
 </head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <img src="magemind-logo-transparent.png" alt="Magemind">
-      <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
-    </div>
-    <div class="auth-tabs">
-      <div class="auth-tab active" onclick="authTab('login')">Entrar</div>
-      <div class="auth-tab" onclick="authTab('reg')">Cadastrar</div>
-    </div>
-    <div class="account-status-alert" id="account-status-alert" role="alert" aria-live="assertive">
-      <strong id="account-status-text"></strong>
-      <span>O suporte pode verificar sua situação e orientar os próximos passos.</span><br>
-      <a id="account-status-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Falar com o suporte no WhatsApp</a>
-    </div>
-    <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
-      <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" placeholder="seu@email.com"></div>
-      <div class="fg"><label class="fl">Senha</label><input class="fi" id="li-pass" type="password" placeholder="••••••••"></div>
-      <div class="auth-options">
-        <label class="remember-option"><input id="li-keep" type="checkbox" checked><span>Manter conectado</span></label>
-        <span style="font-size:12px;color:var(--violet2);cursor:pointer">Esqueci minha senha</span>
+  <div class="auth-stage">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="magemind-logo-transparent.png" alt="Magemind">
+        <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Acessar o painel</button>
-    </div>
-    <div id="auth-reg" style="display:none;flex-direction:column;gap:12px">
-      <div class="f2">
-        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="rg-nome" placeholder="Seu nome"></div>
-        <div class="fg"><label class="fl">Sobrenome *</label><input class="fi" id="rg-sobre" placeholder="Sobrenome"></div>
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="authTab('login')">Entrar</div>
+        <div class="auth-tab" onclick="authTab('reg')">Cadastrar</div>
       </div>
-      <div class="fg"><label class="fl">Email *</label><input class="fi" id="rg-email" type="email" placeholder="seu@email.com"></div>
-      <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
-      <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><input class="fi" id="rg-pass" type="password" placeholder="••••••••"></div>
-      <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doRegister()">Criar minha conta</button>
+      <div class="account-status-alert" id="account-status-alert" role="alert" aria-live="assertive">
+        <strong id="account-status-text"></strong>
+        <span>O suporte pode verificar sua situação e orientar os próximos passos.</span><br>
+        <a id="account-status-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Falar com o suporte no WhatsApp</a>
+      </div>
+      <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
+        <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+        <div class="fg"><label class="fl">Senha</label><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+        <div class="auth-options">
+          <label class="remember-option"><input id="li-keep" type="checkbox" checked><span>Manter conectado</span></label>
+          <span class="auth-forgot">Esqueci minha senha</span>
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Acessar</button>
+      </div>
+      <div id="auth-reg" style="display:none;flex-direction:column;gap:12px">
+        <div class="f2">
+          <div class="fg"><label class="fl">Nome *</label><input class="fi" id="rg-nome" autocomplete="given-name" placeholder="Seu nome"></div>
+          <div class="fg"><label class="fl">Sobrenome *</label><input class="fi" id="rg-sobre" autocomplete="family-name" placeholder="Sobrenome"></div>
+        </div>
+        <div class="fg"><label class="fl">Email *</label><input class="fi" id="rg-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+        <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
+        <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+        <div class="fg"><label class="fl">Confirme sua senha *</label><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+        <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doRegister()">Criar conta</button>
+      </div>
+      <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
+    </div>
+    <div class="auth-brand-panel">
+      <div class="auth-brand-kicker">Magemind desde 2022</div>
+      <div class="auth-phrase" id="auth-phrase">Dont be the copy, be the reference.</div>
+      <div class="auth-brand-caption">Criativos que transformam atenção em movimento e marcas em referência.</div>
     </div>
   </div>
 </div>
@@ -1952,7 +1981,26 @@ function authTab(t){
   document.querySelectorAll('.auth-tab').forEach((el,i) => el.classList.toggle('active', t==='login'?i===0:i===1));
   document.getElementById('auth-login').style.display = t==='login' ? 'flex' : 'none';
   document.getElementById('auth-reg').style.display   = t==='reg'   ? 'flex' : 'none';
+  document.querySelector('.auth-stage')?.classList.toggle('register-mode',t==='reg');
 }
+
+const AUTH_PHRASES = [
+  'Dont be the copy, be the reference.',
+  'Qualidade é o mínimo, entregamos resultados.',
+  'Produzindo criativos desde 2022.',
+  'Vamos alavancar suas vendas!'
+];
+let authPhraseIndex = 0;
+setInterval(()=>{
+  const phrase = document.getElementById('auth-phrase');
+  if(!phrase || document.getElementById('auth-screen')?.style.display==='none') return;
+  phrase.classList.add('changing');
+  setTimeout(()=>{
+    authPhraseIndex = (authPhraseIndex + 1) % AUTH_PHRASES.length;
+    phrase.textContent = AUTH_PHRASES[authPhraseIndex];
+    phrase.classList.remove('changing');
+  },220);
+},3000);
 
 async function doLogin(){
   hideAccountStatusNotice();
@@ -1972,7 +2020,7 @@ async function doLogin(){
     toast(e.message||'Não foi possível entrar agora.','err');
     if(!/senha incorretos|confirme seu e-mail|muitas tentativas/i.test(String(e.message||''))) console.error('doLogin error:', e);
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='Acessar o painel'; }
+    if(btn){ btn.disabled=false; btn.textContent='Acessar'; }
   }
 }
 
@@ -2029,7 +2077,8 @@ async function doRegister(){
   const email = document.getElementById('rg-email').value.trim();
   const phone = phoneDigits(document.getElementById('rg-phone').value);
   const pass  = document.getElementById('rg-pass').value;
-  ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass'].forEach(clearFieldError);
+  const passConfirm = document.getElementById('rg-pass-confirm').value;
+  ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass','rg-pass-confirm'].forEach(clearFieldError);
   if(!nome) return fieldError('rg-nome','Faltou informar o seu nome.');
   if(!sobre) return fieldError('rg-sobre','Faltou informar o seu sobrenome.');
   if(!email) return fieldError('rg-email','Faltou informar o seu e-mail.');
@@ -2038,6 +2087,8 @@ async function doRegister(){
   if(!isValidPhoneDigits(phone)) return fieldError('rg-phone','O WhatsApp precisa ter entre 10 e 15 números.');
   if(!pass) return fieldError('rg-pass','Faltou criar a sua senha.');
   if(pass.length<8) return fieldError('rg-pass','A senha precisa ter pelo menos 8 caracteres.');
+  if(!passConfirm) return fieldError('rg-pass-confirm','Faltou confirmar a sua senha.');
+  if(pass!==passConfirm) return fieldError('rg-pass-confirm','As senhas não estão iguais. Confira e tente de novo.');
 
   if(email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
     toast('Esta conta não pode ser criada pelo cadastro público.','err');
@@ -2084,15 +2135,15 @@ async function doRegister(){
     } else {
       // Confirmação desativada — loga direto
       toast('Conta criada com sucesso!','ok');
-      ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass'].forEach(id=>document.getElementById(id).value='');
+      ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass','rg-pass-confirm'].forEach(id=>document.getElementById(id).value='');
       await afterLogin(data.user);
     }
-    ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass'].forEach(id=>document.getElementById(id).value='');
+    ['rg-nome','rg-sobre','rg-email','rg-phone','rg-pass','rg-pass-confirm'].forEach(id=>document.getElementById(id).value='');
   } catch(e){
     toast('Erro inesperado: '+(e.message||e),'err');
     console.error('doRegister error:', e);
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='Criar minha conta'; }
+    if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
   }
 }
 

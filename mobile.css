@@ -435,6 +435,19 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 
 /* Navegação mobile: perfil no topo, menu enxuto e alvos de toque integrais */
 @media(max-width:900px){
+  .auth-shell{height:100dvh;min-height:100dvh;padding:0;align-items:flex-start;background:#050505;overflow-y:auto}
+  .auth-stage{width:100%;min-height:100dvh;grid-template-columns:minmax(0,1fr);align-content:center;justify-items:center;gap:24px;padding:calc(24px + var(--safe-top)) max(16px,var(--safe-right)) calc(28px + var(--safe-bottom)) max(16px,var(--safe-left));border:0;border-radius:0;background-position:center}
+  .auth-stage::before{background:rgba(0,0,0,.58)}
+  .auth-stage.register-mode{min-height:max(100dvh,980px);align-content:start}
+  .auth-card{grid-column:1;width:min(100%,440px);max-width:440px;padding:26px 22px;border-radius:8px}
+  .auth-logo{margin-bottom:18px}
+  .auth-logo img{width:68px;height:68px}
+  .auth-title{font-size:22px}
+  .auth-brand-panel{grid-column:1;width:min(100%,440px);max-width:440px;text-align:center}
+  .auth-brand-kicker{margin-bottom:8px;font-size:10px}
+  .auth-phrase{min-height:58px;justify-content:center;font-size:26px;line-height:1.15}
+  .auth-brand-caption{display:none}
+
   .topbar-profile{display:flex!important;width:40px;height:40px;min-width:40px;padding:2px;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;flex-shrink:0;touch-action:manipulation}
   .topbar-profile:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
   .topbar-profile .av{width:36px;height:36px;border:2px solid var(--border2);font-size:11px;box-shadow:0 4px 12px rgba(0,0,0,.24)}
@@ -463,6 +476,13 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 }
 
 @media(max-width:370px){
+  .auth-stage{gap:18px;padding-left:12px;padding-right:12px}
+  .auth-card{padding:22px 16px}
+  .auth-logo img{width:60px;height:60px}
+  .auth-logo{margin-bottom:15px}
+  .auth-tabs{margin-bottom:16px}
+  .auth-options{align-items:flex-start}
+  .auth-phrase{font-size:22px}
   .sidebar .sb-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mobile-install-settings>.btn{width:100%}
 }
