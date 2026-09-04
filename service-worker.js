@@ -1,4 +1,4 @@
-const CACHE_NAME='magemind-shell-20260903-27';
+const CACHE_NAME='magemind-shell-20260904-28';
 const SHELL=['./','./index.html','./mobile.css','./mobile-app.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
 
 self.addEventListener('install',event=>{

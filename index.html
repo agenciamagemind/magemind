@@ -1897,7 +1897,8 @@ function mapDemand(d){
     assignee:assignee.name||'', assigneePhoto:assignee.photo||null, assigneeAv:assignee.av||'',
     assigneeId:d.assignee_id||null,
     status:d.status||'Não iniciado', priority:d.priority||'Média',
-    date:d.due_date||'', sortOrder:d.sort_order||0,
+    date:d.due_date||'', sortOrder:Number.isFinite(Number(d.sort_order))?Number(d.sort_order):0,
+    createdAt:d.created_at||null,
     comments:[], commentsLoaded:false
   };
 }
@@ -2162,7 +2163,8 @@ function clearSessionState(){
   currentDemandId = null; editDemandId = null; editClientId = null;
   editSaleId = null; editPlanId = null; convertTargetClientId = null; convertTargetTeamId = null;
   currentView = 'kanban'; salesPeriod = 'all'; revPeriod = 'max';
-  dragId = null; dragOverId = null; lastDraggedId = null;
+  dragId = null; dragOverId = null; dragInsertAfter = false;
+  kanbanOrderSaving = false; suppressDemandClickUntil = 0;
 }
 
 async function doLogout(){
@@ -2629,7 +2631,7 @@ async function reloadDemandsForRole(){
 /* ═══ INIT APP ═══ */
 let currentView='kanban', currentDemandId=null, editClientId=null, editSaleId=null, editDemandId=null, editPlanId=null, salesPeriod='all';
 let revPeriod = 'max'; // período do card de receita no dashboard
-let dragId=null, dragOverId=null, lastDraggedId=null;
+let dragId=null, dragOverId=null, dragInsertAfter=false, kanbanOrderSaving=false, suppressDemandClickUntil=0;
 
 function setRevPeriod(btn, period){
   revPeriod = period;
@@ -3943,8 +3945,8 @@ function renderKanban(){
   const colDots = {'Não iniciado':'var(--text3)','Em andamento':'var(--amber)','Concluído':'var(--emerald)'};
   const canCreate = hasPermission('demands.create');
   document.getElementById('kanban-board').innerHTML = cols.map(col=>{
-    const cards = demands.filter(d=>d.status===col);
-    return `<div class="k-col" ondragover="event.preventDefault()" ondrop="drop(event,'${col}')">
+    const cards = orderedDemandColumn(col,demands);
+    return `<div class="k-col" ondragover="columnDragOver(event)" ondrop="drop(event,'${col}')">
       <div class="k-col-head">
         <div class="k-col-dot" style="background:${colDots[col]}"></div>
         <div class="k-col-title">${col.toUpperCase()}</div>
@@ -3969,7 +3971,7 @@ function renderCard(d){
   // Editor não vê dados sensíveis do cliente — mostra só o nome do projeto/cliente, sem contato/valores
   const clientLabel = isEditor() ? (cn(d.client)||'—') : cn(d.client);
   return `<div class="k-card" id="kc-${d.id}" data-demand-id="${escapeHTML(String(d.id))}" ${dragAttrs}
-    onclick="openDetail('${d.id}')">
+    onclick="if(Date.now()>=suppressDemandClickUntil)openDetail('${d.id}')">
     <div class="k-card-title">${escapeHTML(d.title)}</div>
     <div class="k-card-tags"><span class="badge ${pr[d.priority]}">${escapeHTML(d.priority)}</span>${d.comments.length?`<span class="badge b-muted">💬 ${d.comments.length}</span>`:''}${!draggable?'<span class="badge b-muted">👁 leitura</span>':''}</div>
     <div class="k-card-foot"><span class="k-card-client">${escapeHTML(clientLabel)}</span><span class="k-card-date">${escapeHTML(fDate(d.date))}</span><div class="av av-xs" style="flex-shrink:0" title="${escapeHTML(d.assignee)}">${avHtml}</div></div>
@@ -4015,46 +4017,169 @@ function renderDemandsList(){
 }
 
 /* drag-and-drop */
-function dragStart(e,id){ dragId=id; lastDraggedId=id; e.dataTransfer.effectAllowed='move'; setTimeout(()=>{const el=document.getElementById('kc-'+id);if(el)el.classList.add('dragging')},0); }
-function dragEnd(){ if(dragId){const el=document.getElementById('kc-'+dragId);if(el)el.classList.remove('dragging');} document.querySelectorAll('.k-card').forEach(c=>{c.style.borderTop='';c.style.borderBottom='';}); dragId=null;dragOverId=null; }
-function cardDragOver(e,id){ e.preventDefault();e.stopPropagation(); if(id===dragId)return; dragOverId=id; const el=document.getElementById('kc-'+id);if(!el)return; document.querySelectorAll('.k-card').forEach(c=>{c.style.borderTop='';c.style.borderBottom='';}); const rect=el.getBoundingClientRect(); if(e.clientY<rect.top+rect.height/2){el.style.borderTop='2px solid var(--violet)';}else{el.style.borderBottom='2px solid var(--violet)';} }
-function cardDragLeave(e,id){ const el=document.getElementById('kc-'+id); if(el&&!el.contains(e.relatedTarget)){el.style.borderTop='';el.style.borderBottom='';} }
+function demandOrderNumber(demand){
+  const value=Number(demand?.sortOrder);
+  return Number.isFinite(value)?value:0;
+}
+function nextDemandInitialOrder(status){
+  const orders=DB.demands.filter(demand=>demand.status===status).map(demandOrderNumber);
+  return orders.length?Math.min(...orders)-1:0;
+}
+function compareDemandOrder(a,b){
+  const byOrder=demandOrderNumber(a)-demandOrderNumber(b);
+  if(byOrder) return byOrder;
+  const byCreated=String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+  return byCreated||String(a.id).localeCompare(String(b.id));
+}
+function orderedDemandColumn(status,source=DB.demands){
+  return source.filter(demand=>demand.status===status).slice().sort(compareDemandOrder);
+}
+function assignLocalDemandOrder(cards){
+  cards.forEach((card,index)=>{card.sortOrder=index;});
+}
+function insertDemandAtDropPoint(cards,dragged,targetId,insertAfter){
+  const ordered=cards.filter(card=>card.id!==dragged.id);
+  const targetIndex=targetId?ordered.findIndex(card=>card.id===targetId):-1;
+  const insertIndex=targetIndex<0?ordered.length:targetIndex+(insertAfter?1:0);
+  ordered.splice(insertIndex,0,dragged);
+  return ordered;
+}
+function clearDemandDropMarker(){
+  document.querySelectorAll('.k-card').forEach(card=>{
+    card.style.borderTop='';
+    card.style.borderBottom='';
+  });
+}
+function columnDragOver(e){
+  e.preventDefault();
+  if(!e.target.closest('.k-card')){
+    clearDemandDropMarker();
+    dragOverId=null;
+    dragInsertAfter=false;
+  }
+}
+function dragStart(e,id){
+  if(kanbanOrderSaving){e.preventDefault();return;}
+  dragId=id;
+  dragOverId=null;
+  dragInsertAfter=false;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{const el=document.getElementById('kc-'+id);if(el)el.classList.add('dragging')},0);
+}
+function dragEnd(){
+  if(dragId){const el=document.getElementById('kc-'+dragId);if(el)el.classList.remove('dragging');}
+  clearDemandDropMarker();
+  dragId=null;
+  dragOverId=null;
+  dragInsertAfter=false;
+}
+function cardDragOver(e,id){
+  e.preventDefault();
+  e.stopPropagation();
+  if(id===dragId)return;
+  const el=document.getElementById('kc-'+id);
+  if(!el)return;
+  const rect=el.getBoundingClientRect();
+  dragOverId=id;
+  dragInsertAfter=e.clientY>=rect.top+rect.height/2;
+  clearDemandDropMarker();
+  el.style[dragInsertAfter?'borderBottom':'borderTop']='2px solid var(--violet)';
+}
+function cardDragLeave(e,id){
+  const el=document.getElementById('kc-'+id);
+  if(el&&!el.contains(e.relatedTarget)){
+    el.style.borderTop='';
+    el.style.borderBottom='';
+    if(dragOverId===id){dragOverId=null;dragInsertAfter=false;}
+  }
+}
+async function persistDemandColumnOrder(status,ids){
+  if(!ids.length)return;
+  const {error}=await supa.rpc('reorder_demands',{p_status:status,p_demand_ids:ids});
+  if(error)throw error;
+}
 
 async function drop(e,col){
   e.preventDefault();
-  document.querySelectorAll('.k-card').forEach(c=>{c.style.borderTop='';c.style.borderBottom='';});
-  if(!dragId) return;
-  const dragged = DB.demands.find(x=>x.id===dragId);
-  if(!dragged || !canMoveDemand(dragged)){dragId=null;dragOverId=null;return;}
-  const statusChanged = dragged.status !== col;
+  e.stopPropagation();
+
+  // Capture every drag value before dragend can clear the shared state.
+  const movingId=dragId;
+  const targetId=dragOverId;
+  const insertAfter=dragInsertAfter;
+  const dragged=DB.demands.find(demand=>demand.id===movingId);
+  const sourceStatus=dragged?.status;
+  clearDemandDropMarker();
+  dragId=null;
+  dragOverId=null;
+  dragInsertAfter=false;
+  suppressDemandClickUntil=Date.now()+350;
+
+  if(!dragged||!canMoveDemand(dragged)||kanbanOrderSaving)return;
+  const statusChanged=sourceStatus!==col;
+  const originalPositions=DB.demands.map(demand=>({id:demand.id,status:demand.status,sortOrder:demand.sortOrder}));
+  const sourceBefore=orderedDemandColumn(sourceStatus);
+  const targetBefore=statusChanged?orderedDemandColumn(col):sourceBefore;
+  const sourceAfter=statusChanged?sourceBefore.filter(card=>card.id!==movingId):null;
+  const targetAfter=insertDemandAtDropPoint(targetBefore,dragged,targetId,insertAfter);
+  const beforeIds=targetBefore.map(card=>card.id).join('|');
+  const afterIds=targetAfter.map(card=>card.id).join('|');
+  if(!statusChanged&&beforeIds===afterIds)return;
+
+  if(statusChanged)dragged.status=col;
+  if(sourceAfter)assignLocalDemandOrder(sourceAfter);
+  assignLocalDemandOrder(targetAfter);
+  const sourceIds=sourceAfter?.map(card=>card.id)||[];
+  const targetIds=targetAfter.map(card=>card.id);
+  renderKanban();
+  if(currentView==='list')renderDemandsList();
+
+  kanbanOrderSaving=true;
+  try{
+    if(statusChanged){
+      const temporaryOrder=targetBefore.reduce((max,card)=>Math.max(max,demandOrderNumber(card)),-1)+1;
+      const {error:moveError}=await supa.from('demands')
+        .update({status:col,sort_order:temporaryOrder})
+        .eq('id',movingId)
+        .select('id')
+        .single();
+      if(moveError)throw moveError;
+      await Promise.all([
+        persistDemandColumnOrder(sourceStatus,sourceIds),
+        persistDemandColumnOrder(col,targetIds)
+      ]);
+    }else{
+      await persistDemandColumnOrder(col,targetIds);
+    }
+  }catch(error){
+    console.error('Falha ao salvar ordem do kanban',error);
+    originalPositions.forEach(position=>{
+      const demand=DB.demands.find(item=>item.id===position.id);
+      if(demand)Object.assign(demand,{status:position.status,sortOrder:position.sortOrder});
+    });
+    await reloadDemandsForRole().catch(()=>{
+      renderKanban();
+      if(currentView==='list')renderDemandsList();
+    });
+    toast('Não consegui salvar essa ordem agora. Tente novamente.','err');
+    return;
+  }finally{
+    kanbanOrderSaving=false;
+  }
+
+  await reloadDemandsForRole().catch(console.error);
   if(statusChanged){
-    dragged.status = col;
     if(isStaffRole()){
-      if(col==='Concluído') await dbPushNotifToClient(dragged.client,'✅','var(--emeraldbg)','Demanda concluída!',`"${dragged.title}" foi concluída por ${DB.me.name}.`,dragged.id,'demand_completed');
-      else if(col==='Em andamento') await dbPushNotifToClient(dragged.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${dragged.title}".`,dragged.id,'demand_started');
-    } else {
+      if(col==='Concluído')await dbPushNotifToClient(dragged.client,'✅','var(--emeraldbg)','Demanda concluída!',`"${dragged.title}" foi concluída por ${DB.me.name}.`,dragged.id,'demand_completed');
+      else if(col==='Em andamento')await dbPushNotifToClient(dragged.client,'🔄','var(--violetbg)','Demanda em andamento',`${DB.me.name} iniciou "${dragged.title}".`,dragged.id,'demand_started');
+    }else{
       await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente moveu demanda',`${DB.me.name} moveu "${dragged.title}" para ${col}.`,dragged.id,'demand_status');
     }
-    buildNav(); toast(`Movido para "${col}"!`,'ok');
-  } else if(dragOverId && dragOverId!==dragId){
-    const fromIdx = DB.demands.findIndex(x=>x.id===dragId);
-    let toIdx     = DB.demands.findIndex(x=>x.id===dragOverId);
-    const toEl    = document.getElementById('kc-'+dragOverId);
-    if(fromIdx!==-1&&toIdx!==-1){
-      if(toEl&&toEl.style.borderBottom) toIdx++;
-      const [moved] = DB.demands.splice(fromIdx,1);
-      DB.demands.splice(toIdx>fromIdx?toIdx-1:toIdx, 0, moved);
-    }
+    buildNav();
+    toast(`Movido para "${col}"!`,'ok');
+  }else{
+    toast('Ordem das demandas atualizada!','ok');
   }
-  if(lastDraggedId){
-    const dm = DB.demands.find(x=>x.id===lastDraggedId);
-    if(dm){
-      const newOrder = DB.demands.filter(x=>x.status===dm.status).indexOf(dm);
-      await supa.from('demands').update({status:dm.status, sort_order:newOrder}).eq('id',dm.id);
-    }
-  }
-  dragId=null; dragOverId=null; lastDraggedId=null;
-  renderKanban(); if(currentView==='list') renderDemandsList();
 }
 
 function openNewDemand(status){
@@ -4105,15 +4230,19 @@ async function saveDemand(){
   try {
     if(editDemandId){
       // ── EDITAR
+      const currentDemand=DB.demands.find(demand=>demand.id===editDemandId);
+      const movedToAnotherColumn=currentDemand&&currentDemand.status!==status;
       const demandUpdate={title,priority,status,due_date:dueDate,description:desc,refs};
+      if(movedToAnotherColumn)demandUpdate.sort_order=nextDemandInitialOrder(status);
       if(canChangeDemandClient()) demandUpdate.client_id=clientId;
       if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
       const {error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId);
       if(error){ toast('Erro: '+error.message,'err'); return; }
-      const d = DB.demands.find(x=>x.id===editDemandId);
+      const d = currentDemand;
       if(d){
         const assigneeProf = DB.users.find(u=>u.id===assigneeId);
         Object.assign(d,{title,priority,status,date:dueDate||'',desc,refs});
+        if(movedToAnotherColumn)d.sortOrder=demandUpdate.sort_order;
         if(canChangeDemandClient()) d.client=clientId;
         if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
       }
@@ -4124,10 +4253,11 @@ async function saveDemand(){
 
     } else {
       // ── CRIAR
+      const initialSortOrder=nextDemandInitialOrder(status);
       const {data:nd, error} = await supa.from('demands').insert({
         title, client_id:clientId, assignee_id:assigneeId,
         priority, status, due_date:dueDate, description:desc, refs,
-        created_by:DB.me.id, sort_order:0
+        created_by:DB.me.id, sort_order:initialSortOrder
       }).select('*').single();
       if(error){ toast('Erro ao criar demanda: '+error.message,'err'); return; }
       const mapped = mapDemand(nd);
@@ -5055,17 +5185,18 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
   closeDemandContextMenu();
   try{
     const title=`cópia-${source.title}`;
+    const copiedStatus=source.status||'Não iniciado';
     const {data:nd,error}=await supa.from('demands').insert({
       title,
       client_id:source.client||null,
       assignee_id:source.assigneeId||null,
       priority:source.priority||'Média',
-      status:source.status||'Não iniciado',
+      status:copiedStatus,
       due_date:source.date||null,
       description:source.desc||'',
       refs:source.refs||'',
       created_by:DB.me.id,
-      sort_order:0
+      sort_order:nextDemandInitialOrder(copiedStatus)
     }).select('*').single();
     if(error){ toast('Erro ao duplicar demanda: '+error.message,'err'); return; }
     const copied=mapDemand(nd);
