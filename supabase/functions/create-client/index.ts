@@ -38,6 +38,14 @@ Deno.serve(async (req) => {
   if (callerAuthError || !callerAuth.user) return json({ error: "Sessão inválida" }, 401);
 
   const admin = createClient(supabaseUrl, serviceKey);
+  const rollbackClient = async (clientId: string, userId?: string) => {
+    if (userId) {
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) console.error("Falha ao remover acesso incompleto do cliente:", error.message);
+    }
+    const { error } = await admin.from("clients").delete().eq("id", clientId);
+    if (error) console.error("Falha ao remover cadastro incompleto do cliente:", error.message);
+  };
   const { data: callerProfile, error: callerProfileError } = await admin
     .from("profiles")
     .select("role,active,archived_at")
@@ -104,7 +112,7 @@ Deno.serve(async (req) => {
   });
 
   if (authError || !authData.user) {
-    await admin.from("clients").delete().eq("id", createdClient.id);
+    await rollbackClient(createdClient.id);
     return json({ error: authError?.message || "Falha ao criar acesso do cliente" }, 400);
   }
 
@@ -122,18 +130,34 @@ Deno.serve(async (req) => {
   }, { onConflict: "id" });
 
   if (profileError) {
-    await admin.auth.admin.deleteUser(userId);
-    await admin.from("clients").delete().eq("id", createdClient.id);
+    await rollbackClient(createdClient.id, userId);
     return json({ error: "Falha ao criar perfil: " + profileError.message }, 500);
   }
 
   if (status === "Inativo") {
     const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     if (banError) {
-      await admin.auth.admin.deleteUser(userId);
-      await admin.from("clients").delete().eq("id", createdClient.id);
+      await rollbackClient(createdClient.id, userId);
       return json({ error: "Falha ao bloquear o acesso do cliente inativo" }, 500);
     }
+  }
+
+  const [{ data: verifiedAuth, error: verifyAuthError }, { data: verifiedProfile, error: verifyProfileError }] = await Promise.all([
+    admin.auth.admin.getUserById(userId),
+    admin.from("profiles").select("id,role,active,client_id").eq("id", userId).maybeSingle(),
+  ]);
+  const accessIsComplete = Boolean(
+    verifiedAuth?.user?.id === userId &&
+    verifiedAuth.user.email?.toLowerCase() === email &&
+    verifiedProfile?.id === userId &&
+    verifiedProfile.role === "client" &&
+    verifiedProfile.client_id === createdClient.id &&
+    verifiedProfile.active === (status !== "Inativo")
+  );
+  if (verifyAuthError || verifyProfileError || !accessIsComplete) {
+    console.error("Verificação final do acesso do cliente falhou", verifyAuthError?.message, verifyProfileError?.message);
+    await rollbackClient(createdClient.id, userId);
+    return json({ error: "O cadastro não foi concluído por inteiro. Nada foi salvo; tente novamente." }, 500);
   }
 
   await Promise.all([

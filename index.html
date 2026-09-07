@@ -180,6 +180,14 @@ tbody td:first-child{padding-left:20px}
 .fi:focus{border-color:var(--violetborder)}
 .fi[aria-invalid="true"]{border-color:var(--red);box-shadow:0 0 0 2px rgba(239,68,68,.12)}
 .fi::placeholder{color:var(--text4)}
+.password-field{position:relative;width:100%}
+.password-field>.fi{padding-right:46px}
+.password-toggle{position:absolute;top:50%;right:2px;transform:translateY(-50%);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:var(--text3);cursor:pointer;transition:color .15s,background .15s}
+.password-toggle:hover,.password-toggle:focus-visible{color:var(--text);background:rgba(255,255,255,.06);outline:none}
+.password-toggle svg{width:18px;height:18px;pointer-events:none}
+.password-toggle .password-eye-off{display:none}
+.password-toggle.is-visible .password-eye{display:none}
+.password-toggle.is-visible .password-eye-off{display:block}
 select.fi{cursor:pointer}
 select.fi option{background:var(--bg3);color:var(--text)}
 textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
@@ -511,7 +519,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </div>
       <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
         <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
-        <div class="fg"><label class="fl">Senha</label><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+        <div class="fg"><label class="fl">Senha</label><div class="password-field"><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="li-pass" onclick="togglePasswordVisibility('li-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <div class="auth-options">
           <label class="remember-option"><input id="li-keep" type="checkbox" checked><span>Manter conectado</span></label>
           <span class="auth-forgot">Esqueci minha senha</span>
@@ -525,8 +533,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         </div>
         <div class="fg"><label class="fl">Email *</label><input class="fi" id="rg-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
         <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
-        <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"></div>
-        <div class="fg"><label class="fl">Confirme sua senha *</label><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+        <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><div class="password-field"><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass" onclick="togglePasswordVisibility('rg-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
+        <div class="fg"><label class="fl">Confirme sua senha *</label><div class="password-field"><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass-confirm" onclick="togglePasswordVisibility('rg-pass-confirm',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doRegister()">Criar conta</button>
       </div>
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
@@ -1051,7 +1059,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </div>
       <div class="f2">
         <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="c-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
-        <div class="fg" id="c-pass-wrap"><label class="fl">Senha de acesso *</label><input class="fi" id="c-pass" type="password" placeholder="Senha para o cliente"></div>
+        <div class="fg" id="c-pass-wrap"><label class="fl">Senha de acesso *</label><div class="password-field"><input class="fi" id="c-pass" type="password" autocomplete="new-password" placeholder="Senha para o cliente"><button class="password-toggle" type="button" data-password-for="c-pass" onclick="togglePasswordVisibility('c-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
       </div>
       <div class="fg">
         <label class="fl">Planos / Pacotes contratados</label>
@@ -1180,7 +1188,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="fg"><label class="fl">E-mail *</label><input class="fi" id="tm-email" type="email" placeholder="email@exemplo.com"><div id="tm-email-hint" style="display:none;font-size:11px;color:var(--text3);margin-top:4px">E-mail de acesso não pode ser alterado por aqui.</div></div>
       </div>
       <div class="f2">
-        <div class="fg" id="tm-pass-wrap"><label class="fl">Senha provisória *</label><input class="fi" id="tm-pass" type="text" placeholder="Mínimo 8 caracteres"></div>
+        <div class="fg" id="tm-pass-wrap"><label class="fl">Senha provisória *</label><div class="password-field"><input class="fi" id="tm-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"><button class="password-toggle" type="button" data-password-for="tm-pass" onclick="togglePasswordVisibility('tm-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <div class="fg"><label class="fl">WhatsApp (opcional)</label><input class="fi" id="tm-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
       </div>
       <div class="f2">
@@ -1565,6 +1573,29 @@ function isOperationalStaff(){ return isCEO() || isManager() || isGestor() || is
 /* Alias semântico: qualquer cargo interno da equipe (nunca cliente/afiliado).
    Usado para decidir o texto de notificações (nunca chamar Gestor/Editor de "cliente"). */
 function isStaffRole(){ return isOperationalStaff(); }
+
+const OPERATIONAL_ROLES = new Set(['ceo','manager','gestor','editor']);
+function activeOperationalUsers(){
+  return DB.users
+    .filter(user=>user && OPERATIONAL_ROLES.has(user.role) && user.active!==false && !user.archivedAt)
+    .slice()
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+}
+function demandAssigneeOptions(selectedId=''){
+  const activeUsers=activeOperationalUsers();
+  const selectedIsActive=activeUsers.some(user=>user.id===selectedId);
+  const current=selectedId&&!selectedIsActive ? DB.users.find(user=>user.id===selectedId) : null;
+  const preserved=current
+    ? `<option value="${escapeHTML(current.id)}" selected hidden>${escapeHTML(current.name||'Responsável anterior')}</option>`
+    : '';
+  return preserved+activeUsers.map(user=>`<option value="${escapeHTML(user.id)}"${user.id===selectedId?' selected':''}>${escapeHTML(user.name)}</option>`).join('');
+}
+function populateDemandAssignee(selectedId=''){
+  const select=document.getElementById('d-assignee');
+  if(!select) return;
+  select.innerHTML=demandAssigneeOptions(selectedId);
+  if(selectedId) select.value=selectedId;
+}
 
 function hasPermission(perm){
   const role = getRole();
@@ -1977,7 +2008,30 @@ async function handleExpiredSession(){
   toast('Sua sessão expirou. Entre novamente para continuar.','err');
 }
 
+function resetPasswordVisibility(inputId){
+  const input=document.getElementById(inputId);
+  const button=document.querySelector(`[data-password-for="${inputId}"]`);
+  if(input) input.type='password';
+  if(button){
+    button.classList.remove('is-visible');
+    button.setAttribute('aria-label','Mostrar senha');
+    button.title='Mostrar senha';
+  }
+}
+function togglePasswordVisibility(inputId,button){
+  const input=document.getElementById(inputId);
+  if(!input||!button) return;
+  const show=input.type==='password';
+  input.type=show?'text':'password';
+  button.classList.toggle('is-visible',show);
+  button.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');
+  button.title=show?'Ocultar senha':'Mostrar senha';
+  input.focus({preventScroll:true});
+  const end=input.value.length;
+  try{ input.setSelectionRange(end,end); }catch(_error){ /* Alguns navegadores não expõem seleção em senha. */ }
+}
 function authTab(t){
+  ['li-pass','rg-pass','rg-pass-confirm'].forEach(resetPasswordVisibility);
   document.querySelectorAll('.auth-tab').forEach((el,i) => el.classList.toggle('active', t==='login'?i===0:i===1));
   document.getElementById('auth-login').style.display = t==='login' ? 'flex' : 'none';
   document.getElementById('auth-reg').style.display   = t==='reg'   ? 'flex' : 'none';
@@ -3146,6 +3200,7 @@ function openNewClient(){
   document.getElementById('c-pass-wrap').style.display = 'flex';
   document.getElementById('c-convert-btn').style.display = 'none';
   ['c-name','c-email','c-phone','c-pass','c-notes'].forEach(id=>document.getElementById(id).value='');
+  resetPasswordVisibility('c-pass');
   document.getElementById('c-email-hint').style.display = 'none';
   document.getElementById('c-status').value = 'Ativo';
   const now = new Date(); now.setSeconds(0,0);
@@ -3239,9 +3294,8 @@ async function saveClient(){
     if(pass.length<8) return fieldError('c-pass','A senha do cliente precisa ter pelo menos 8 caracteres.');
     if(btn){ btn.disabled=true; btn.textContent='Criando...'; }
     try {
-      const sessionResult = await supa.auth.getSession();
-      const token = sessionResult?.data?.session?.access_token;
-      if(!token){ toast('Sessão expirada. Faça login novamente.','err'); return; }
+      const token=await getFreshAccessToken();
+      if(!token){ await handleExpiredSession(); return; }
 
       let res, json;
       try {
@@ -3257,13 +3311,14 @@ async function saveClient(){
         return;
       }
 
+      if(res.status===401){ await handleExpiredSession(); return; }
       if(!res.ok || json.error){ toast('Erro: '+(json.error||res.statusText),'err'); return; }
 
       // Sucesso: adiciona ao cache usando os dados reais retornados pelo servidor
       const newClient = mapClient({...json.client, plan_id:primaryPlan, customer_since:customerSince, affiliate_id});
       newClient.planIds = planIds;
       DB.clients.unshift(newClient);
-      DB.users.push({id:json.user_id, name, role:'client', av:avatarInitials(name), photo:null, clientId:json.client.id});
+      DB.users.push({id:json.user_id, name, role:'client', email, phone, av:avatarInitials(name), photo:null, clientId:json.client.id, active:status!=='Inativo'});
       closeModal('modal-client');
       toast(`${name} cadastrado com acesso ao sistema! ✓`,'ok');
       buildNav(); renderClients();
@@ -3357,6 +3412,7 @@ function openNewTeamMember(){
   document.getElementById('mt-title').textContent = 'Novo usuário';
   document.getElementById('tm-btn-label').textContent = 'Criar usuário';
   ['tm-name','tm-email','tm-pass','tm-phone'].forEach(id=>document.getElementById(id).value='');
+  resetPasswordVisibility('tm-pass');
   document.getElementById('tm-email').disabled = false;
   document.getElementById('tm-email-hint').style.display = 'none';
   document.getElementById('tm-pass-wrap').style.display='flex';
@@ -4199,8 +4255,7 @@ function openNewDemand(status){
   }
   const allowedStatuses=['Não iniciado','Em andamento','Concluído'];
   document.getElementById('d-status').value = typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
-  const dAssign = document.getElementById('d-assignee');
-  if(dAssign) dAssign.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
+  populateDemandAssignee();
   document.getElementById('d-title').value = '';
   document.getElementById('d-desc').value  = '';
   document.getElementById('d-priority').value = 'Média';
@@ -4400,9 +4455,15 @@ function loadSales(){
     : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Nenhuma venda neste período</td></tr>';
 }
 
-function populateSaleAssignee(){
+function populateSaleAssignee(selectedName=''){
   const sel = document.getElementById('s-assignee'); if(!sel) return;
-  sel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${escapeHTML(u.name)}">${escapeHTML(u.name)}</option>`).join('');
+  const activeUsers=activeOperationalUsers();
+  const selectedIsActive=activeUsers.some(user=>user.name===selectedName);
+  const preserved=selectedName&&!selectedIsActive
+    ? `<option value="${escapeHTML(selectedName)}" selected hidden>${escapeHTML(selectedName)}</option>`
+    : '';
+  sel.innerHTML=preserved+activeUsers.map(user=>`<option value="${escapeHTML(user.name)}"${user.name===selectedName?' selected':''}>${escapeHTML(user.name)}</option>`).join('');
+  if(selectedName) sel.value=selectedName;
 }
 function populateSalePlans(){
   const sel = document.getElementById('s-plan');
@@ -4482,11 +4543,10 @@ function openEditSale(id){
   const sc = document.getElementById('s-client');
   sc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   sc.value = s.client;
-  populateSaleAssignee(); populateSalePlans(); updateSaleDemands();
+  populateSaleAssignee(s.assignee||''); populateSalePlans(); updateSaleDemands();
   setTimeout(()=>{document.getElementById('s-plan').value=s.plan||'';document.getElementById('s-demand').value=s.demand||'';},0);
   document.getElementById('s-value').value    = s.value;
   document.getElementById('s-desc').value     = s.desc||'';
-  document.getElementById('s-assignee').value = s.assignee||'';
   document.getElementById('s-status').value   = s.status;
   document.getElementById('s-date').value     = s.date;
   openModal('modal-sale');
@@ -5037,10 +5097,9 @@ async function openDetail(id){
 
   // Responsável — toda a equipe operacional pode administrar a atribuição.
   if(canChangeDemandAssignee()){
-    const assignees = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role));
     document.getElementById('det-assignee-wrap').innerHTML = `
       <select class="fi" id="det-assignee-sel" onchange="queueDemandFieldSave('assigneeId',this.value,true)">
-        ${assignees.map(a=>`<option value="${a.id}"${a.id===d.assigneeId?' selected':''}>${escapeHTML(a.name)}</option>`).join('')}
+        ${demandAssigneeOptions(d.assigneeId||'')}
       </select>`;
   } else {
     const avHtml = profileAvatarHTML(d.assigneeId,d.assignee);
@@ -5112,9 +5171,7 @@ function openEditDemand(id){
   document.getElementById('d-client-wrap').style.display='flex';
   document.getElementById('d-assignee-wrap').style.display= canChangeDemandAssignee() ? 'flex' : 'none';
   document.getElementById('d-title').value    = d.title;
-  const dAssignSel = document.getElementById('d-assignee');
-  dAssignSel.innerHTML = DB.users.filter(u=>['ceo','manager','gestor','editor'].includes(u.role)).map(u=>`<option value="${u.id}">${escapeHTML(u.name)}</option>`).join('');
-  dAssignSel.value = d.assigneeId||'';
+  populateDemandAssignee(d.assigneeId||'');
   document.getElementById('d-priority').value = d.priority;
   document.getElementById('d-status').value   = d.status;
   document.getElementById('d-date').value     = d.date;
