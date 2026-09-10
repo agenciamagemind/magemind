@@ -3,7 +3,7 @@ import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-dispatch-token",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -62,29 +62,52 @@ Deno.serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization") || "";
     const jwt = authHeader.replace(/^Bearer\s+/i, "");
-    if (!jwt) return json({ error: "Não autenticado" }, 401);
+    if (!jwt&&!req.headers.get("x-dispatch-token")) return json({ error: "Não autenticado" }, 401);
 
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: callerAuth, error: callerError } = await callerClient.auth.getUser(jwt);
-    if (callerError || !callerAuth.user) return json({ error: "Sessão inválida" }, 401);
+    const admin = createClient(supabaseUrl, serviceKey);
+    const dispatchToken=req.headers.get('x-dispatch-token')||'';
+    let trustedDispatcher=false;
+    let callerId:string|null=null;
+    if(dispatchToken){
+      const {data,error}=await admin.rpc('validate_push_dispatch_token',{p_token:dispatchToken});
+      if(error||data!==true)return json({error:'Dispatcher inválido'},401);
+      trustedDispatcher=true;
+    }else{
+      const callerClient=createClient(supabaseUrl,anonKey,{global:{headers:{Authorization:authHeader}}});
+      const {data,error}=await callerClient.auth.getUser(jwt);
+      if(error||!data.user)return json({error:'Sessão inválida'},401);
+      callerId=data.user.id;
+      const {data:caller}=await admin.from('profiles').select('active,archived_at').eq('id',callerId).maybeSingle();
+      if(!caller||!caller.active||caller.archived_at)return json({error:'Conta inativa'},403);
+    }
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "JSON inválido" }, 400); }
     const notificationId = typeof body.notificationId === "string" ? body.notificationId : "";
     if (!uuidPattern.test(notificationId)) return json({ error: "Notificação inválida" }, 400);
 
-    const admin = createClient(supabaseUrl, serviceKey);
-    const { data: caller } = await admin.from("profiles")
-      .select("active,archived_at").eq("id", callerAuth.user.id).maybeSingle();
-    if (!caller || caller.active !== true || caller.archived_at) return json({ error: "Conta inativa" }, 403);
 
     const { data: notification } = await admin.from("notifications")
-      .select("id,to_user_id,to_role,title,body,event_type,link_demand_id,created_by")
+      .select("id,to_user_id,to_role,title,body,event_type,link_demand_id,created_by,dedupe_key")
       .eq("id", notificationId).maybeSingle();
     if (!notification) return json({ error: "Notificação não encontrada" }, 404);
-    if (notification.created_by !== callerAuth.user.id) return json({ error: "Notificação não pertence ao remetente" }, 403);
+    if (!trustedDispatcher&&notification.created_by !== callerId) return json({ error: "Notificação não pertence ao remetente" }, 403);
+    const finish=async(result:Record<string,unknown>)=>{
+      const {error}=await admin.rpc('complete_notification_push',{p_id:notificationId,p_error:Number(result.failed||0)>0?'Uma ou mais entregas aguardam nova tentativa':null});
+      if(error)throw error;
+      return json(result);
+    };
+    if(notification.event_type==='sale_payment_pending'){
+      const {data:profile,error:profileError}=await admin.from('profiles').select('client_id').eq('id',notification.to_user_id).single();
+      if(profileError)throw profileError;
+      const {data:pending,error:pendingError}=await admin.from('sales').select('value').eq('client_id',profile.client_id).eq('status','Pendente');
+      if(pendingError)throw pendingError;
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+      const day=['year','month','day'].map(t=>parts.find(p=>p.type===t)?.value).join('-');
+      if(!pending?.length||notification.dedupe_key!=='payment:'+day)return finish({ok:true,sent:0,skipped:1});
+      const total=pending.reduce((sum,row)=>sum+Math.round(Number(row.value)*100),0)/100;
+      notification.body='Pagamento pendente: '+new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(total)+'. Fale com a Magemind no WhatsApp.';
+    }
 
     let linkedAssigneeId: string | null = null;
     if (notification.link_demand_id) {
@@ -96,7 +119,7 @@ Deno.serve(async (req) => {
     let targetIds: string[] = [];
     if (notification.to_user_id) {
       const { data: target } = await admin.from("profiles").select("id,role")
-        .eq("id", notification.to_user_id).maybeSingle();
+        .eq("id", notification.to_user_id).eq("active",true).is("archived_at",null).maybeSingle();
       if (target && (target.role !== "editor" || target.id === linkedAssigneeId)) targetIds = [target.id];
     } else if (notification.to_role === "admin") {
       const { data: staff } = await admin.from("profiles").select("id,role")
@@ -106,20 +129,22 @@ Deno.serve(async (req) => {
         .filter((profile) => profile.role !== "editor" || profile.id === linkedAssigneeId)
         .map((profile) => profile.id);
     }
-    if (!targetIds.length) return json({ ok: true, sent: 0, skipped: 0 });
+    if (!targetIds.length) return finish({ ok: true, sent: 0, skipped: 0 });
 
-    const { data: preferences } = await admin.from("notification_preferences").select("*").in("user_id", targetIds);
+    const { data: preferences,error:preferencesError } = await admin.from("notification_preferences").select("*").in("user_id", targetIds);
+    if(preferencesError)throw preferencesError;
     const preferenceMap = new Map<string, Preference>((preferences || []).map((item) => [item.user_id, item as Preference]));
     const category = preferenceColumn(notification.event_type || "general");
     const eligibleIds = targetIds.filter((id) => {
       const pref = preferenceMap.get(id);
       return Boolean(pref?.push_enabled && pref[category]);
     });
-    if (!eligibleIds.length) return json({ ok: true, sent: 0, skipped: targetIds.length });
+    if (!eligibleIds.length) return finish({ ok: true, sent: 0, skipped: targetIds.length });
 
-    const { data: subscriptions } = await admin.from("push_subscriptions").select("id,user_id,endpoint,p256dh,auth")
+    const { data: subscriptions,error:subscriptionsError } = await admin.from("push_subscriptions").select("id,user_id,endpoint,p256dh,auth")
       .in("user_id", eligibleIds).eq("enabled", true);
-    if (!subscriptions?.length) return json({ ok: true, sent: 0, skipped: eligibleIds.length });
+    if(subscriptionsError)throw subscriptionsError;
+    if (!subscriptions?.length) return finish({ ok: true, sent: 0, skipped: eligibleIds.length });
 
     const subscriptionIds = subscriptions.map((subscription) => subscription.id);
     const { data: completed } = await admin.from("push_deliveries").select("subscription_id")
@@ -133,14 +158,13 @@ Deno.serve(async (req) => {
 
     await Promise.all(subscriptions.map(async (subscription) => {
       if (completedIds.has(subscription.id)) return;
-      await admin.from("push_deliveries").upsert({
-        notification_id: notificationId,
-        subscription_id: subscription.id,
-        status: "pending",
-        attempts: 1,
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "notification_id,subscription_id" });
+      const {data:claimed,error:claimError}=await admin.rpc('claim_push_delivery',{p_notification_id:notificationId,p_subscription_id:subscription.id});
+      if(claimError)throw claimError;
+      if(!claimed){
+        const {data:delivery}=await admin.from('push_deliveries').select('status').eq('notification_id',notificationId).eq('subscription_id',subscription.id).single();
+        if(delivery?.status==='sent'||delivery?.status==='expired')skipped+=1;else failed+=1;
+        return;
+      }
 
       const payload = JSON.stringify({
         title: compactPushText(notification.title, 28, "Magemind"),
@@ -172,7 +196,7 @@ Deno.serve(async (req) => {
       }
     }));
 
-    return json({ ok: failed === 0, sent, failed, skipped });
+    return finish({ ok: failed === 0, sent, failed, skipped });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Erro inesperado" }, 500);
   }

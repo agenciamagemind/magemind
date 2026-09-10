@@ -1,5 +1,5 @@
-const CACHE_NAME='magemind-shell-20260907-29';
-const SHELL=['./','./index.html','./mobile.css','./mobile-app.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
+const CACHE_NAME='magemind-shell-20260910-1';
+const SHELL=['./','./index.html','./mobile.css','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));

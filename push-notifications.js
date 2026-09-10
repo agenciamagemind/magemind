@@ -35,7 +35,7 @@
   async function loadPreferences(){
     if(!hasSession()) return preferences;
     const {data,error}=await supa.from('notification_preferences').select('*').eq('user_id',DB.me.id).maybeSingle();
-    if(error) console.error('notification_preferences:',error);
+    if(error) throw error;
     preferences={...defaults,...(data||{})};
     return preferences;
   }
@@ -50,7 +50,9 @@
     const available=supported();
     let subscription=null;
     if(available) subscription=await currentSubscription();
-    const active=Boolean(preferences.push_enabled&&subscription&&Notification.permission==='granted');
+    let serverEnabled=false;
+    if(subscription){const {data,error}=await supa.from('push_subscriptions').select('enabled').eq('user_id',DB.me.id).eq('endpoint',subscription.endpoint).maybeSingle();if(error)throw error;serverEnabled=data?.enabled===true;}
+    const active=Boolean(preferences.push_enabled&&serverEnabled&&subscription&&Notification.permission==='granted');
 
     toggle?.classList.toggle('on',active);
     toggle?.setAttribute('aria-checked',String(active));
@@ -63,7 +65,7 @@
       if(!available) status.textContent='Este navegador não oferece suporte a notificações Web Push.';
       else if(Notification.permission==='denied') status.textContent='As notificações estão bloqueadas nas permissões do navegador.';
       else if(isIOS()&&!isStandalone()) status.textContent='No iPhone, instale e abra a Magemind pela Tela de Início para ativar.';
-      else if(active) status.textContent='Ativas neste aparelho. Nada de aviso aleatório que não seja seu.';
+      else if(active) status.textContent='Ativas neste aparelho. As categorias abaixo valem para seu perfil em todos os dispositivos.';
       else status.textContent='Desativadas. Ative para receber os eventos importantes deste perfil.';
     }
     document.querySelectorAll('[data-push-pref]').forEach(input=>{
@@ -82,9 +84,7 @@
       return;
     }
     try{
-      if(matchMedia('(max-width:900px)').matches){
-        preferences={...preferences,demand_updates:true,comments:true,sales:true,team_activity:true,general:true};
-      }
+      await loadPreferences();
       const permission=await Notification.requestPermission();
       if(permission!=='granted'){
         toast(permission==='denied'?'Permissão bloqueada no navegador.':'Ativação cancelada.','err');
@@ -106,13 +106,13 @@
       },{onConflict:'user_id,endpoint'});
       if(subscriptionError) throw subscriptionError;
       const {error:preferenceError}=await supa.from('notification_preferences').upsert({
-        user_id:DB.me.id,...preferences,push_enabled:true
+        user_id:DB.me.id,push_enabled:true
       },{onConflict:'user_id'});
       if(preferenceError) throw preferenceError;
       preferences.push_enabled=true;
       localStorage.removeItem('mm_app_just_installed');
       document.getElementById('push-onboarding')?.classList.remove('open');
-      toast('Notificações ativadas neste celular.','ok');
+      toast('Notificações ativadas neste aparelho.','ok');
       await window.renderPushSettings();
     }catch(error){
       console.error('enablePushNotifications:',error);
@@ -124,12 +124,13 @@
     try{
       const subscription=await currentSubscription();
       if(subscription){
-        await supa.from('push_subscriptions').delete().eq('user_id',DB.me.id).eq('endpoint',subscription.endpoint);
-        await subscription.unsubscribe();
+        const {error}=await supa.from('push_subscriptions').update({enabled:false}).eq('user_id',DB.me.id).eq('endpoint',subscription.endpoint);
+        if(error)throw error;
+        const unsubscribed=await subscription.unsubscribe();
+        if(!unsubscribed)throw new Error('Não foi possível remover a inscrição do navegador');
       }
-      await supa.from('notification_preferences').upsert({user_id:DB.me.id,push_enabled:false},{onConflict:'user_id'});
-      preferences.push_enabled=false;
-      toast('Notificações desativadas. O silêncio venceu.','ok');
+      toast('Notificações desativadas neste aparelho.','ok');
+
       await window.renderPushSettings();
     }catch(error){ toast('Erro ao desativar notificações: '+(error.message||error),'err'); }
   };
@@ -173,8 +174,8 @@
   }
 
   document.addEventListener('magemind:session-ready',()=>{
-    window.renderPushSettings();
-    maybePromptOnboarding();
+    window.renderPushSettings().catch(console.error);
+    maybePromptOnboarding().catch(console.error);
     const pending=new URLSearchParams(location.search).get('openDemand');
     if(pending){ history.replaceState({},'',location.pathname); openDemandFromPush(pending); }
   });

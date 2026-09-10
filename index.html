@@ -26,7 +26,7 @@
 :root{
   --bg:#08080f;--bg2:#0f0f1a;--bg3:#16162a;--bg4:#1e1e35;--bg5:#252540;
   --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.12);--border3:rgba(255,255,255,.18);
-  --text:#f0f0ff;--text2:#9090b8;--text3:#505070;--text4:#303050;
+  --text:#f0f0ff;--text2:#b0b0cf;--text3:#9999b8;--text4:#9090ad;
   --violet:#8b5cf6;--violet2:#a78bfa;--violet3:#c4b5fd;
   --violetbg:rgba(139,92,246,.1);--violetborder:rgba(139,92,246,.25);
   --cyan:#06b6d4;--cyanbg:rgba(6,182,212,.1);--cyanborder:rgba(6,182,212,.2);
@@ -497,7 +497,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260903-9">
+<link rel="stylesheet" href="mobile.css?v=20260910-1">
 </head>
 <body>
 
@@ -619,6 +619,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
     </div>
 
     <div class="content">
+      <div id="payment-alert" class="payment-alert" role="status" aria-live="polite" hidden></div>
 
       <!-- DASHBOARD -->
       <div class="page" id="pg-dashboard">
@@ -655,12 +656,12 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 <div style="font-size:12px;color:var(--emerald);margin-bottom:10px" id="dash-rev-sub">Vendas fechadas</div>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
                   <button class="btn btn-ghost btn-xs rev-period-btn active" data-period="max" onclick="setRevPeriod(this,'max')">Máximo</button>
-                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="year" onclick="setRevPeriod(this,'year')">1 ano</button>
-                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="month" onclick="setRevPeriod(this,'month')">1 mês</button>
+                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="year" onclick="setRevPeriod(this,'year')">Este ano</button>
+                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="month" onclick="setRevPeriod(this,'month')">Este mês</button>
                   <button class="btn btn-ghost btn-xs rev-period-btn" data-period="14d" onclick="setRevPeriod(this,'14d')">14 dias</button>
                   <button class="btn btn-ghost btn-xs rev-period-btn" data-period="7d" onclick="setRevPeriod(this,'7d')">7 dias</button>
-                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="48h" onclick="setRevPeriod(this,'48h')">48h</button>
-                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="24h" onclick="setRevPeriod(this,'24h')">24h</button>
+                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="48h" onclick="setRevPeriod(this,'48h')">Hoje e ontem</button>
+                  <button class="btn btn-ghost btn-xs rev-period-btn" data-period="24h" onclick="setRevPeriod(this,'24h')">Hoje</button>
                 </div>
                 <div class="bar-chart" id="rev-chart"></div>
               </div>
@@ -1436,7 +1437,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="mobile-app.js?v=20260829-4"></script>
+<script src="app-core.js?v=20260910-1"></script>
+<script src="mobile-app.js?v=20260910-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -1936,7 +1938,7 @@ function mapDemand(d){
 function mapSale(s){
   return {
     id:s.id, client:s.client_id, clientName:s.clients?.name||'',
-    plan:s.plan_id||'', service:s.plans?.name||s.service||'',
+    plan:s.plan_id||'', demand:s.demand_id||'', service:s.plans?.name||s.service||'',
     value:parseFloat(s.value)||0, desc:s.description||'',
     assignee:s.assignee||'', status:s.status||'Fechado',
     date:s.sale_date||'', createdAt:s.created_at||null
@@ -2525,6 +2527,9 @@ async function loadAllData(){
         .select('*').eq('to_user_id',DB.me.id).order('created_at',{ascending:false}).limit(50);
       DB.notifications = (notifs||[]).map(mapNotif);
     }
+    await refreshNotifications();
+    await loadCompanySettings();
+    renderPaymentAlert();
     if(isReferralApproved()) await loadReferralData();
   } catch(e){
     console.error('loadAllData error:', e);
@@ -2579,18 +2584,16 @@ function setupRealtime(){
   if(!DB.me) return;
   cleanupRealtimeSubscriptions(); // garante zero canais órfãos de um login anterior
 
-  const notifFilter = isStaffRole() ? 'to_role=eq.admin' : `to_user_id=eq.${DB.me.id}`;
-  const notifChannel = supa.channel(`notifs-${DB.me.id}`)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:notifFilter},
-      payload=>{
-        const mapped=mapNotif(payload.new);
-        if(!canReceiveCurrentNotification(mapped)) return;
-        DB.notifications.unshift(mapped);
-        if(DB.notifications.length>50) DB.notifications.length=50;
-        updateNotifBadge();
-      })
+  const notifChannel=supa.channel('notifs-'+DB.me.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifications().catch(console.error))
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notification_reads',filter:'user_id=eq.'+DB.me.id},()=>refreshNotifications().catch(console.error))
     .subscribe();
   realtimeChannels.push(notifChannel);
+  if(isClient()||isAdmin()){
+    const salesChannel=supa.channel('sales-ui-'+DB.me.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:'sales'},()=>refreshSales().catch(console.error)).subscribe();
+    realtimeChannels.push(salesChannel);
+  }
 
   // Carteiras e fila de aprovação são atualizadas imediatamente.
   if(isReferralApproved() || isAdmin()){
@@ -2693,30 +2696,16 @@ function setRevPeriod(btn, period){
   if(btn) btn.classList.add('active');
   updateRevCard();
 }
-function getRevSales(){
-  const now = new Date();
-  return DB.sales.filter(s=>{
-    if(s.status!=='Fechado') return false;
-    if(revPeriod==='max') return true;
-    const raw = s.date || s.createdAt;
-    if(!raw) return revPeriod==='max';
-    const d = new Date(raw);
-    const diffMs = now - d;
-    if(revPeriod==='24h')   return diffMs <= 24*3600*1000;
-    if(revPeriod==='48h')   return diffMs <= 48*3600*1000;
-    if(revPeriod==='7d')    return diffMs <= 7*24*3600*1000;
-    if(revPeriod==='14d')   return diffMs <= 14*24*3600*1000;
-    if(revPeriod==='month') return diffMs <= 30*24*3600*1000;
-    if(revPeriod==='year')  return diffMs <= 365*24*3600*1000;
-    return true;
-  });
-}
+function getRevSales(){ return MagemindCore.revenueSeries(DB.sales,revPeriod).rows; }
 function updateRevCard(){
-  const closed = getRevSales();
-  const rev = closed.reduce((a,b)=>a+b.value,0);
-  document.getElementById('dash-rev-total').textContent = formatCurrencyBRL(rev);
-  const subEl = document.getElementById('dash-rev-sub');
-  if(subEl) subEl.textContent = `${closed.length} venda${closed.length!==1?'s':''} fechada${closed.length!==1?'s':''}`;
+  const series=MagemindCore.revenueSeries(DB.sales,revPeriod);
+  document.getElementById('dash-rev-total').textContent=formatCurrencyBRL(series.total);
+  document.getElementById('dash-rev-sub').textContent=series.rows.length+' vendas fechadas · '+fDate(series.from)+' a '+fDate(series.to);
+  const max=Math.max(...series.buckets.map(b=>b.value),1);
+  const chart=document.getElementById('rev-chart');
+  chart.setAttribute('role','list');chart.setAttribute('aria-label','Receita por período');
+  chart.innerHTML=series.buckets.map(b=>`<div class="revenue-column" role="listitem" tabindex="0" aria-label="${escapeHTML(b.label+': '+formatCurrencyBRL(b.value))}" title="${escapeHTML(b.label+': '+formatCurrencyBRL(b.value))}"><div class="revenue-bar-track"><div class="bar" style="height:${b.value/max*100}%;min-height:${b.value>0?3:0}px"></div></div><span>${b.label}</span></div>`).join('');
+  document.querySelectorAll('.rev-period-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.period===revPeriod)));
 }
 
 function initApp(){
@@ -2725,6 +2714,7 @@ function initApp(){
     Object.keys(localStorage).filter(k=>k.startsWith('mm_last_page')).forEach(k=>localStorage.removeItem(k));
   } catch(e){ /* localStorage pode não estar disponível — ignora silenciosamente */ }
   updateSidebarUser();
+  renderPaymentAlert();
   buildNav();
   setupRealtime();
   // Regra definitiva: todo login/cadastro/troca de conta abre em Dashboard.
@@ -2826,10 +2816,10 @@ function buildNav(){
   // Filtra por página realmente acessível (defesa extra além da lista acima)
   items = items.filter(i=>canAccessPage(i.id));
   document.getElementById('sb-nav').innerHTML = items.map(i=>`
-    <div class="sb-item" id="nav-${i.id}" onclick="goTo('${i.id}')">
+    <button type="button" class="sb-item" id="nav-${i.id}" onclick="goTo('${i.id}')">
       <span class="sb-icon">${i.icon}</span><span class="sb-label" data-mobile-label="${escapeHTML(i.id==='demands'?'Demandas':i.label)}">${escapeHTML(i.label)}</span>
       ${i.badge ? `<span class="sb-badge${i.warn?' warn':''}">${i.badge}</span>` : ''}
-    </div>`).join('');
+    </button>`).join('');
   if(typeof buildMobileNav==='function') buildMobileNav(items);
 }
 
@@ -2840,7 +2830,8 @@ function goTo(page){
     toast('Você não tem permissão para acessar esta página','err');
     page = 'dashboard';
   }
-  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(el=>{el.classList.remove('active');el.removeAttribute('aria-current');});
+  document.getElementById('nav-'+page)?.setAttribute('aria-current','page');
   const ni = document.getElementById('nav-'+page); if(ni) ni.classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg = document.getElementById('pg-'+page); if(pg) pg.classList.add('active');
@@ -2863,6 +2854,7 @@ function goTo(page){
   if(ctaFn[page] && ctaAllowed){
     ctaBtn.style.display='inline-flex';
     document.getElementById('tb-cta-label').textContent=ctaLabel[page];
+    ctaBtn.setAttribute('aria-label',ctaLabel[page]);
     ctaBtn.onclick=()=>ctaFn[page]();
   } else { ctaBtn.style.display='none'; }
 
@@ -3000,9 +2992,7 @@ function loadDashAffiliate(){
       <div class="av av-xs">${clientAvatarHTML(c.id,c.name)}</div>
       <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${escapeHTML(c.name)}</div></div>
     </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente indicado ainda</div>';
-  document.getElementById('dash-rev-total').textContent = formatCurrencyBRL(totalComm);
-  document.getElementById('dash-rev-sub').textContent = `Disponível ${formatCurrencyBRL(available)} · Em análise ${formatCurrencyBRL(review)} · Recebido ${formatCurrencyBRL(paid)}${pend?` · Pendente ${formatCurrencyBRL(pend)}`:''}`;
-  document.getElementById('rev-chart').innerHTML = '';
+  updateRevCard();
   document.getElementById('dash-activity').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Comissões e indicações atualizam aqui</div>';
 }
 
@@ -3065,21 +3055,6 @@ function loadDashFull(){
       </div>`).join('')
     : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente ativo</div>';
 
-  const now = new Date();
-  const revData = Array.from({length:6},(_,i)=>{
-    const d = new Date(now.getFullYear(),now.getMonth()-5+i,1);
-    return DB.sales.filter(s=>{
-      if(s.status!=='Fechado'||!s.date) return false;
-      const sd = new Date(s.date); return sd.getFullYear()===d.getFullYear()&&sd.getMonth()===d.getMonth();
-    }).reduce((a,b)=>a+b.value,0);
-  });
-  const revLabels = Array.from({length:6},(_,i)=>new Date(now.getFullYear(),now.getMonth()-5+i,1).toLocaleDateString('pt-BR',{month:'short'}));
-  const maxR = Math.max(...revData,1);
-  document.getElementById('rev-chart').innerHTML = revData.map((v,i)=>`
-    <div title="${escapeHTML(formatCurrencyBRL(v))}" style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;height:100%;justify-content:flex-end;min-width:0">
-      <div class="bar" style="height:${Math.round(v/maxR*100)}%;min-height:${v>0?'4px':'2px'};opacity:${v>0?1:0.2}"></div>
-      <div style="font-size:9px;color:var(--text3)">${revLabels[i]}</div>
-    </div>`).join('');
 
   const sc = {'Não iniciado':0,'Em andamento':0,'Concluído':0};
   DB.demands.forEach(d=>{ if(sc[d.status]!==undefined) sc[d.status]++; });
@@ -4291,12 +4266,12 @@ async function saveDemand(){
       if(movedToAnotherColumn)demandUpdate.sort_order=nextDemandInitialOrder(status);
       if(canChangeDemandClient()) demandUpdate.client_id=clientId;
       if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
-      const {error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId);
+      const {data:savedDemand,error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId).select('*').single();
       if(error){ toast('Erro: '+error.message,'err'); return; }
       const d = currentDemand;
       if(d){
         const assigneeProf = DB.users.find(u=>u.id===assigneeId);
-        Object.assign(d,{title,priority,status,date:dueDate||'',desc,refs});
+        Object.assign(d,{title:savedDemand.title,priority,status,date:dueDate||'',desc,refs});
         if(movedToAnotherColumn)d.sortOrder=demandUpdate.sort_order;
         if(canChangeDemandClient()) d.client=clientId;
         if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
@@ -4446,7 +4421,8 @@ function loadSales(){
       <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
       <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee)}</td>
-      <td><div style="display:flex;gap:6px">
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${s.demand?`<button class="btn btn-ghost btn-xs" onclick="openSaleDemand('${s.id}')">Ver demanda</button>`:''}
         ${canEditS?`<button class="btn btn-ghost btn-xs" onclick="openEditSale('${s.id}')">✎</button>`:''}
         ${canDelS?`<button class="btn btn-danger btn-xs" onclick="removeSale('${s.id}')">✕</button>`:''}
         ${(!canEditS&&!canDelS)?'<span style="font-size:11px;color:var(--text3)">leitura</span>':''}
@@ -4532,7 +4508,7 @@ async function openNewSale(){
   populateSaleAssignee(); populateSalePlans(); updateSaleDemands();
   document.getElementById('s-value').value=''; document.getElementById('s-desc').value='';
   document.getElementById('s-status').value='Fechado';
-  document.getElementById('s-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('s-date').value=MagemindCore.civilDate();
   openModal('modal-sale');
 }
 function openEditSale(id){
@@ -4544,7 +4520,7 @@ function openEditSale(id){
   sc.innerHTML = DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   sc.value = s.client;
   populateSaleAssignee(s.assignee||''); populateSalePlans(); updateSaleDemands();
-  setTimeout(()=>{document.getElementById('s-plan').value=s.plan||'';document.getElementById('s-demand').value=s.demand||'';},0);
+  document.getElementById('s-plan').value=s.plan||'';document.getElementById('s-demand').value=s.demand||'';
   document.getElementById('s-value').value    = s.value;
   document.getElementById('s-desc').value     = s.desc||'';
   document.getElementById('s-status').value   = s.status;
@@ -4559,6 +4535,9 @@ async function saveSale(){
   const svc     = plan ? plan.name : 'Pacote personalizado';
   if(!Number.isFinite(v) || v<=0){ toast('Informe um valor de venda maior que zero','err'); return; }
   const clientId = document.getElementById('s-client').value;
+  if(!clientId){toast('Selecione um cliente','err');return;}
+  const chosenDemand=document.getElementById('s-demand').value;
+  if(chosenDemand&&!DB.demands.some(d=>d.id===chosenDemand&&d.client===clientId)){toast('Selecione uma demanda deste cliente','err');return;}
   const saleData = {
     client_id:clientId, plan_id:planId||null,
     demand_id:document.getElementById('s-demand').value||null,
@@ -4572,10 +4551,10 @@ async function saveSale(){
   if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
   try {
     if(editSaleId){
-      const {error} = await supa.from('sales').update(saleData).eq('id',editSaleId);
+      const {data:saved,error} = await supa.from('sales').update(saleData).eq('id',editSaleId).select('*, clients(name), plans(name)').single();
       if(error){ toast('Erro: '+error.message,'err'); return; }
       const s = DB.sales.find(x=>x.id===editSaleId);
-      if(s) Object.assign(s,{client:clientId,plan:planId,service:svc,value:v,desc:saleData.description,assignee:saleData.assignee,status:saleData.status,date:saleData.sale_date});
+      if(s) Object.assign(s,mapSale(saved));
       closeModal('modal-sale'); toast('Venda atualizada! ✓','ok');
     } else {
       const {data:ns, error} = await supa.from('sales').insert(saleData).select('*, clients(name), plans(name)').single();
@@ -4586,8 +4565,8 @@ async function saveSale(){
       }
       closeModal('modal-sale'); toast('Venda registrada! ✓','ok');
     }
-    loadSales();
-  } finally {
+    loadSales();renderPaymentAlert();
+  } catch(error){toast('Não foi possível salvar a venda: '+error.message,'err');} finally {
     if(btn){ btn.disabled=false; btn.textContent=editSaleId?'Salvar alterações':'Registrar venda'; }
   }
 }
@@ -5019,12 +4998,14 @@ function persistDemandField(key){
   const previous=demandAutosaveQueues.get(key)||Promise.resolve();
   const job=previous.catch(()=>{}).then(async()=>{
     const cfg=demandFieldMap[pending.field];
-    const {error}=await supa.from('demands').update({[cfg.db]:pending.value||null}).eq('id',pending.demandId);
+    const {data:savedField,error}=await supa.from('demands').update({[cfg.db]:pending.value||null}).eq('id',pending.demandId).select('*').single();
     if(error){
       if(currentDemandId===pending.demandId) setDemandSaveState('error','Não salvou ainda. Tenta novamente em um instante.');
       toast('Erro ao salvar alteração: '+error.message,'err'); return;
     }
     if(demandAutosaveVersions.get(key)===pending.version){
+      const current=DB.demands.find(d=>d.id===pending.demandId);
+      if(current){current[cfg.local]=savedField[cfg.db]??'';if(pending.field==='title'&&currentDemandId===current.id)document.getElementById('det-title').value=savedField.title;}
       demandAutosavePending.delete(key);
       const stillPending=[...demandAutosavePending.keys()].some(k=>k.startsWith(`${pending.demandId}:`));
       if(currentDemandId===pending.demandId&&!stillPending) setDemandSaveState();
@@ -5241,7 +5222,7 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
   demandDuplicateInFlight=true;
   closeDemandContextMenu();
   try{
-    const title=`cópia-${source.title}`;
+    const title=source.title;
     const copiedStatus=source.status||'Não iniciado';
     const {data:nd,error}=await supa.from('demands').insert({
       title,
@@ -5497,10 +5478,12 @@ function openModal(id){
     if(restricted){ restricted.disabled=!isAdmin(); restricted.hidden=!isAdmin(); }
   }
   document.getElementById(id).classList.add('open');
+  window.syncAccessibleDialogs?.();
 }
 function closeModal(id){
   if(id==='modal-detail'&&currentDemandId) flushDemandAutosaves(currentDemandId);
   document.getElementById(id).classList.remove('open');
+  window.syncAccessibleDialogs?.();
   // Evita ids de edição "presos" depois de fechar sem salvar
   if(id==='modal-detail') currentDemandId = null;
   if(id==='modal-demand')  editDemandId = null;
@@ -5605,14 +5588,14 @@ function playfulNotification(eventType,title,body){
   return {title:compactNotificationText(selected,28,'Magemind'),body:compactNotificationText(body,72)};
 }
 async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDemandId, eventType='general'){
-  const copy=playfulNotification(eventType,title,body||'');
+  const copy={title,body:body||''};
   const {data:notificationId,error}=await supa.rpc('create_notification',{
     p_to_user_id:toUserId||null,p_to_role:toRole==='admin'?'admin':null,p_icon:icon,
     p_icon_bg:iconBg||'var(--violetbg)',p_title:copy.title,p_body:copy.body,
     p_link_demand_id:linkDemandId||null,p_event_type:eventType
   });
   if(error){ console.error('dbPushNotif: erro ao criar notificação:',error); return; }
-  supa.functions.invoke('send-push',{body:{notificationId}}).catch(err=>console.error('send-push:',err));
+  // Delivery is queued transactionally by the server.
   // Atualiza cache local se a notif é para o usuário atual.
   // "admin" é o bucket de equipe interna (CEO/Gerente/Gestor/Editor), não só CEO/Gerente.
   // to_user_id é sempre profiles.id — comparamos com DB.me.id (nunca com clientId).
@@ -5631,12 +5614,19 @@ async function dbPushNotif(toUserId, toRole, icon, iconBg, title, body, linkDema
    Busca ao vivo no banco (não confia no cache DB.users, que em sessões de
    Gestor/Editor nem carrega profiles de clientes). Se não existir profile
    vinculado, não quebra o fluxo — apenas não envia a notificação. */
-async function dbPushNotifToClient(clientId, icon, iconBg, title, body, linkDemandId, eventType='general'){
-  if(!clientId) return;
-  const {data:prof, error} = await supa.from('profiles').select('id').eq('client_id', clientId).maybeSingle();
-  if(error){ console.error('dbPushNotifToClient: erro ao resolver profile do cliente:', error); return; }
-  if(!prof){ console.warn('dbPushNotifToClient: nenhum profile vinculado ao cliente', clientId, '— notificação não enviada.'); return; }
-  await dbPushNotif(prof.id, null, icon, iconBg, title, body, linkDemandId, eventType);
+async function dbPushNotifToClient(clientId,icon,iconBg,title,body,linkDemandId,eventType='general'){
+  if(!clientId)return;
+  const {error}=await supa.rpc('notify_client',{p_client_id:clientId,p_icon:icon,p_icon_bg:iconBg,p_title:title,p_body:body||'',p_link_demand_id:linkDemandId||null,p_event_type:eventType});
+  if(error){console.error('notify_client:',error);toast('Registro salvo, mas não foi possível criar o aviso ao cliente.','err');}
+}
+async function refreshNotifications(){
+  if(!DB.me)return;
+  const userId=DB.me.id;
+  const {data,error}=await supa.rpc('get_my_notifications');
+  if(error)throw error;
+  if(DB.me?.id!==userId)return;
+  DB.notifications=(data||[]).map(mapNotif);updateNotifBadge();
+  if(document.getElementById('notif-panel')?.style.display==='block')renderNotifPanel();
 }
 
 function notifTarget(){ return isStaffRole() ? 'admin' : DB.me.id; }
@@ -5649,7 +5639,7 @@ function canReceiveCurrentNotification(notification){
 }
 function myNotifs(){
   if(isEditor()) return DB.notifications.filter(canReceiveCurrentNotification);
-  if(isStaffRole()) return DB.notifications.filter(n=>n.to==='admin');
+  if(isStaffRole()) return DB.notifications.filter(n=>n.to==='admin'||n.to===DB.me.id);
   return DB.notifications.filter(n=>n.to===DB.me.id||n.to===DB.me.clientId);
 }
 function updateNotifBadge(){
@@ -5666,7 +5656,7 @@ function renderNotifPanel(){
   if(!notifs.length){ list.innerHTML=''; if(empty) empty.style.display='block'; return; }
   if(empty) empty.style.display='none';
   list.innerHTML = notifs.map(n=>`
-    <div class="notif-item${n.read?'':' unread'}" onclick="clickNotif('${n.id}'${n.linkDemandId?`,'${n.linkDemandId}'`:''})">
+    <div role="button" tabindex="0" class="notif-item${n.read?'':' unread'}" onclick="clickNotif('${n.id}'${n.linkDemandId?`,'${n.linkDemandId}'`:''})">
       <div class="notif-icon" style="background:${safeThemeColor(n.iconBg)}">${escapeHTML(n.icon)}</div>
       <div class="notif-body">
         <div class="notif-title">${escapeHTML(n.title)}</div>
@@ -5680,22 +5670,27 @@ function toggleNotifPanel(){
   const panel = document.getElementById('notif-panel'); if(!panel) return;
   const open = panel.style.display==='block';
   panel.style.display = open ? 'none' : 'block';
-  if(!open) renderNotifPanel();
+  if(!open){renderNotifPanel();refreshNotifications().catch(()=>toast('Não foi possível atualizar os avisos.','err'));}
 }
 function closeNotifPanel(){ const panel=document.getElementById('notif-panel'); if(panel) panel.style.display='none'; }
-async function clickNotif(nid, demandId){
-  const n = DB.notifications.find(x=>String(x.id)===String(nid));
-  if(n){ n.read=true; supa.from('notifications').update({read:true}).eq('id',n.id).then(()=>{}); }
-  updateNotifBadge(); renderNotifPanel();
-  if(demandId){ closeNotifPanel(); goTo('demands'); setTimeout(()=>openDetail(demandId),200); }
+async function clickNotif(nid,demandId){
+  const n=DB.notifications.find(x=>x.id===nid);
+  if(n&&!n.read){
+    const {error}=await supa.rpc('mark_notifications_read',{p_ids:[nid]});
+    if(error){toast('Não foi possível marcar a notificação como lida.','err');return;}
+    n.read=true;updateNotifBadge();renderNotifPanel();
+  }
+  if(demandId){closeNotifPanel();await openDetail(demandId);}
+  else if(n?.eventType==='sale_payment_pending'){closeNotifPanel();await refreshSales();document.getElementById('payment-alert')?.scrollIntoView({block:'nearest'});}
 }
 async function markAllRead(){
-  const visible=myNotifs();
-  visible.forEach(n=>n.read=true);
-  updateNotifBadge(); renderNotifPanel();
-  const ids=visible.map(n=>n.id).filter(Boolean);
-  if(ids.length) supa.from('notifications').update({read:true}).in('id',ids).then(()=>{});
+  const visible=myNotifs().filter(n=>!n.read);
+  if(!visible.length)return;
+  const {error}=await supa.rpc('mark_notifications_read',{p_ids:visible.map(n=>n.id)});
+  if(error){toast('Não foi possível marcar os avisos como lidos.','err');return;}
+  visible.forEach(n=>n.read=true);updateNotifBadge();renderNotifPanel();
 }
+
 document.addEventListener('click', e=>{ const w=document.getElementById('notif-wrapper'); if(w&&!w.contains(e.target)) closeNotifPanel(); });
 
 /* ═══ FIREWALL / AUDITORIA DE ACESSOS ═══ */
@@ -5819,26 +5814,56 @@ function loadAgencySettings(){
   const agencyCard=document.getElementById('agency-settings-card');
   if(agencyCard) agencyCard.style.display=isAdmin()?'block':'none';
   if(isAdmin()){
-    const cfg = JSON.parse(localStorage.getItem('mm_agency_cfg') || '{}');
+    const cfg = {nome:companySettings.name,email:companySettings.email,phone:companySettings.phone};
     document.getElementById('cfg-nome').value  = cfg.nome  || '';
     document.getElementById('cfg-email').value = cfg.email || '';
     document.getElementById('cfg-phone').value = cfg.phone || '';
   }
   loadProfile();
 }
-function saveAgencySettings(){
-  const cfg = {
-    nome:  document.getElementById('cfg-nome').value.trim(),
-    email: document.getElementById('cfg-email').value.trim(),
-    phone: document.getElementById('cfg-phone').value.trim().replace(/\D/g,'')
-  };
-  localStorage.setItem('mm_agency_cfg', JSON.stringify(cfg));
-  toast('Dados da empresa salvos! ✓','ok');
+let companySettings={name:'',email:'',phone:'554899391390'};
+async function loadCompanySettings(){
+  const {data,error}=await supa.from('company_settings').select('*').eq('id',true).single();
+  if(error)throw error;
+  companySettings=data;
 }
-function getAgencyPhone(){
-  const cfg = JSON.parse(localStorage.getItem('mm_agency_cfg') || '{}');
-  return cfg.phone || '554899391390';
+async function saveAgencySettings(){
+  const cfg={name:document.getElementById('cfg-nome').value.trim(),email:document.getElementById('cfg-email').value.trim(),phone:document.getElementById('cfg-phone').value.replace(/\D/g,'')};
+  if(!/^\d{10,15}$/.test(cfg.phone)){toast('Informe o WhatsApp com DDI e DDD.','err');return;}
+  const {data,error}=await supa.from('company_settings').update({...cfg,updated_at:new Date().toISOString()}).eq('id',true).select('*').single();
+  if(error){toast('Não foi possível salvar os dados da empresa.','err');return;}
+  companySettings=data;renderPaymentAlert();updateSidebarUser();toast('Dados da empresa salvos.','ok');
 }
+function getAgencyPhone(){return companySettings.phone;}
+function renderPaymentAlert(){
+  const el=document.getElementById('payment-alert');if(!el)return;
+  const pending=isClient()?DB.sales.filter(s=>s.client===DB.me.clientId&&s.status==='Pendente'):[];
+  const cents=pending.reduce((sum,s)=>sum+Math.round(s.value*100),0);
+  el.hidden=cents<=0;
+  if(el.hidden){el.innerHTML='';return;}
+  const value=formatCurrencyBRL(cents/100);
+  const message='Olá, Magemind! Gostaria de acertar o pagamento pendente de '+value+'.';
+  el.innerHTML=`<div><strong>Pagamento pendente: ${escapeHTML(value)}</strong><p>Para acertar esse valor, entre em contato com a Magemind pelo WhatsApp.</p></div><a class="btn btn-sm" href="https://wa.me/${getAgencyPhone()}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>`;
+}
+async function refreshSales(){
+  if(!DB.me||(!isAdmin()&&!isClient()))return;
+  const userId=DB.me.id;
+  const {data,error}=await supa.from('sales').select('*, clients(name), plans(name)').order('created_at',{ascending:false});
+  if(error)throw error;
+  if(DB.me?.id!==userId)return;
+  DB.sales=(data||[]).map(mapSale);renderPaymentAlert();
+  if(document.getElementById('pg-sales')?.classList.contains('active'))loadSales();
+  if(document.getElementById('pg-dashboard')?.classList.contains('active'))loadDash();
+}
+async function openSaleDemand(saleId){
+  const sale=DB.sales.find(s=>s.id===saleId);if(!sale?.demand)return;
+  const {data,error}=await supa.from('demands').select('*').eq('id',sale.demand).single();
+  if(error){toast('Não foi possível carregar a demanda vinculada.','err');return;}
+  const demand=mapDemand(data);const idx=DB.demands.findIndex(d=>d.id===demand.id);
+  if(idx>=0)DB.demands[idx]=demand;else DB.demands.push(demand);
+  await openDetail(demand.id);
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&DB.me){refreshNotifications().catch(console.error);refreshSales().catch(console.error);}});
 
 window.addEventListener('load', ()=>{
   const keep=document.getElementById('li-keep'); if(keep) keep.checked=localStorage.getItem(KEEP_CONNECTED_KEY)!=='0';
@@ -5868,6 +5893,7 @@ async function clearDB(){
   }
 }
 </script>
-<script src="push-notifications.js?v=20260829-2"></script>
+<script src="app-accessibility.js?v=20260910-1"></script>
+<script src="push-notifications.js?v=20260910-1"></script>
 </body>
 </html>
