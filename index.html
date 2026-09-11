@@ -401,6 +401,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .avatar-onboarding-copy{max-width:340px;margin-top:8px;color:var(--text2);font-size:13px;line-height:1.65}
 .avatar-onboarding-hint{margin-top:13px;color:var(--text3);font-size:10px}
 .avatar-onboarding-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:18px 24px 24px}
+.avatar-onboarding-actions [hidden]{display:none!important}
 .auth-options{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .remember-option{display:inline-flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;cursor:pointer;user-select:none}
 .remember-option input,.push-category input{width:16px;height:16px;accent-color:var(--violet2);cursor:pointer}
@@ -471,7 +472,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260910-2">
-<link rel="stylesheet" href="auth.css?v=20260911-2">
+<link rel="stylesheet" href="auth.css?v=20260911-3">
 </head>
 <body>
 
@@ -1422,8 +1423,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
     </div>
     <div class="avatar-onboarding-actions">
       <button class="btn btn-ghost" type="button" onclick="dismissAvatarOnboarding()">Agora não</button>
-      <button class="btn btn-ghost" type="button" onclick="document.getElementById('avatar-onboarding-file').click()">Escolher imagem</button>
-      <button class="btn btn-primary" id="avatar-onboarding-save" type="button" onclick="saveAvatarOnboarding()" disabled>Usar esta imagem</button>
+      <button class="btn btn-primary" id="avatar-onboarding-choose" type="button" onclick="document.getElementById('avatar-onboarding-file').click()">Escolher imagem</button>
+      <button class="btn btn-primary" id="avatar-onboarding-save" type="button" onclick="saveAvatarOnboarding()" hidden disabled>Usar esta imagem</button>
     </div>
   </div>
 </div>
@@ -4922,7 +4923,7 @@ function dismissAvatarOnboarding(){
   if(avatarOnboardingPreviewUrl) URL.revokeObjectURL(avatarOnboardingPreviewUrl);
   avatarOnboardingPreviewUrl=null; avatarOnboardingFile=null;
   const input=document.getElementById('avatar-onboarding-file'); if(input) input.value='';
-  const save=document.getElementById('avatar-onboarding-save'); if(save){save.disabled=true;save.textContent='Usar esta imagem';}
+  const save=document.getElementById('avatar-onboarding-save'); if(save){save.hidden=true;save.disabled=true;save.textContent='Usar esta imagem';}
   const preview=document.getElementById('avatar-onboarding-preview');
   if(preview&&DB.me) preview.innerHTML=avatarHTML(DB.me,DB.me.name,'Prévia da foto de perfil');
 }
@@ -4942,7 +4943,8 @@ function previewAvatarOnboarding(e){
   if(avatarOnboardingPreviewUrl) URL.revokeObjectURL(avatarOnboardingPreviewUrl);
   avatarOnboardingPreviewUrl=URL.createObjectURL(file); avatarOnboardingFile=file;
   document.getElementById('avatar-onboarding-preview').innerHTML=`<img src="${escapeHTML(avatarOnboardingPreviewUrl)}" alt="Prévia da foto de perfil">`;
-  document.getElementById('avatar-onboarding-save').disabled=false;
+  const save=document.getElementById('avatar-onboarding-save');
+  save.hidden=false; save.disabled=false;
 }
 async function saveAvatarOnboarding(){
   if(!avatarOnboardingFile) return;
