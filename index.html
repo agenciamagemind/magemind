@@ -471,12 +471,28 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260910-2">
-<link rel="stylesheet" href="auth.css?v=20260911-1">
+<link rel="stylesheet" href="auth.css?v=20260911-2">
 </head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
   <div class="auth-stage">
+    <div class="auth-merkabah" aria-hidden="true">
+      <svg viewBox="0 0 240 240" focusable="false">
+        <g class="merkabah-layer merkabah-layer-outer">
+          <polygon points="120,18 218,184 22,184"></polygon>
+          <polygon points="120,222 22,56 218,56"></polygon>
+        </g>
+        <g class="merkabah-layer merkabah-layer-middle" transform="translate(120 120) scale(.76) translate(-120 -120)">
+          <polygon points="120,18 218,184 22,184"></polygon>
+          <polygon points="120,222 22,56 218,56"></polygon>
+        </g>
+        <g class="merkabah-layer merkabah-layer-inner" transform="translate(120 120) scale(.5) translate(-120 -120)">
+          <polygon points="120,18 218,184 22,184"></polygon>
+          <polygon points="120,222 22,56 218,56"></polygon>
+        </g>
+      </svg>
+    </div>
     <div class="auth-card">
       <div class="auth-logo">
         <img src="magemind-logo-transparent.png" alt="Magemind">
@@ -515,22 +531,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
     </div>
     <div class="auth-brand-panel">
-      <div class="auth-merkabah" aria-hidden="true">
-        <svg viewBox="0 0 240 240" focusable="false">
-          <g class="merkabah-layer merkabah-layer-outer">
-            <polygon points="120,18 218,184 22,184"></polygon>
-            <polygon points="120,222 22,56 218,56"></polygon>
-          </g>
-          <g class="merkabah-layer merkabah-layer-middle" transform="translate(120 120) scale(.76) translate(-120 -120)">
-            <polygon points="120,18 218,184 22,184"></polygon>
-            <polygon points="120,222 22,56 218,56"></polygon>
-          </g>
-          <g class="merkabah-layer merkabah-layer-inner" transform="translate(120 120) scale(.5) translate(-120 -120)">
-            <polygon points="120,18 218,184 22,184"></polygon>
-            <polygon points="120,222 22,56 218,56"></polygon>
-          </g>
-        </svg>
-      </div>
       <div class="auth-phrase" id="auth-phrase">
         <span class="auth-phrase-line">Don't be the copy,</span>
         <span class="auth-phrase-line">be the reference.</span>
