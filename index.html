@@ -471,7 +471,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260910-2">
-<link rel="stylesheet" href="auth.css?v=20260910-2">
+<link rel="stylesheet" href="auth.css?v=20260911-1">
 </head>
 <body>
 
@@ -482,7 +482,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <img src="magemind-logo-transparent.png" alt="Magemind">
         <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
       </div>
-      <div class="auth-intro"><h1 id="auth-heading">Bem-vindo.</h1><p id="auth-subheading">Seu próximo projeto começa aqui.</p></div>
+      <div class="auth-intro"><h1 id="auth-heading">Bem-vindo.</h1><p id="auth-subheading">Crie, organize e acompanhe o status das suas demandas.</p></div>
       <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
         <button type="button" class="auth-tab active" role="tab" id="auth-login-tab" aria-selected="true" aria-controls="auth-login" onclick="authTab('login')">Entrar</button>
         <button type="button" class="auth-tab" role="tab" id="auth-reg-tab" aria-selected="false" aria-controls="auth-reg" tabindex="-1" onclick="authTab('reg')">Criar conta</button>
@@ -515,11 +515,26 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
     </div>
     <div class="auth-brand-panel">
-      <div class="auth-eyebrow">Seu espaço Magemind</div>
-      <div class="auth-phrase" id="auth-phrase"><span class="auth-phrase-line">Grandes ideias.</span><span class="auth-phrase-line">Próximos passos.</span></div>
-      <p class="auth-brand-copy">Acompanhe seus projetos, troque ideias e transforme planos em resultados.</p>
-      <div class="auth-values"><span>Criação</span><span>Organização</span><span>Crescimento</span></div>
-      <div class="auth-brand-signature">Feito para quem quer ir além.</div>
+      <div class="auth-merkabah" aria-hidden="true">
+        <svg viewBox="0 0 240 240" focusable="false">
+          <g class="merkabah-layer merkabah-layer-outer">
+            <polygon points="120,18 218,184 22,184"></polygon>
+            <polygon points="120,222 22,56 218,56"></polygon>
+          </g>
+          <g class="merkabah-layer merkabah-layer-middle" transform="translate(120 120) scale(.76) translate(-120 -120)">
+            <polygon points="120,18 218,184 22,184"></polygon>
+            <polygon points="120,222 22,56 218,56"></polygon>
+          </g>
+          <g class="merkabah-layer merkabah-layer-inner" transform="translate(120 120) scale(.5) translate(-120 -120)">
+            <polygon points="120,18 218,184 22,184"></polygon>
+            <polygon points="120,222 22,56 218,56"></polygon>
+          </g>
+        </svg>
+      </div>
+      <div class="auth-phrase" id="auth-phrase">
+        <span class="auth-phrase-line">Don't be the copy,</span>
+        <span class="auth-phrase-line">be the reference.</span>
+      </div>
     </div>
   </div>
 </div>
@@ -2012,7 +2027,7 @@ function authTab(t){
   ['li-pass','rg-pass','rg-pass-confirm'].forEach(resetPasswordVisibility);
   document.querySelectorAll('.auth-tab').forEach((el,i)=>{const active=t==='login'?i===0:i===1;el.classList.toggle('active',active);el.setAttribute('aria-selected',String(active));el.tabIndex=active?0:-1;});
   document.getElementById('auth-heading').textContent=t==='login'?'Bem-vindo.':'Vamos começar.';
-  document.getElementById('auth-subheading').textContent=t==='login'?'Seu próximo projeto começa aqui.':'Crie sua conta e aproxime suas ideias do próximo passo.';
+  document.getElementById('auth-subheading').textContent=t==='login'?'Crie, organize e acompanhe o status das suas demandas.':'Crie sua conta e tenha acesso aos benefícios da nossa ferramenta.';
   document.getElementById('auth-login').style.display = t==='login' ? 'flex' : 'none';
   document.getElementById('auth-reg').style.display   = t==='reg'   ? 'flex' : 'none';
   document.querySelector('.auth-stage')?.classList.toggle('register-mode',t==='reg');
@@ -2023,6 +2038,28 @@ document.querySelector('.auth-tabs').addEventListener('keydown',event=>{
   event.preventDefault();const login=event.key==='Home'||(event.key!=='End'&&document.querySelector('.auth-tab.active').id==='auth-reg-tab');
   authTab(login?'login':'reg');document.getElementById(login?'auth-login-tab':'auth-reg-tab').focus();
 });
+
+const AUTH_PHRASES = [
+  ["Don't be the copy,",'be the reference.'],
+  ['Qualidade é o mínimo,','entregamos resultados.'],
+  ['Produzindo criativos','desde 2022.'],
+  ['Vamos alavancar','suas vendas!']
+];
+let authPhraseIndex = 0;
+let authPhraseTimeout = null;
+setInterval(()=>{
+  const phrase=document.getElementById('auth-phrase');
+  if(!phrase||document.getElementById('auth-screen')?.style.display==='none'||matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  phrase.classList.add('changing');
+  clearTimeout(authPhraseTimeout);
+  authPhraseTimeout=setTimeout(()=>{
+    authPhraseIndex=(authPhraseIndex+1)%AUTH_PHRASES.length;
+    const lines=phrase.querySelectorAll('.auth-phrase-line');
+    lines[0].textContent=AUTH_PHRASES[authPhraseIndex][0];
+    lines[1].textContent=AUTH_PHRASES[authPhraseIndex][1];
+    phrase.classList.remove('changing');
+  },240);
+},3600);
 
 async function doLogin(){
   hideAccountStatusNotice();
