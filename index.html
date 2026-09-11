@@ -172,6 +172,18 @@ tbody td:first-child{padding-left:20px}
 .m-sub{font-size:12px;color:var(--text3);margin-top:2px}
 .m-close{width:28px;height:28px;border-radius:7px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0;transition:all .15s}
 .m-close:hover{background:var(--bg4);color:var(--text)}
+.push-onboarding-modal{position:relative;width:420px;max-width:calc(100vw - 36px);overflow:hidden;border-color:rgba(178,139,255,.24);border-radius:24px;background:linear-gradient(155deg,rgba(30,28,46,.98),rgba(15,15,27,.99));box-shadow:0 30px 90px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,255,255,.07)}
+.push-onboarding-modal::before{content:'';position:absolute;inset:0 0 auto;height:160px;pointer-events:none;background:radial-gradient(circle at 50% 0,rgba(142,80,238,.22),transparent 72%)}
+.push-onboarding-close{position:absolute;z-index:2;top:16px;right:16px;width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.09)}
+.push-onboarding-content{position:relative;padding:34px 30px 24px;text-align:center}
+.push-onboarding-visual{display:flex;align-items:center;justify-content:center;width:58px;height:58px;margin:0 auto 18px;border:1px solid rgba(203,177,255,.25);border-radius:19px;background:linear-gradient(145deg,rgba(151,91,244,.28),rgba(111,59,203,.12));color:#d9c3ff;box-shadow:0 14px 34px rgba(99,45,183,.22),inset 0 1px 0 rgba(255,255,255,.13)}
+.push-onboarding-visual svg{width:27px;height:27px}
+.push-onboarding-modal .m-title{font-size:23px;line-height:1.2;letter-spacing:-.65px}
+.push-onboarding-modal .m-sub{max-width:310px;margin:8px auto 0;color:var(--text2);font-size:13px;line-height:1.55}
+.push-onboarding-note{display:flex;align-items:flex-start;gap:11px;margin-top:22px;padding:14px 15px;border:1px solid rgba(167,125,243,.17);border-radius:14px;background:rgba(133,83,219,.075);color:var(--text2);font-size:12px;line-height:1.6;text-align:left}
+.push-onboarding-note svg{flex:0 0 auto;width:18px;height:18px;margin-top:1px;color:#bb94f5}
+.push-onboarding-actions{position:relative;display:grid;grid-template-columns:1fr 1.25fr;gap:10px;padding:0 30px 30px}
+.push-onboarding-actions .btn{min-height:46px;border-radius:13px}
 .m-body{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
 .m-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg2)}
 .fg{display:flex;flex-direction:column;gap:6px}
@@ -471,29 +483,13 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260910-2">
-<link rel="stylesheet" href="auth.css?v=20260911-3">
+<link rel="stylesheet" href="mobile.css?v=20260911-3">
+<link rel="stylesheet" href="auth.css?v=20260911-4">
 </head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
   <div class="auth-stage">
-    <div class="auth-merkabah" aria-hidden="true">
-      <svg viewBox="0 0 240 240" focusable="false">
-        <g class="merkabah-layer merkabah-layer-outer">
-          <polygon points="120,18 218,184 22,184"></polygon>
-          <polygon points="120,222 22,56 218,56"></polygon>
-        </g>
-        <g class="merkabah-layer merkabah-layer-middle" transform="translate(120 120) scale(.76) translate(-120 -120)">
-          <polygon points="120,18 218,184 22,184"></polygon>
-          <polygon points="120,222 22,56 218,56"></polygon>
-        </g>
-        <g class="merkabah-layer merkabah-layer-inner" transform="translate(120 120) scale(.5) translate(-120 -120)">
-          <polygon points="120,18 218,184 22,184"></polygon>
-          <polygon points="120,222 22,56 218,56"></polygon>
-        </g>
-      </svg>
-    </div>
     <div class="auth-card">
       <div class="auth-logo">
         <img src="magemind-logo-transparent.png" alt="Magemind">
@@ -1403,10 +1399,15 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </div>
 
 <div class="overlay" id="push-onboarding" role="dialog" aria-modal="true" aria-labelledby="push-onboarding-title" onclick="if(event.target===this)dismissPushOnboarding()">
-  <div class="modal" style="width:460px">
-    <div class="m-head"><div><div class="m-title" id="push-onboarding-title">Notificações, agora sem precisar ficar de plantão</div><div class="m-sub">Receba no celular somente os avisos ligados ao seu perfil.</div></div><button class="m-close" type="button" onclick="dismissPushOnboarding()" aria-label="Fechar">✕</button></div>
-    <div class="m-body"><div class="secure-note"><span>i</span><span>Demandas, comentários e eventos comerciais continuam organizados por categoria. Você pode mudar tudo em Configurações.</span></div></div>
-    <div class="m-foot"><button class="btn btn-ghost" type="button" onclick="dismissPushOnboarding()">Agora não</button><button class="btn btn-primary" type="button" onclick="enablePushNotifications(true)">Ativar notificações</button></div>
+  <div class="modal push-onboarding-modal">
+    <button class="m-close push-onboarding-close" type="button" onclick="dismissPushOnboarding()" aria-label="Fechar">✕</button>
+    <div class="push-onboarding-content">
+      <div class="push-onboarding-visual" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></div>
+      <div class="m-title" id="push-onboarding-title">Ative as notificações</div>
+      <div class="m-sub">Receba avisos ligados ao seu perfil.</div>
+      <div class="push-onboarding-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Acompanhe demandas, comentários, eventos, vendas e muito mais. Você pode mudar tudo depois com configurações.</span></div>
+    </div>
+    <div class="push-onboarding-actions"><button class="btn btn-ghost" type="button" onclick="dismissPushOnboarding()">Agora não</button><button class="btn btn-primary" type="button" onclick="enablePushNotifications(true)">Ativar notificações</button></div>
   </div>
 </div>
 
