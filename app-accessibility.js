@@ -4,6 +4,8 @@
   const stack=[];
   const restore=new Map();
   const background=new Map();
+  let lastActivator=null;
+  document.addEventListener('click',event=>{const el=event.target.closest('button,a,[role="button"]');if(el)lastActivator=el;},true);
   const focusable='button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"],[contenteditable="true"]';
   const visible=el=>el.getClientRects().length&&!el.closest('[inert]')&&getComputedStyle(el).visibility!=='hidden';
   const surface=()=>stack.at(-1)||(matchMedia('(max-width:900px)').matches?document.querySelector('.sidebar.mobile-open'):null);
@@ -42,11 +44,11 @@
       returnTo=restore.get(stack[i]);restore.delete(stack[i]);stack.splice(i,1);
     }
     let added=false;
-    opened.forEach(d=>{if(!stack.includes(d)){restore.set(d,document.activeElement);stack.push(d);added=true;}});
+    opened.forEach(d=>{if(!stack.includes(d)){restore.set(d,document.activeElement===document.body?lastActivator:document.activeElement);stack.push(d);added=true;}});
     const top=stack.at(-1);
     dialogs.forEach(d=>{
       const active=d===top;
-      d.inert=!active;d.setAttribute('aria-hidden',String(!active));d.setAttribute('role','dialog');
+      d.toggleAttribute('inert',!active);d.setAttribute('aria-hidden',String(!active));d.setAttribute('role','dialog');
       d.setAttribute('aria-modal',String(active));d.tabIndex=-1;
       const heading=d.querySelector('.m-title,.install-title,.avatar-onboarding-title');
       if(heading){
@@ -58,8 +60,8 @@
     });
     [...document.body.children].forEach(el=>{
       if(el.matches(selector+',script,link,style'))return;
-      if(top){if(!background.has(el))background.set(el,el.inert);el.inert=true;}
-      else if(background.has(el)){el.inert=background.get(el);background.delete(el);}
+      if(top){if(!background.has(el))background.set(el,{inert:el.hasAttribute('inert'),aria:el.getAttribute('aria-hidden')});el.setAttribute('inert','');el.setAttribute('aria-hidden','true');}
+      else if(background.has(el)){const previous=background.get(el);el.toggleAttribute('inert',previous.inert);if(previous.aria===null)el.removeAttribute('aria-hidden');else el.setAttribute('aria-hidden',previous.aria);background.delete(el);}
     });
     if(top&&(added||!top.contains(document.activeElement))){
       const target=[...top.querySelectorAll(focusable)].find(visible)||top;target.focus({preventScroll:true});
@@ -95,7 +97,7 @@
     const sidebar=document.querySelector('.sidebar');let menuWasOpen=false;
     const syncMenu=()=>{
       const mobile=matchMedia('(max-width:900px)').matches;const open=sidebar.classList.contains('mobile-open');
-      sidebar.inert=mobile&&!open;sidebar.setAttribute('aria-hidden',String(mobile&&!open));
+      sidebar.toggleAttribute('inert',mobile&&!open);sidebar.setAttribute('aria-hidden',String(mobile&&!open));
       document.getElementById('mobile-more-tab')?.setAttribute('aria-expanded',String(mobile&&open));
       if(mobile&&open&&!menuWasOpen&&!stack.length)sidebar.querySelector('button,a')?.focus();
       if(menuWasOpen&&!open&&!stack.length)document.getElementById('mobile-more-tab')?.focus();

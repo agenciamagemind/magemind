@@ -7,6 +7,7 @@
     push_enabled:false,demand_updates:true,comments:true,sales:true,team_activity:true,general:true
   };
   let preferences={...defaults};
+  let currentDeviceActive=false;
 
   function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
   function isAndroid(){ return /android/i.test(navigator.userAgent); }
@@ -53,6 +54,7 @@
     let serverEnabled=false;
     if(subscription){const {data,error}=await supa.from('push_subscriptions').select('enabled').eq('user_id',DB.me.id).eq('endpoint',subscription.endpoint).maybeSingle();if(error)throw error;serverEnabled=data?.enabled===true;}
     const active=Boolean(preferences.push_enabled&&serverEnabled&&subscription&&Notification.permission==='granted');
+    currentDeviceActive=active;
 
     toggle?.classList.toggle('on',active);
     toggle?.setAttribute('aria-checked',String(active));
@@ -136,9 +138,11 @@
   };
 
   window.togglePushNotifications=async function(){
-    const subscription=supported()?await currentSubscription():null;
-    if(preferences.push_enabled&&subscription) await window.disablePushNotifications();
-    else await window.enablePushNotifications();
+    try{
+      await window.renderPushSettings();
+      if(currentDeviceActive) await window.disablePushNotifications();
+      else await window.enablePushNotifications();
+    }catch(error){toast('Não foi possível consultar a inscrição deste aparelho.','err');}
   };
 
   window.savePushCategory=async function(input){
@@ -185,6 +189,6 @@
   window.addEventListener('appinstalled',()=>setTimeout(maybePromptOnboarding,1000));
   document.addEventListener('DOMContentLoaded',()=>{
     registerServiceWorker();
-    if(hasSession()){ window.renderPushSettings(); maybePromptOnboarding(); }
+    if(hasSession()){ window.renderPushSettings().catch(console.error); maybePromptOnboarding().catch(console.error); }
   });
 })();

@@ -118,13 +118,15 @@ Deno.serve(async (req) => {
 
     let targetIds: string[] = [];
     if (notification.to_user_id) {
-      const { data: target } = await admin.from("profiles").select("id,role")
+      const { data: target,error:targetError } = await admin.from("profiles").select("id,role")
         .eq("id", notification.to_user_id).eq("active",true).is("archived_at",null).maybeSingle();
+      if(targetError)throw targetError;
       if (target && (target.role !== "editor" || target.id === linkedAssigneeId)) targetIds = [target.id];
     } else if (notification.to_role === "admin") {
-      const { data: staff } = await admin.from("profiles").select("id,role")
+      const { data: staff,error:staffError } = await admin.from("profiles").select("id,role")
         .in("role", ["ceo", "manager", "gestor", "editor"])
         .eq("active", true).is("archived_at", null);
+      if(staffError)throw staffError;
       targetIds = (staff || [])
         .filter((profile) => profile.role !== "editor" || profile.id === linkedAssigneeId)
         .map((profile) => profile.id);
@@ -147,8 +149,9 @@ Deno.serve(async (req) => {
     if (!subscriptions?.length) return finish({ ok: true, sent: 0, skipped: eligibleIds.length });
 
     const subscriptionIds = subscriptions.map((subscription) => subscription.id);
-    const { data: completed } = await admin.from("push_deliveries").select("subscription_id")
+    const { data: completed,error:completedError } = await admin.from("push_deliveries").select("subscription_id")
       .eq("notification_id", notificationId).eq("status", "sent").in("subscription_id", subscriptionIds);
+    if(completedError)throw completedError;
     const completedIds = new Set((completed || []).map((item) => item.subscription_id));
 
     webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
@@ -179,19 +182,21 @@ Deno.serve(async (req) => {
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
         }, payload, { TTL: 86400, urgency: "normal" });
         sent += 1;
-        await admin.from("push_deliveries").update({
+        const {error:receiptError}=await admin.from("push_deliveries").update({
           status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         }).eq("notification_id", notificationId).eq("subscription_id", subscription.id);
+        if(receiptError)throw receiptError;
       } catch (error) {
         failed += 1;
         const statusCode = Number((error as { statusCode?: number }).statusCode || 0);
         const expired = statusCode === 404 || statusCode === 410;
         const message = error instanceof Error ? error.message.slice(0, 500) : "Falha no provedor Web Push";
-        await admin.from("push_deliveries").update({
+        const {error:failureError}=await admin.from("push_deliveries").update({
           status: expired ? "expired" : "failed",
           last_error: message,
           updated_at: new Date().toISOString(),
         }).eq("notification_id", notificationId).eq("subscription_id", subscription.id);
+        if(failureError)throw failureError;
         if (expired) await admin.from("push_subscriptions").update({ enabled: false }).eq("id", subscription.id);
       }
     }));

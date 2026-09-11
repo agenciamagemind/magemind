@@ -272,33 +272,6 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .toast-message{line-height:1.5}
 .toast-support{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:7px 10px;border:1px solid var(--violetborder);border-radius:6px;background:var(--violetbg);color:var(--violet3);font-size:11px;font-weight:700;text-decoration:none}
 .toast-support:hover{color:#fff;border-color:var(--violet2)}
-.auth-shell{height:100dvh;display:flex;align-items:center;justify-content:center;background:#050505;position:relative;overflow:auto}
-.auth-stage{isolation:isolate;width:100%;min-height:100dvh;position:relative;display:grid;grid-template-columns:minmax(360px,410px) minmax(400px,520px);align-items:center;justify-content:center;gap:clamp(48px,4.5vw,82px);padding:clamp(28px,4vh,44px) clamp(28px,4vw,72px);overflow:hidden;background:#111 url('magemind-auth-creatives.webp') center/cover no-repeat}
-.auth-stage::before{content:'';position:absolute;inset:0;z-index:-1;background:rgba(0,0,0,.58);pointer-events:none}
-.auth-card{grid-column:1;background:rgba(2,2,3,.96);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:30px 34px;width:100%;max-width:410px;position:relative;box-shadow:0 28px 80px rgba(0,0,0,.68)}
-.auth-logo{text-align:center;margin-bottom:18px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.auth-logo img{width:68px;height:68px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.38))}
-.auth-title{font-size:22px;line-height:1.1}
-.auth-tabs{display:flex;background:#101012;border-radius:7px;padding:3px;margin-bottom:17px;border:1px solid rgba(255,255,255,.12)}
-.auth-tab{flex:1;min-height:36px;padding:8px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:5px;transition:background .15s,color .15s;color:#777;display:flex;align-items:center;justify-content:center}
-.auth-tab.active{background:#fff;color:#080808;box-shadow:none}
-.auth-card .fl{color:#8c8c94;letter-spacing:0}
-.auth-card .fi{min-height:44px;background:#0c0c0e;border-color:rgba(255,255,255,.14);border-radius:7px;color:#fff}
-.auth-card .fi:focus{border-color:rgba(255,255,255,.45);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
-.auth-card .btn-primary{min-height:45px;border-radius:7px;background:#fff;color:#080808;box-shadow:none}
-.auth-card .btn-primary:hover{background:#e9e9e9;color:#080808;box-shadow:none;transform:translateY(-1px)}
-.auth-card .btn-primary:disabled{background:#a5a5a5;color:#333;transform:none}
-.auth-card .remember-option{color:#a4a4aa}
-.auth-card .remember-option input{accent-color:#fff}
-.auth-forgot{font-size:12px;color:#ddd;cursor:pointer;text-decoration:none}
-.auth-forgot:hover{color:#fff;text-decoration:underline}
-.auth-help{display:flex;align-items:center;justify-content:center;width:100%;margin-top:15px;padding-top:14px;border-top:1px solid rgba(255,255,255,.11);color:#aaa;font-size:11px;text-decoration:none;transition:color .15s}
-.auth-help strong{margin-left:4px;color:#fff;font-weight:700}
-.auth-help:hover{color:#fff}
-.auth-brand-panel{grid-column:2;width:min(100%,520px);color:#fff;text-shadow:0 4px 28px rgba(0,0,0,.9)}
-.auth-phrase{min-height:96px;display:flex;flex-direction:column;justify-content:center;font:600 clamp(27px,2.25vw,38px)/1.2 'Poppins',sans-serif;letter-spacing:0;transition:opacity .22s ease,transform .22s ease}
-.auth-phrase-line{display:block;white-space:nowrap}
-.auth-phrase.changing{opacity:0;transform:translateY(7px)}
 .rev-period-btn.active{background:var(--violet)!important;color:#fff!important;border-color:var(--violet)!important;}
 
 .auth-shortcut{flex:1;padding:8px;text-align:center;border-radius:var(--r2);cursor:pointer;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text2);transition:all .15s}
@@ -497,7 +470,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-empty{padding:22px;border:1px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:12px;text-align:center}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
-<link rel="stylesheet" href="mobile.css?v=20260910-1">
+<link rel="stylesheet" href="mobile.css?v=20260910-2">
+<link rel="stylesheet" href="auth.css?v=20260910-2">
 </head>
 <body>
 
@@ -508,25 +482,26 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <img src="magemind-logo-transparent.png" alt="Magemind">
         <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
       </div>
-      <div class="auth-tabs">
-        <div class="auth-tab active" onclick="authTab('login')">Entrar</div>
-        <div class="auth-tab" onclick="authTab('reg')">Cadastrar</div>
+      <div class="auth-intro"><h1 id="auth-heading">Bem-vindo.</h1><p id="auth-subheading">Seu próximo projeto começa aqui.</p></div>
+      <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
+        <button type="button" class="auth-tab active" role="tab" id="auth-login-tab" aria-selected="true" aria-controls="auth-login" onclick="authTab('login')">Entrar</button>
+        <button type="button" class="auth-tab" role="tab" id="auth-reg-tab" aria-selected="false" aria-controls="auth-reg" tabindex="-1" onclick="authTab('reg')">Criar conta</button>
       </div>
       <div class="account-status-alert" id="account-status-alert" role="alert" aria-live="assertive">
         <strong id="account-status-text"></strong>
         <span>O suporte pode verificar sua situação e orientar os próximos passos.</span><br>
         <a id="account-status-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Falar com o suporte no WhatsApp</a>
       </div>
-      <div id="auth-login" style="display:flex;flex-direction:column;gap:14px">
+      <form id="auth-login" role="tabpanel" aria-labelledby="auth-login-tab" onsubmit="event.preventDefault();if(!this.querySelector('.btn-primary').disabled)doLogin()" style="display:flex;flex-direction:column;gap:14px">
         <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
         <div class="fg"><label class="fl">Senha</label><div class="password-field"><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="li-pass" onclick="togglePasswordVisibility('li-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <div class="auth-options">
-          <label class="remember-option"><input id="li-keep" type="checkbox" checked><span>Manter conectado</span></label>
-          <span class="auth-forgot">Esqueci minha senha</span>
+          <label class="remember-option"><input id="li-keep" type="checkbox" role="switch" checked><span>Manter conectado</span></label>
+          <a class="auth-forgot" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20Magemind.%20Esqueci%20minha%20senha%20e%20preciso%20de%20ajuda%20para%20recuperar%20o%20acesso." target="_blank" rel="noopener noreferrer">Esqueceu a senha?</a>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doLogin()">Acessar</button>
-      </div>
-      <div id="auth-reg" style="display:none;flex-direction:column;gap:12px">
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:11px">Entrar na minha conta</button>
+      </form>
+      <form id="auth-reg" role="tabpanel" aria-labelledby="auth-reg-tab" onsubmit="event.preventDefault();if(!this.querySelector('.btn-primary').disabled)doRegister()" style="display:none;flex-direction:column;gap:12px">
         <div class="f2">
           <div class="fg"><label class="fl">Nome *</label><input class="fi" id="rg-nome" autocomplete="given-name" placeholder="Seu nome"></div>
           <div class="fg"><label class="fl">Sobrenome *</label><input class="fi" id="rg-sobre" autocomplete="family-name" placeholder="Sobrenome"></div>
@@ -535,15 +510,16 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
         <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><div class="password-field"><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass" onclick="togglePasswordVisibility('rg-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <div class="fg"><label class="fl">Confirme sua senha *</label><div class="password-field"><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass-confirm" onclick="togglePasswordVisibility('rg-pass-confirm',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
-        <button class="btn btn-primary" style="width:100%;padding:11px" onclick="doRegister()">Criar conta</button>
-      </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:11px">Criar conta</button>
+      </form>
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
     </div>
     <div class="auth-brand-panel">
-      <div class="auth-phrase" id="auth-phrase">
-        <span class="auth-phrase-line">Dont be the copy,</span>
-        <span class="auth-phrase-line">be the reference.</span>
-      </div>
+      <div class="auth-eyebrow">Seu espaço Magemind</div>
+      <div class="auth-phrase" id="auth-phrase"><span class="auth-phrase-line">Grandes ideias.</span><span class="auth-phrase-line">Próximos passos.</span></div>
+      <p class="auth-brand-copy">Acompanhe seus projetos, troque ideias e transforme planos em resultados.</p>
+      <div class="auth-values"><span>Criação</span><span>Organização</span><span>Crescimento</span></div>
+      <div class="auth-brand-signature">Feito para quem quer ir além.</div>
     </div>
   </div>
 </div>
@@ -1438,7 +1414,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </div>
 
 <script src="app-core.js?v=20260910-1"></script>
-<script src="mobile-app.js?v=20260910-1"></script>
+<script src="mobile-app.js?v=20260910-2"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -2034,31 +2010,19 @@ function togglePasswordVisibility(inputId,button){
 }
 function authTab(t){
   ['li-pass','rg-pass','rg-pass-confirm'].forEach(resetPasswordVisibility);
-  document.querySelectorAll('.auth-tab').forEach((el,i) => el.classList.toggle('active', t==='login'?i===0:i===1));
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>{const active=t==='login'?i===0:i===1;el.classList.toggle('active',active);el.setAttribute('aria-selected',String(active));el.tabIndex=active?0:-1;});
+  document.getElementById('auth-heading').textContent=t==='login'?'Bem-vindo.':'Vamos começar.';
+  document.getElementById('auth-subheading').textContent=t==='login'?'Seu próximo projeto começa aqui.':'Crie sua conta e aproxime suas ideias do próximo passo.';
   document.getElementById('auth-login').style.display = t==='login' ? 'flex' : 'none';
   document.getElementById('auth-reg').style.display   = t==='reg'   ? 'flex' : 'none';
   document.querySelector('.auth-stage')?.classList.toggle('register-mode',t==='reg');
 }
 
-const AUTH_PHRASES = [
-  ['Dont be the copy,','be the reference.'],
-  ['Qualidade é o mínimo,','entregamos resultados.'],
-  ['Produzindo criativos','desde 2022.'],
-  ['Vamos alavancar','suas vendas!']
-];
-let authPhraseIndex = 0;
-setInterval(()=>{
-  const phrase = document.getElementById('auth-phrase');
-  if(!phrase || document.getElementById('auth-screen')?.style.display==='none') return;
-  phrase.classList.add('changing');
-  setTimeout(()=>{
-    authPhraseIndex = (authPhraseIndex + 1) % AUTH_PHRASES.length;
-    const lines = phrase.querySelectorAll('.auth-phrase-line');
-    lines[0].textContent = AUTH_PHRASES[authPhraseIndex][0];
-    lines[1].textContent = AUTH_PHRASES[authPhraseIndex][1];
-    phrase.classList.remove('changing');
-  },220);
-},3000);
+document.querySelector('.auth-tabs').addEventListener('keydown',event=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();const login=event.key==='Home'||(event.key!=='End'&&document.querySelector('.auth-tab.active').id==='auth-reg-tab');
+  authTab(login?'login':'reg');document.getElementById(login?'auth-login-tab':'auth-reg-tab').focus();
+});
 
 async function doLogin(){
   hideAccountStatusNotice();
@@ -2078,7 +2042,7 @@ async function doLogin(){
     toast(e.message||'Não foi possível entrar agora.','err');
     if(!/senha incorretos|confirme seu e-mail|muitas tentativas/i.test(String(e.message||''))) console.error('doLogin error:', e);
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='Acessar'; }
+    if(btn){ btn.disabled=false; btn.textContent='Entrar na minha conta'; }
   }
 }
 
@@ -5893,7 +5857,7 @@ async function clearDB(){
   }
 }
 </script>
-<script src="app-accessibility.js?v=20260910-1"></script>
-<script src="push-notifications.js?v=20260910-1"></script>
+<script src="app-accessibility.js?v=20260910-2"></script>
+<script src="push-notifications.js?v=20260910-2"></script>
 </body>
 </html>

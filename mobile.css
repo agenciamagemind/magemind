@@ -29,7 +29,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 .sidebar-install-btn:hover{background:var(--bg3);color:var(--text)}
 
 @media(display-mode:standalone){
-  html,body,.shell,.auth-shell{height:100dvh}
   body{padding-top:var(--safe-top)}
   .topbar{padding-top:0}
 }
@@ -165,12 +164,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 }
 
 @media(max-width:600px){
-  .auth-shell{min-height:100dvh;height:100dvh;padding:18px max(14px,var(--safe-right)) calc(18px + var(--safe-bottom)) max(14px,var(--safe-left));overflow-y:auto;align-items:center}
-  .auth-card{width:100%;max-width:430px;padding:26px 20px;border-radius:20px}
-  .auth-logo{margin-bottom:19px;gap:5px}
-  .auth-logo img{width:82px;height:82px}
-  .auth-title{font-size:22px}
-  .auth-tabs{margin-bottom:17px}
   .fi{min-height:43px;font-size:16px}
   select.fi{font-size:16px}
   textarea.fi{font-size:16px}
@@ -406,9 +399,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 }
 
 @media(max-width:600px){
-  .auth-shell{padding:16px max(14px,var(--safe-right)) calc(16px + var(--safe-bottom)) max(14px,var(--safe-left))}
-  .auth-card{padding:24px 18px;border-radius:16px}
-  .auth-logo img{width:76px;height:76px}
   .search-row{grid-template-columns:1fr}
   .search-row>select.fi,#client-filters{grid-column:1}
   .stats-4{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -435,40 +425,7 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 
 /* Navegação mobile: perfil no topo, menu enxuto e alvos de toque integrais */
 @media(max-width:900px){
-  .auth-shell{height:100dvh;min-height:100dvh;padding:0;align-items:stretch;background:#050505;overflow:hidden}
-  .auth-stage{width:100%;height:100dvh;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:center;justify-items:center;gap:14px;padding:calc(12px + var(--safe-top)) max(16px,var(--safe-right)) calc(12px + var(--safe-bottom)) max(16px,var(--safe-left));overflow:hidden;background-position:center}
-  .auth-stage::before{background:rgba(0,0,0,.64)}
-  .auth-stage.register-mode{height:100dvh;min-height:0;align-content:center;gap:0}
-  .auth-card{grid-column:1;width:min(100%,342px);max-width:342px;padding:18px;border-radius:8px}
-  .auth-logo{margin-bottom:12px;gap:2px}
-  .auth-logo img{width:50px;height:50px}
-  .auth-title{font-size:19px}
-  .auth-tabs{min-height:38px;margin-bottom:13px}
-  .auth-tab{min-height:32px;padding:5px;font-size:12px}
-  .auth-card .fi{min-height:40px;padding:7px 10px;font-size:16px}
-  .auth-card .fl{font-size:9px}
   #auth-login{gap:9px!important}
-  .auth-options{gap:8px}
-  .auth-card .remember-option,.auth-forgot{font-size:10px}
-  .auth-card .remember-option{gap:6px}
-  .auth-card .remember-option input{width:15px;height:15px}
-  .auth-card .btn-primary{min-height:40px;padding:8px!important;font-size:12px}
-  .auth-help{margin-top:11px;padding-top:10px;font-size:9px}
-  .auth-brand-panel{grid-column:1;width:min(100%,342px);max-width:342px;text-align:center}
-  .auth-phrase{min-height:44px;align-items:center;justify-content:center;font-size:18px;line-height:1.2}
-
-  .auth-stage.register-mode .auth-card{max-height:calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom));padding:13px 16px;overflow-y:auto;scrollbar-width:none}
-  .auth-stage.register-mode .auth-card::-webkit-scrollbar{display:none}
-  .auth-stage.register-mode .auth-logo{margin-bottom:7px}
-  .auth-stage.register-mode .auth-logo img{width:38px;height:38px}
-  .auth-stage.register-mode .auth-title{font-size:17px}
-  .auth-stage.register-mode .auth-tabs{min-height:34px;margin-bottom:8px}
-  .auth-stage.register-mode .auth-tab{min-height:28px}
-  .auth-stage.register-mode #auth-reg{gap:6px!important}
-  .auth-stage.register-mode #auth-reg .f2{grid-template-columns:1fr 1fr;gap:7px}
-  .auth-stage.register-mode .auth-card .fg{gap:3px}
-  .auth-stage.register-mode .auth-card .fi{min-height:36px;padding:6px 9px}
-  .auth-stage.register-mode .auth-help,.auth-stage.register-mode .auth-brand-panel{display:none}
 
   .topbar-profile{display:flex!important;width:40px;height:40px;min-width:40px;padding:2px;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;flex-shrink:0;touch-action:manipulation}
   .topbar-profile:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
@@ -498,14 +455,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
 }
 
 @media(max-width:370px){
-  .auth-stage{gap:10px;padding-left:12px;padding-right:12px}
-  .auth-card{width:min(100%,330px);padding:16px 15px}
-  .auth-logo img{width:46px;height:46px}
-  .auth-logo{margin-bottom:10px}
-  .auth-tabs{margin-bottom:11px}
-  .auth-options{align-items:flex-start}
-  .auth-brand-panel{width:min(100%,330px)}
-  .auth-phrase{font-size:17px}
   .sidebar .sb-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mobile-install-settings>.btn{width:100%}
 }

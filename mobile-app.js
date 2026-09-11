@@ -138,6 +138,7 @@
   };
 
   window.openInstallGuide=function(force){
+    if(!force&&(typeof DB==='undefined'||!DB.me))return;
     if(!isMobile() && !force) return;
     if(isStandalone() && !force) return;
     if(!selectedPlatform) selectedPlatform=detectedPlatform();
