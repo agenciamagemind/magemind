@@ -35,7 +35,29 @@
     buckets.forEach(b=>b.value/=100);
     return {rows,total,buckets,from,to:today};
   }
-  const api={civilDate,shiftDay,revenueSeries};
+  function periodRange(period,from='',to='',now=new Date()){
+    const today=civilDate(now);
+    if(period==='custom')return {from,to};
+    if(period==='today')return {from:today,to:today};
+    if(period==='yesterday'){const day=shiftDay(today,-1);return {from:day,to:day};}
+    if(period==='7d'||period==='14d')return {from:shiftDay(today,1-parseInt(period)),to:today};
+    if(period==='month')return {from:today.slice(0,7)+'-01',to:today};
+    return {from:'',to:today};
+  }
+  function filterSales(sales,range){return sales.filter(s=>{const d=civilDate(s.date||s.createdAt);return d&&(!range.from||d>=range.from)&&(!range.to||d<=range.to);});}
+  function financeTotals(sales){
+    const sum=status=>sales.filter(s=>s.status===status).reduce((n,s)=>n+Math.round(Number(s.value||0)*100),0);
+    const revenue=sum('Fechado'),expenses=sum('Gasto'),pending=sum('Pendente');
+    return {revenue:revenue/100,expenses:expenses/100,profit:(revenue-expenses)/100,pending:pending/100,ticket:sales.filter(s=>s.status==='Fechado').length?revenue/100/sales.filter(s=>s.status==='Fechado').length:0};
+  }
+  function goalProgress(goal,sales,now=new Date()){
+    const today=civilDate(now),end=goal.end_date<today?goal.end_date:today;
+    const rows=filterSales(sales,{from:goal.start_date,to:end}).filter(s=>s.status==='Fechado'&&(!goal.plan_id||s.plan===goal.plan_id));
+    const current=goal.metric==='manual'?Number(goal.manual_value||0):goal.metric==='count'?rows.length:financeTotals(rows).revenue;
+    const target=Number(goal.target),percent=target>0?Math.min(100,current/target*100):0;
+    return {current,remaining:Math.max(0,target-current),percent,state:goal.archived?'archived':current>=target?'achieved':today<goal.start_date?'scheduled':today>goal.end_date?'missed':'active'};
+  }
+  const api={civilDate,shiftDay,revenueSeries,periodRange,filterSales,financeTotals,goalProgress};
   root.MagemindCore=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

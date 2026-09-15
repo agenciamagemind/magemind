@@ -485,6 +485,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
+<link rel="stylesheet" href="goals.css?v=20260915-1">
 </head>
 <body>
 
@@ -741,9 +742,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="ph">
           <div class="ph-info">
             <div class="ph-title" id="sales-page-title">Vendas</div>
-            <div class="ph-sub" id="sales-page-subtitle">Pipeline e histórico</div>
+            <div class="ph-sub" id="sales-page-subtitle">Receitas, gastos e resultados</div>
           </div>
-          <div class="ph-actions"></div>
+          <div class="ph-actions"><button class="btn btn-ghost" id="expense-create" onclick="openNewExpense()">− Adicionar gasto</button></div>
         </div>
         <div class="wallet-shell" id="affiliate-wallet">
           <div class="wallet-primary">
@@ -762,22 +763,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         </div>
         <div class="table-wrap" style="padding-top:16px">
           <div class="tbl-container">
+<div id="sales-period-filter" class="sales-period-bar"><button class="btn btn-ghost btn-sm" id="spf-today" onclick="setSalesPeriod('today')">Hoje</button><button class="btn btn-ghost btn-sm" id="spf-yesterday" onclick="setSalesPeriod('yesterday')">Ontem</button><button class="btn btn-ghost btn-sm" id="spf-7d" onclick="setSalesPeriod('7d')">7 dias</button><button class="btn btn-ghost btn-sm" id="spf-14d" onclick="setSalesPeriod('14d')">14 dias</button><button class="btn btn-ghost btn-sm" id="spf-month" onclick="setSalesPeriod('month')">Este mês</button><button class="btn btn-ghost btn-sm" id="spf-all" onclick="setSalesPeriod('all')">Todo o período</button><button class="btn btn-ghost btn-sm" id="spf-custom" onclick="openModal('modal-sales-period')">Período personalizado</button><span id="sales-period-caption"></span></div>
             <table>
-              <div id="sales-period-filter" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:12px 16px 0">
-                <button class="btn btn-sm" id="spf-today" onclick="setSalesPeriod('today')" style="font-size:11px;padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text2)">Hoje</button>
-                <button class="btn btn-sm" id="spf-7d" onclick="setSalesPeriod('7d')" style="font-size:11px;padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text2)">Últimos 7 dias</button>
-                <button class="btn btn-sm" id="spf-14d" onclick="setSalesPeriod('14d')" style="font-size:11px;padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text2)">Últimos 14 dias</button>
-                <button class="btn btn-sm" id="spf-month" onclick="setSalesPeriod('month')" style="font-size:11px;padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text2)">Último mês</button>
-                <button class="btn btn-sm" id="spf-all" onclick="setSalesPeriod('all')" style="font-size:11px;padding:4px 12px;background:var(--violet);border:1px solid var(--violet);color:#fff">Período completo</button>
-                <div style="display:flex;gap:6px;align-items:center;margin-left:6px;padding-left:10px;border-left:1px solid var(--border)">
-                  <label style="font-size:11px;color:var(--text3)">De</label>
-                  <input type="date" id="sp-from" class="fi" style="font-size:11px;padding:4px 8px;width:auto">
-                  <label style="font-size:11px;color:var(--text3)">Até</label>
-                  <input type="date" id="sp-to" class="fi" style="font-size:11px;padding:4px 8px;width:auto">
-                  <button class="btn btn-sm" style="font-size:11px;padding:4px 12px" onclick="applyCustomSalesPeriod()">Aplicar</button>
-                  <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 12px" onclick="clearCustomSalesPeriod()">Limpar</button>
-                </div>
-              </div>
               <thead><tr id="sales-table-head"><th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th></tr></thead>
               <tbody id="sales-body"></tbody>
             </table>
@@ -785,6 +772,11 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         </div>
       </div>
 
+      <!-- METAS -->
+      <div class="page" id="pg-goals">
+        <div class="ph"><div><div class="ph-title">Metas</div><div class="ph-sub">Transforme objetivos em resultados.</div></div><div class="ph-actions"><button class="btn btn-primary" onclick="openGoal()">+ Nova meta</button></div></div>
+        <div class="goals-workspace"><div id="goals-summary" class="goals-summary"></div><div class="goals-toolbar"><div class="goals-filters" role="group" aria-label="Filtrar metas"><button class="btn btn-ghost btn-sm" data-goal-filter="all" onclick="setGoalFilter('all')">Todas</button><button class="btn btn-ghost btn-sm" data-goal-filter="active" onclick="setGoalFilter('active')">Em andamento</button><button class="btn btn-ghost btn-sm" data-goal-filter="achieved" onclick="setGoalFilter('achieved')">Atingidas</button><button class="btn btn-ghost btn-sm" data-goal-filter="missed" onclick="setGoalFilter('missed')">Encerradas</button><button class="btn btn-ghost btn-sm" data-goal-filter="archived" onclick="setGoalFilter('archived')">Arquivadas</button></div><input class="fi" id="goals-search" type="search" placeholder="Buscar meta..." aria-label="Buscar meta" oninput="renderGoals()"></div><div id="goals-grid" class="goals-grid" aria-live="polite"></div></div>
+      </div>
       <!-- SOLUCOES -->
       <div class="page" id="pg-solutions">
         <div class="ph">
@@ -1430,7 +1422,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="app-core.js?v=20260910-1"></script>
+<script src="app-core.js?v=20260915-1"></script>
+<script src="goals.js?v=20260915-1"></script>
 <script src="mobile-app.js?v=20260910-2"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
@@ -1537,8 +1530,8 @@ const ROLE_PERMISSIONS = {
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','firewall','settings'],
-  manager:   ['dashboard','clients','demands','sales','solutions','affiliates','team','docs','settings'],
+  ceo:       ['dashboard','clients','demands','sales','goals','solutions','affiliates','team','docs','firewall','settings'],
+  manager:   ['dashboard','clients','demands','sales','goals','solutions','affiliates','team','docs','settings'],
   gestor:    ['dashboard','demands','affiliates','team','docs','settings'],
   editor:    ['dashboard','demands','affiliates','docs','settings'],
   affiliate: ['dashboard','affiliates','docs','settings'],
@@ -2216,6 +2209,7 @@ function clearSessionState(){
   dismissAvatarOnboarding();
   DB.me = null;
   DB.clients = []; DB.users = []; DB.demands = []; DB.sales = [];
+  window.clearGoalsState?.();
   DB.docs = []; DB.notifications = []; DB.activity = []; DB.commissions = [];
   DB.avatarProfiles = {}; DB.avatarClients = {};
   avatarDirectoryLoadedAt = 0; avatarDirectoryRefreshPromise = null;
@@ -2369,8 +2363,8 @@ async function loadAllData(){
         .order('sort_order').order('created_at',{ascending:false});
       DB.demands = (demands||[]).map(mapDemand);
 
-      const {data:sales} = await supa.from('sales')
-        .select('*, clients(name), plans(name)').order('created_at',{ascending:false});
+      const {data:sales,error:salesError} = await fetchFullSales();
+      if(salesError)throw salesError;
       DB.sales = (sales||[]).map(mapSale);
 
       const {data:docs} = await supa.from('docs')
@@ -2596,6 +2590,7 @@ function setupRealtime(){
     const salesChannel=supa.channel('sales-ui-'+DB.me.id)
       .on('postgres_changes',{event:'*',schema:'public',table:'sales'},()=>refreshSales().catch(console.error)).subscribe();
     realtimeChannels.push(salesChannel);
+    if(isAdmin())realtimeChannels.push(supa.channel('goals-'+DB.me.id).on('postgres_changes',{event:'*',schema:'public',table:'goals'},()=>{if(document.getElementById('pg-goals')?.classList.contains('active'))loadGoals();}).subscribe());
   }
 
   // Carteiras e fila de aprovação são atualizadas imediatamente.
@@ -2774,6 +2769,7 @@ function buildNav(){
     {id:'clients',   icon:ico('users'),    label:'Clientes', badge:DB.clients.filter(c=>c.status==='Ativo').length},
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
+    {id:'goals', icon:ico('grid'), label:'Metas'},
     {id:'solutions', icon:ico('package'),  label:'Soluções'},
     {id:'affiliates',icon:ico('gift'),     label:'Indique & Ganhe'},
     {id:'team',      icon:ico('users'),    label:'Equipe'},
@@ -2841,8 +2837,8 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
-  const S = {dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
+  const T = {goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
@@ -2863,7 +2859,7 @@ function goTo(page){
 
   updateSidebarUser();
   const loaders = {
-    dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
+    goals:loadGoals, dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
     affiliates:loadAffiliates, team:loadTeam, docs:loadDocs, firewall:loadFirewall,
     settings:loadAgencySettings
   };
@@ -4313,80 +4309,34 @@ async function saveDemand(){
 /* ═══ SALES ═══ */
 let salesCustomFrom = '', salesCustomTo = '';
 function saleSortDate(s){ return s.date || s.createdAt || ''; }
-function setSalesPeriod(period){
-  salesPeriod = period;
-  salesCustomFrom = ''; salesCustomTo = '';
-  const fromEl = document.getElementById('sp-from'), toEl = document.getElementById('sp-to');
-  if(fromEl) fromEl.value = ''; if(toEl) toEl.value = '';
-  ['today','7d','14d','month','all'].forEach(p=>{
-    const btn=document.getElementById('spf-'+p); if(!btn) return;
-    btn.style.background   = p===period?'var(--violet)':'transparent';
-    btn.style.borderColor  = p===period?'var(--violet)':'var(--border)';
-    btn.style.color        = p===period?'#fff':'var(--text2)';
-  });
-  loadSales();
+function syncSalesPeriod(){
+  ['today','yesterday','7d','14d','month','all','custom'].forEach(p=>{const b=document.getElementById('spf-'+p);if(b){b.classList.toggle('active',p===salesPeriod);b.setAttribute('aria-pressed',String(p===salesPeriod));}});
+  const r=MagemindCore.periodRange(salesPeriod,salesCustomFrom,salesCustomTo);
+  document.getElementById('sales-period-caption').textContent=(r.from?fDate(r.from)+' — ':'Até ')+fDate(r.to);
 }
+function setSalesPeriod(period){salesPeriod=period;salesCustomFrom='';salesCustomTo='';syncSalesPeriod();loadSales();}
 function applyCustomSalesPeriod(){
-  const from = document.getElementById('sp-from').value;
-  const to   = document.getElementById('sp-to').value;
-  if(!from && !to){ toast('Preencha ao menos uma data','err'); return; }
-  salesCustomFrom = from; salesCustomTo = to;
-  salesPeriod = 'custom';
-  ['today','7d','14d','month','all'].forEach(p=>{
-    const btn=document.getElementById('spf-'+p); if(!btn) return;
-    btn.style.background = 'transparent'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text2)';
-  });
-  loadSales();
+ const from=document.getElementById('sp-from').value,to=document.getElementById('sp-to').value;
+ if(!from||!to||from>to){toast('Informe início e fim válidos, em ordem cronológica.','err');return;}
+ salesCustomFrom=from;salesCustomTo=to;salesPeriod='custom';closeModal('modal-sales-period');syncSalesPeriod();loadSales();
 }
-function clearCustomSalesPeriod(){
-  document.getElementById('sp-from').value = '';
-  document.getElementById('sp-to').value   = '';
-  setSalesPeriod('all');
-}
-function getSalesFiltered(){
-  const now=new Date(); const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  let list = DB.sales.filter(s=>{
-    if(salesPeriod==='custom'){
-      const raw = saleSortDate(s);
-      if(!raw) return false;
-      const d = new Date(raw.slice(0,10));
-      if(salesCustomFrom && d < new Date(salesCustomFrom)) return false;
-      if(salesCustomTo   && d > new Date(salesCustomTo))   return false;
-      return true;
-    }
-    if(salesPeriod==='all') return true;
-    if(!s.date) return salesPeriod==='all';
-    const d=new Date(s.date);
-    if(salesPeriod==='today') return d>=today;
-    if(salesPeriod==='7d'){  const t=new Date(today);t.setDate(t.getDate()-6);return d>=t;}
-    if(salesPeriod==='14d'){ const t=new Date(today);t.setDate(t.getDate()-13);return d>=t;}
-    if(salesPeriod==='month'){const t=new Date(today);t.setDate(t.getDate()-29);return d>=t;}
-    return true;
-  });
-  // Mais recente sempre no topo — usa sale.date, com created_at como fallback quando não há data de venda
-  list = list.slice().sort((a,b)=>{
-    const da = saleSortDate(a), db = saleSortDate(b);
-    if(!da && !db) return 0;
-    if(!da) return 1;
-    if(!db) return -1;
-    return new Date(db) - new Date(da);
-  });
-  return list;
-}
+function getSalesFiltered(){return MagemindCore.filterSales(DB.sales,MagemindCore.periodRange(salesPeriod,salesCustomFrom,salesCustomTo)).sort((a,b)=>saleSortDate(b).localeCompare(saleSortDate(a)));}
 function loadSales(){
+  syncSalesPeriod();
+  document.getElementById('expense-create').hidden=!isAdmin();
   const salesPage=document.getElementById('pg-sales');
   salesPage?.classList.toggle('affiliate-finance',isAffiliate());
   const salesTitle=document.getElementById('sales-page-title');
   const salesSubtitle=document.getElementById('sales-page-subtitle');
   if(salesTitle) salesTitle.textContent=isAffiliate()?'Finanças':'Vendas';
-  if(salesSubtitle) salesSubtitle.textContent=isAffiliate()?'Saldo, comissões e saques':'Pipeline e histórico';
+  if(salesSubtitle) salesSubtitle.textContent=isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados';
   renderAffiliateWallet();
   const allSales = getSalesFiltered();
   const closed   = allSales.filter(s=>s.status==='Fechado');
   const pending  = allSales.filter(s=>s.status==='Pendente');
   const rate = isAffiliate() ? (DB.me.commissionRate||0) : 100;
-  const revC = closed.reduce((a,b)=>a+b.value,0);
-  const revP = pending.reduce((a,b)=>a+b.value,0);
+  const totals=MagemindCore.financeTotals(allSales);
+  const revC=totals.revenue, revP=totals.pending;
   if(isAffiliate()){
     const wallet=DB.wallet||{};
     document.getElementById('sales-stats').innerHTML=`
@@ -4398,7 +4348,7 @@ function loadSales(){
       <div class="stat"><div class="stat-label">Receita fechada</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(revC)}</div><div class="stat-delta delta-up">${closed.length} vendas</div></div>
       <div class="stat"><div class="stat-label">Em negociação</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(revP)}</div><div class="stat-delta delta-neutral">${pending.length} negócios</div></div>
       <div class="stat"><div class="stat-label">Ticket médio</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(closed.length?revC/closed.length:0)}</div><div class="stat-delta delta-up">Média exata</div></div>
-      <div class="stat"><div class="stat-label">Pipeline total</div><div class="stat-val" style="color:var(--violet2)">${formatCurrencyBRL(revC+revP)}</div><div class="stat-delta delta-neutral">Acumulado</div></div>`;
+      <div class="stat expense-stat"><div class="stat-label">Total de gastos</div><div class="stat-val" style="color:var(--rose)">${formatCurrencyBRL(totals.expenses)}</div><div class="stat-delta">${allSales.filter(s=>s.status==='Gasto').length} lançamentos</div></div><div class="stat profit-stat"><div class="stat-label">Lucro líquido</div><div class="stat-val" style="color:${totals.profit<0?'var(--rose)':'var(--emerald)'}">${formatCurrencyBRL(totals.profit)}</div><div class="stat-delta">Receita fechada − gastos</div></div>`;
   }
   const valueLabelEl = document.getElementById('sales-value-col-label');
   if(valueLabelEl) valueLabelEl.textContent = isAffiliate() ? 'Minha comissão' : 'Valor';
@@ -4409,7 +4359,7 @@ function loadSales(){
     document.getElementById('sales-body').innerHTML=allSales.length?allSales.map(s=>`<tr>
       <td class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(s.value)}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs">${clientAvatarHTML(s.client,cn(s.client))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
-      <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
+      <td>${s.status==='Gasto'?'<span class="badge b-rose">Gasto</span>':s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
       <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee||'—')}</td>
     </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhuma comissão neste período</td></tr>';
@@ -4418,14 +4368,14 @@ function loadSales(){
   document.getElementById('sales-table-head').innerHTML='<th>Cliente</th><th>Serviço</th><th id="sales-value-col-label">Valor</th><th>Status</th><th>Data</th><th>Responsável</th><th>Ações</th>';
   document.getElementById('sales-body').innerHTML = allSales.length ? allSales.map(s=>`
     <tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av av-xs">${clientAvatarHTML(s.client,cn(s.client))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div></td>
+      <td>${s.status==='Gasto'?'<span class="expense-label">Gasto operacional</span>':`<div style="display:flex;align-items:center;gap:8px"><div class="av av-xs">${clientAvatarHTML(s.client,cn(s.client))}</div><span style="font-weight:500">${escapeHTML(cn(s.client))}</span></div>`}</td>
       <td style="color:var(--text2)">${escapeHTML(s.service)}</td>
-      <td class="financial-value" style="font-weight:700;color:var(--emerald)">${formatCurrencyBRL(isAffiliate() ? s.value*(DB.me.commissionRate||0)/100 : s.value)}</td>
-      <td>${s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
+      <td class="financial-value" style="font-weight:700;color:${s.status==='Gasto'?'var(--rose)':'var(--emerald)'}">${s.status==='Gasto'?'− ':''}${formatCurrencyBRL(s.value)}</td>
+      <td>${s.status==='Gasto'?'<span class="badge b-rose">Gasto</span>':s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
       <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee)}</td>
       <td><div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${s.demand?`<button class="btn btn-ghost btn-xs" onclick="openSaleDemand('${s.id}')">Ver demanda</button>`:''}
+        ${s.demand?`<button class="btn btn-ghost btn-xs sale-icon" title="Ver demanda vinculada" aria-label="Ver demanda vinculada" onclick="openSaleDemand('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>`:''}
         ${canEditS?`<button class="btn btn-ghost btn-xs" onclick="openEditSale('${s.id}')">✎</button>`:''}
         ${canDelS?`<button class="btn btn-danger btn-xs" onclick="removeSale('${s.id}')">✕</button>`:''}
         ${(!canEditS&&!canDelS)?'<span style="font-size:11px;color:var(--text3)">leitura</span>':''}
@@ -4515,6 +4465,8 @@ async function openNewSale(){
   openModal('modal-sale');
 }
 function openEditSale(id){
+  if(!hasPermission('sales.edit'))return;
+  const expense=DB.sales.find(s=>s.id===id);if(expense?.status==='Gasto'){openExpense(id);return;}
   editSaleId = id;
   const s = DB.sales.find(x=>x.id===id); if(!s) return;
   document.getElementById('ms-title').textContent = 'Editar venda';
@@ -4551,7 +4503,7 @@ async function saveSale(){
     sale_date:document.getElementById('s-date').value
   };
   const btn = document.querySelector('#modal-sale .btn-primary');
-  if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
+  if(btn){ btn.disabled=true; document.getElementById('ms-btn-label').textContent='Salvando...'; }
   try {
     if(editSaleId){
       const {data:saved,error} = await supa.from('sales').update(saleData).eq('id',editSaleId).select('*, clients(name), plans(name)').single();
@@ -4570,7 +4522,7 @@ async function saveSale(){
     }
     loadSales();renderPaymentAlert();
   } catch(error){toast('Não foi possível salvar a venda: '+error.message,'err');} finally {
-    if(btn){ btn.disabled=false; btn.textContent=editSaleId?'Salvar alterações':'Registrar venda'; }
+    if(btn){ btn.disabled=false; document.getElementById('ms-btn-label').textContent=editSaleId?'Salvar alterações':'Registrar venda'; }
   }
 }
 
@@ -4593,11 +4545,11 @@ async function removeSale(id){
     toast('Venda cancelada; histórico financeiro preservado','ok');
     loadSales(); return;
   }
-  if(!confirm('Remover esta venda permanentemente?')) return;
+  if(!confirm(sale?.status==='Gasto'?'Remover este gasto permanentemente?':'Remover esta venda permanentemente?')) return;
   const {error} = await supa.from('sales').delete().eq('id',id);
   if(error){ toast('Erro: '+error.message,'err'); return; }
   DB.sales = DB.sales.filter(x=>x.id!==id);
-  toast('Venda removida','ok'); loadSales();
+  toast(sale?.status==='Gasto'?'Gasto removido':'Venda removida','ok'); loadSales();
 }
 
 /* ═══ DOCS ═══ */
@@ -5852,12 +5804,13 @@ function renderPaymentAlert(){
 async function refreshSales(){
   if(!DB.me||(!isAdmin()&&!isClient()))return;
   const userId=DB.me.id;
-  const {data,error}=await supa.from('sales').select('*, clients(name), plans(name)').order('created_at',{ascending:false});
+  const {data,error}=await fetchFullSales();
   if(error)throw error;
   if(DB.me?.id!==userId)return;
   DB.sales=(data||[]).map(mapSale);renderPaymentAlert();
   if(document.getElementById('pg-sales')?.classList.contains('active'))loadSales();
   if(document.getElementById('pg-dashboard')?.classList.contains('active'))loadDash();
+  if(document.getElementById('pg-goals')?.classList.contains('active'))loadGoals();
 }
 async function openSaleDemand(saleId){
   const sale=DB.sales.find(s=>s.id===saleId);if(!sale?.demand)return;
@@ -5865,7 +5818,7 @@ async function openSaleDemand(saleId){
   if(error){toast('Não foi possível carregar a demanda vinculada.','err');return;}
   const demand=mapDemand(data);const idx=DB.demands.findIndex(d=>d.id===demand.id);
   if(idx>=0)DB.demands[idx]=demand;else DB.demands.push(demand);
-  await openDetail(demand.id);
+  openSaleDemandPreview(demand);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&DB.me){refreshNotifications().catch(console.error);refreshSales().catch(console.error);}});
 
