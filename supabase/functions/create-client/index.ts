@@ -134,6 +134,12 @@ Deno.serve(async (req) => {
     return json({ error: "Falha ao criar perfil: " + profileError.message }, 500);
   }
 
+  const { error: metadataError } = await admin.auth.admin.updateUserById(userId, { user_metadata: { name, phone: null } });
+  if (metadataError) {
+    await rollbackClient(createdClient.id, userId);
+    return json({ error: "Falha ao proteger os dados de autenticação do cliente" }, 500);
+  }
+
   if (status === "Inativo") {
     const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     if (banError) {
@@ -149,6 +155,7 @@ Deno.serve(async (req) => {
   const accessIsComplete = Boolean(
     verifiedAuth?.user?.id === userId &&
     verifiedAuth.user.email?.toLowerCase() === email &&
+    !verifiedAuth.user.user_metadata?.phone &&
     verifiedProfile?.id === userId &&
     verifiedProfile.role === "client" &&
     verifiedProfile.client_id === createdClient.id &&

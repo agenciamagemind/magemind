@@ -486,6 +486,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260915-1">
+<link rel="stylesheet" href="security-rich-text.css?v=20260915-1">
 </head>
 <body>
 
@@ -875,7 +876,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div class="ph-title">Firewall</div>
             <div class="ph-sub">Acessos, tentativas e bloqueios registrados pelo servidor</div>
           </div>
-          <div class="ph-actions"><button class="btn btn-ghost btn-sm" type="button" onclick="loadFirewall(true)">Atualizar</button></div>
+          <div class="ph-actions"><button class="btn btn-danger btn-sm firewall-action" type="button" onclick="openFirewallBlock()">Bloquear IP</button><button class="btn btn-ghost btn-sm" type="button" onclick="loadFirewall(true)">Atualizar</button></div>
         </div>
         <div class="stats stats-4" id="firewall-stats"></div>
         <div class="firewall-toolbar">
@@ -883,7 +884,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           <select class="fs" id="firewall-outcome" onchange="renderFirewall()"><option value="all">Todos os resultados</option><option value="success">Acessos válidos</option><option value="failure">Falhas</option><option value="blocked">Bloqueados</option></select>
           <select class="fs" id="firewall-period" onchange="renderFirewall()"><option value="24">Últimas 24 horas</option><option value="168">Últimos 7 dias</option><option value="720">Últimos 30 dias</option><option value="all">Todo o histórico carregado</option></select>
         </div>
-        <div class="table-wrap firewall-table"><div class="tbl-container"><table><thead><tr><th>Data e hora</th><th>Conta</th><th>Evento</th><th>IP e localização</th><th>Dispositivo</th><th>Risco</th></tr></thead><tbody id="firewall-body"></tbody></table></div></div>
+        <div class="table-wrap firewall-table"><div class="tbl-container"><table><thead><tr><th>Data e hora</th><th>Conta</th><th>Evento</th><th>IP e localização</th><th>Dispositivo</th><th>Risco</th><th>Ações</th></tr></thead><tbody id="firewall-body"></tbody></table></div></div>
       </div>
 
       <!-- CONFIGURAÇÕES -->
@@ -1013,7 +1014,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         </div>
         <div class="fg"><label class="fl">Entrega</label><input class="fi" type="date" id="d-date"></div>
       </div>
-      <div class="fg"><label class="fl">Descrição</label><textarea class="fi" id="d-desc" placeholder="Detalhes e briefing da demanda..."></textarea></div>
+      <div class="fg"><label class="fl">Descrição</label><div class="demand-rich-editor"><div class="demand-format-toolbar" role="toolbar" aria-label="Formatação da descrição"><button type="button" title="Negrito" aria-label="Negrito" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','bold')"><b>B</b></button><button type="button" title="Itálico" aria-label="Itálico" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','italic')"><i>I</i></button><button type="button" title="Sublinhado" aria-label="Sublinhado" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','underline')"><u>U</u></button><button type="button" title="Tachado" aria-label="Tachado" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','strikeThrough')"><s>S</s></button><span aria-hidden="true"></span><button type="button" title="Tamanho título" aria-label="Tamanho título" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','formatBlock','h2')">Título</button><button type="button" title="Tamanho subtítulo" aria-label="Tamanho subtítulo" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','formatBlock','h3')">Subtítulo</button><button type="button" title="Tamanho parágrafo" aria-label="Tamanho parágrafo" onmousedown="event.preventDefault()" onclick="formatDemandText('d-desc','formatBlock','p')">Parágrafo</button></div><div class="demand-rich-input" id="d-desc" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Detalhes e briefing da demanda..."></div></div></div>
       <div class="fg"><label class="fl">Referências</label><textarea class="fi" id="d-refs" placeholder="Links, materiais, exemplos ou orientações de referência..."></textarea></div>
     </div>
     <div class="m-foot">
@@ -1293,6 +1294,22 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
+<!-- MODAL: Bloquear IP -->
+<div class="overlay" id="modal-firewall-block" onclick="if(event.target===this)closeModal('modal-firewall-block')">
+  <div class="modal" style="width:480px">
+    <div class="m-head">
+      <div><div class="m-title">Bloquear endereço IP</div><div class="m-sub">O acesso será recusado antes da conferência da senha</div></div>
+      <button type="button" class="m-close" aria-label="Fechar" onclick="closeModal('modal-firewall-block')">✕</button>
+    </div>
+    <div class="m-body">
+      <div class="fg"><label class="fl" for="fw-block-ip">Endereço IP</label><input class="fi firewall-ip" id="fw-block-ip" autocomplete="off" spellcheck="false" placeholder="Ex.: 192.0.2.10 ou 2001:db8::1"></div>
+      <div class="fg"><label class="fl" for="fw-block-reason">Motivo</label><textarea class="fi" id="fw-block-reason" maxlength="300" placeholder="Ex.: tentativas de acesso não reconhecidas"></textarea></div>
+      <div class="goal-editor-help">O bloqueio vale para login e sessões do aplicativo. Confira o endereço antes de salvar para não bloquear uma rede legítima.</div>
+    </div>
+    <div class="m-foot"><button class="btn btn-ghost" type="button" onclick="closeModal('modal-firewall-block')">Cancelar</button><button class="btn btn-danger" id="fw-block-save" type="button" onclick="saveFirewallBlock()">Bloquear IP</button></div>
+  </div>
+</div>
+
 <!-- MENU DE CONTEXTO: Demandas do Kanban -->
 <div class="demand-context-menu" id="demand-context-menu" role="menu" aria-label="Ações da demanda"></div>
 
@@ -1422,6 +1439,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
+<script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260915-1"></script>
 <script src="mobile-app.js?v=20260910-2"></script>
@@ -1467,6 +1485,7 @@ const DB = {
   referralWithdrawals: [],
   referralWallet: null,
   securityLogs: [],
+  securityBlockedIps: [],
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2097,13 +2116,30 @@ async function secureAuthRequest(action,payload){
 let lastSecurityEventKey='';
 let lastSecurityEventAt=0;
 async function recordSecurityAccess(eventType,extra={}){
-  if(!DB.me) return;
+  if(!DB.me) return true;
   const key=`${eventType}:${extra.path||location.hash||location.pathname}`;
-  if(key===lastSecurityEventKey&&Date.now()-lastSecurityEventAt<30000) return;
+  if(key===lastSecurityEventKey&&Date.now()-lastSecurityEventAt<30000) return true;
   lastSecurityEventKey=key;lastSecurityEventAt=Date.now();
   try{
-    await supa.functions.invoke('record-access',{body:{eventType,...browserSecurityContext(),visibilityState:document.visibilityState,...extra}});
-  }catch(error){ console.error('Falha ao registrar evento de segurança:',error); }
+    const token=await getFreshAccessToken();
+    if(!token)return false;
+    const response=await fetch(`${SUPA_URL}/functions/v1/record-access`,{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,'apikey':SUPA_KEY},
+      body:JSON.stringify({eventType,...browserSecurityContext(),visibilityState:document.visibilityState,...extra})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(response.status===403&&result.blocked){
+      await supa.auth.signOut();
+      clearSessionState();
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      document.body.classList.remove('app-ready');
+      toast('Este endereço IP foi bloqueado pelo administrador.','err');
+      return false;
+    }
+    if(!response.ok)console.error('Falha ao registrar evento de segurança:',result.error||response.status);
+    return true;
+  }catch(error){console.error('Falha ao registrar evento de segurança:',error);return true;}
 }
 
 /* Espera o profile do usuário recém-criado existir (o trigger roda no mesmo
@@ -2211,6 +2247,7 @@ function clearSessionState(){
   DB.clients = []; DB.users = []; DB.demands = []; DB.sales = [];
   window.clearGoalsState?.();
   DB.docs = []; DB.notifications = []; DB.activity = []; DB.commissions = [];
+  DB.securityLogs = []; DB.securityBlockedIps = [];
   DB.avatarProfiles = {}; DB.avatarClients = {};
   avatarDirectoryLoadedAt = 0; avatarDirectoryRefreshPromise = null;
   currentDemandId = null; editDemandId = null; editClientId = null;
@@ -2292,13 +2329,13 @@ async function afterLogin(authUser){
       affiliateRequestedAt:prof.affiliate_requested_at||null,
       affiliateReviewedAt:prof.affiliate_reviewed_at||null
     };
+    if(!await recordSecurityAccess('session_access')) return;
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.body.classList.add('app-ready');
     await loadAllData();
     await loadAvatarDirectory();
     initApp();
-    recordSecurityAccess('session_access');
     setTimeout(()=>maybeShowAvatarOnboarding(),650);
     document.dispatchEvent(new CustomEvent('magemind:session-ready'));
   } catch(e){
@@ -4231,7 +4268,7 @@ function openNewDemand(status){
   document.getElementById('d-status').value = typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
   populateDemandAssignee();
   document.getElementById('d-title').value = '';
-  document.getElementById('d-desc').value  = '';
+  setDemandRichEditor('d-desc','');
   document.getElementById('d-priority').value = 'Média';
   if(document.getElementById('d-refs')) document.getElementById('d-refs').value = '';
   document.getElementById('d-date').value = tomorrowDateInput();
@@ -4251,8 +4288,10 @@ async function saveDemand(){
   const priority  = document.getElementById('d-priority').value;
   const status    = document.getElementById('d-status').value;
   const dueDate   = document.getElementById('d-date').value||null;
-  const desc      = document.getElementById('d-desc').value;
+  const desc      = demandRichValue(document.getElementById('d-desc'));
   const refs      = document.getElementById('d-refs')?.value||'';
+  if(desc.length>12000){toast('A descrição ficou muito longa. Reduza o texto ou a formatação.','err');return;}
+  if(refs.length>8000){toast('As referências ultrapassaram o limite de texto.','err');return;}
   const btn       = document.querySelector('#modal-demand .btn-primary');
 
   if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
@@ -4939,6 +4978,8 @@ function queueDemandFieldSave(field,value,immediate=false){
   if(!d||!cfg||!canEditDemand(d)) return;
   const normalized=field==='title' ? String(value).trim() : value;
   if(field==='title'&&!normalized){ setDemandSaveState('error','O título não pode ficar vazio'); return; }
+  if(field==='desc'&&String(normalized).length>12000){setDemandSaveState('error','Descrição longa demais para salvar');return;}
+  if(field==='refs'&&String(normalized).length>8000){setDemandSaveState('error','Referências longas demais para salvar');return;}
   d[cfg.local]=normalized;
   const key=`${d.id}:${field}`;
   const version=(demandAutosaveVersions.get(key)||0)+1;
@@ -4981,15 +5022,21 @@ function renderDemandRichField(field,editable){
   const value=field==='desc'?(d.desc||''):(d.refs||'');
   const placeholder=field==='desc'?'Nenhuma descrição adicionada.':'Nenhuma referência adicionada.';
   const el=document.getElementById(id); if(!el) return;
-  el.outerHTML=`<div class="rich-text detail-rich-text${value?'':' detail-empty'}" id="${id}">${value?linkifyText(value):escapeHTML(placeholder)}</div>`;
+  const target=el.closest('.demand-rich-editor')||el;
+  target.outerHTML=`<div class="rich-text detail-rich-text${value?'':' detail-empty'}" id="${id}">${value?renderDemandRichHTML(value):escapeHTML(placeholder)}</div>`;
   const edit=document.getElementById(`${id}-edit`); if(edit) edit.style.display=editable?'inline-flex':'none';
 }
 function editDemandRichField(field){
   const d=DB.demands.find(x=>x.id===currentDemandId); if(!d||!canEditDemand(d)) return;
   const id=field==='desc'?'det-desc':'det-refs'; const value=field==='desc'?(d.desc||''):(d.refs||'');
   const el=document.getElementById(id); if(!el||el.tagName==='TEXTAREA') return;
-  el.outerHTML=`<textarea class="fi detail-editor${field==='refs'?' refs':''}" id="${id}" oninput="queueDemandFieldSave('${field}',this.value)" onblur="finishDemandRichField('${field}',this.value)">${escapeHTML(value)}</textarea>`;
-  const input=document.getElementById(id); input.focus(); input.setSelectionRange(input.value.length,input.value.length);
+  if(field==='desc'){
+    el.outerHTML=`<div class="demand-rich-editor" id="det-desc-shell">${demandRichToolbar(id)}<div class="demand-rich-input" id="${id}" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Digite a descrição" oninput="queueDemandFieldSave('desc',demandRichValue(this))" onblur="finishDemandRichField('desc',demandRichValue(this))">${demandRichEditorHTML(value)}</div></div>`;
+    const input=document.getElementById(id);input.focus();const range=document.createRange();range.selectNodeContents(input);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
+  }else{
+    el.outerHTML=`<textarea class="fi detail-editor refs" id="${id}" oninput="queueDemandFieldSave('refs',this.value)" onblur="finishDemandRichField('refs',this.value)">${escapeHTML(value)}</textarea>`;
+    const input=document.getElementById(id);input.focus();input.setSelectionRange(input.value.length,input.value.length);
+  }
 }
 function finishDemandRichField(field,value){
   queueDemandFieldSave(field,value,true);
@@ -5112,7 +5159,7 @@ function openEditDemand(id){
   document.getElementById('d-priority').value = d.priority;
   document.getElementById('d-status').value   = d.status;
   document.getElementById('d-date').value     = d.date;
-  document.getElementById('d-desc').value     = d.desc||'';
+  setDemandRichEditor('d-desc',d.desc||'');
   if(document.getElementById('d-refs')) document.getElementById('d-refs').value = d.refs||'';
   openModal('modal-demand');
 }
@@ -5659,15 +5706,53 @@ async function loadFirewall(force=false){
   if(!isCEO()) return;
   if(!force&&DB.securityLogs.length){renderFirewall();return;}
   const body=document.getElementById('firewall-body');
-  if(body) body.innerHTML='<tr><td colspan="6" class="firewall-empty">Carregando movimentações...</td></tr>';
-  const {data,error}=await supa.from('security_access_logs').select('*').order('occurred_at',{ascending:false}).limit(500);
-  if(error){
-    console.error('loadFirewall:',error);
-    if(body) body.innerHTML='<tr><td colspan="6" class="firewall-empty">Não foi possível carregar os acessos agora.</td></tr>';
+  if(body) body.innerHTML='<tr><td colspan="7" class="firewall-empty">Carregando movimentações...</td></tr>';
+  const [logsResult,blockedResult]=await Promise.all([
+    supa.from('security_access_logs').select('*').order('occurred_at',{ascending:false}).limit(500),
+    supa.from('security_blocked_ips').select('*').order('updated_at',{ascending:false})
+  ]);
+  if(logsResult.error||blockedResult.error){
+    console.error('loadFirewall:',logsResult.error||blockedResult.error);
+    if(body) body.innerHTML='<tr><td colspan="7" class="firewall-empty">Não foi possível carregar os acessos agora.</td></tr>';
     return;
   }
-  DB.securityLogs=data||[];
+  DB.securityLogs=logsResult.data||[];
+  DB.securityBlockedIps=blockedResult.data||[];
   renderFirewall();
+}
+function firewallIpIsActive(ip){const row=DB.securityBlockedIps.find(item=>item.ip_address===ip);return Boolean(row?.active&&(!row.expires_at||new Date(row.expires_at)>new Date()));}
+function validFirewallIp(value){
+  const ip=String(value||'').trim();
+  if(ip.includes(':')){try{return new URL(`http://[${ip}]/`).hostname.length>2&&ip.length<=45;}catch{return false;}}
+  const parts=ip.split('.');return parts.length===4&&parts.every(part=>/^\d{1,3}$/.test(part)&&Number(part)<=255);
+}
+function openFirewallBlock(ip=''){
+  if(!isCEO())return;
+  document.getElementById('fw-block-ip').value=ip;
+  document.getElementById('fw-block-reason').value='';
+  openModal('modal-firewall-block');
+  setTimeout(()=>document.getElementById(ip?'fw-block-reason':'fw-block-ip').focus(),50);
+}
+async function saveFirewallBlock(){
+  if(!isCEO())return;
+  const ip=document.getElementById('fw-block-ip').value.trim(),reason=document.getElementById('fw-block-reason').value.trim();
+  if(!validFirewallIp(ip)){fieldError('fw-block-ip','Informe um endereço IPv4 ou IPv6 válido.');return;}
+  if(!reason){fieldError('fw-block-reason','Informe por que este IP será bloqueado.');return;}
+  const button=document.getElementById('fw-block-save');button.disabled=true;
+  try{
+    const {error}=await supa.from('security_blocked_ips').upsert({ip_address:ip,active:true,reason,created_by:DB.me.id},{onConflict:'ip_address'});
+    if(error)throw error;
+    closeModal('modal-firewall-block');await loadFirewall(true);toast('IP bloqueado imediatamente.','ok');
+  }catch(error){toast('Não foi possível bloquear o IP: '+error.message,'err');}
+  finally{button.disabled=false;}
+}
+async function toggleFirewallIp(ip,blocked){
+  if(!isCEO()||!validFirewallIp(ip))return;
+  if(blocked&&!confirm(`Liberar novamente o IP ${ip}?`))return;
+  if(!blocked){openFirewallBlock(ip);return;}
+  const {error}=await supa.from('security_blocked_ips').update({active:false}).eq('ip_address',ip);
+  if(error){toast('Não foi possível liberar o IP: '+error.message,'err');return;}
+  await loadFirewall(true);toast('IP liberado.','ok');
 }
 function securityDate(value){
   if(!value)return '—';
@@ -5688,13 +5773,13 @@ function renderFirewall(){
   const last24=DB.securityLogs.filter(row=>new Date(row.occurred_at).getTime()>=Date.now()-86400000);
   const uniqueIps=new Set(last24.map(row=>row.ip_address).filter(Boolean)).size;
   const failures=last24.filter(row=>row.outcome==='failure').length;
-  const blocked=last24.filter(row=>row.outcome==='blocked').length;
+  const blocked=DB.securityBlockedIps.filter(row=>firewallIpIsActive(row.ip_address)).length;
   const stats=document.getElementById('firewall-stats');
   if(stats)stats.innerHTML=`
     <div class="stat"><div class="stat-label">Eventos em 24h</div><div class="stat-val">${last24.length}</div><div class="stat-delta delta-neutral">movimentações registradas</div></div>
     <div class="stat"><div class="stat-label">IPs distintos</div><div class="stat-val" style="color:var(--violet2)">${uniqueIps}</div><div class="stat-delta delta-neutral">últimas 24 horas</div></div>
     <div class="stat"><div class="stat-label">Tentativas falhas</div><div class="stat-val" style="color:var(--amber)">${failures}</div><div class="stat-delta delta-neutral">credenciais recusadas</div></div>
-    <div class="stat"><div class="stat-label">Bloqueios</div><div class="stat-val" style="color:var(--rose)">${blocked}</div><div class="stat-delta delta-neutral">limite ou permissão</div></div>`;
+    <div class="stat"><div class="stat-label">IPs bloqueados</div><div class="stat-val" style="color:var(--rose)">${blocked}</div><div class="stat-delta delta-neutral">bloqueios ativos</div></div>`;
   const body=document.getElementById('firewall-body');
   if(!body)return;
   body.innerHTML=list.length?list.map(row=>{
@@ -5702,6 +5787,7 @@ function renderFirewall(){
     const account=row.email_snapshot||profile?.name||'Visitante não identificado';
     const location=[row.country_code,row.timezone].filter(Boolean).join(' · ')||'Local não informado';
     const device=[row.browser,row.operating_system,row.device_type].filter(Boolean).join(' · ')||'Dispositivo não identificado';
+    const ip=row.ip_address||'',ipBlocked=ip&&firewallIpIsActive(ip);
     return `<tr>
       <td><strong>${escapeHTML(securityDate(row.occurred_at))}</strong><div class="firewall-context">${escapeHTML(row.path||'')}</div></td>
       <td><div style="display:flex;align-items:center;gap:9px"><div class="av av-xs">${profile?avatarHTML(profile,profile.name,''):escapeHTML(avatarInitials(account))}</div><div><strong>${escapeHTML(account)}</strong><div class="firewall-context">${escapeHTML(row.session_fingerprint?'Sessão '+row.session_fingerprint.slice(0,8):'Sem sessão')}</div></div></div></td>
@@ -5709,8 +5795,9 @@ function renderFirewall(){
       <td><div class="firewall-ip">${escapeHTML(row.ip_address||'IP indisponível')}</div><div class="firewall-context">${escapeHTML(location)}</div></td>
       <td>${escapeHTML(device)}<div class="firewall-context">${escapeHTML(row.locale||'')}</div></td>
       <td><span><i class="risk-dot ${escapeHTML(row.risk_level||'low')}"></i>${escapeHTML(row.risk_level==='high'?'Alto':row.risk_level==='medium'?'Médio':'Baixo')}</span></td>
+      <td>${ip?`<button type="button" class="btn ${ipBlocked?'btn-ghost':'btn-danger'} btn-xs firewall-action" onclick="toggleFirewallIp('${escapeHTML(ip)}',${ipBlocked})">${ipBlocked?'Liberar IP':'Bloquear IP'}</button>`:'<span class="firewall-context">Indisponível</span>'}</td>
     </tr>`;
-  }).join(''):'<tr><td colspan="6" class="firewall-empty">Nenhum acesso corresponde aos filtros.</td></tr>';
+  }).join(''):'<tr><td colspan="7" class="firewall-empty">Nenhum acesso corresponde aos filtros.</td></tr>';
 }
 
 /* ═══ DELEGAÇÃO DE EVENTOS — Demandas ═══

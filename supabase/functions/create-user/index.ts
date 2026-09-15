@@ -102,6 +102,12 @@ Deno.serve(async (req) => {
     return json({ error: "Falha ao gravar perfil: " + profileError.message }, 500);
   }
 
+  const { error: metadataError } = await admin.auth.admin.updateUserById(userId, { user_metadata: { name, phone: null } });
+  if (metadataError) {
+    await admin.auth.admin.deleteUser(userId);
+    return json({ error: "Falha ao proteger os dados de autenticação do usuário" }, 500);
+  }
+
   if (!active) {
     const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     if (banError) {

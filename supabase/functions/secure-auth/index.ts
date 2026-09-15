@@ -29,6 +29,20 @@ function requestIp(req: Request) {
   return value && value.length <= 64 ? value : null
 }
 
+async function blockedIp(ip: string | null) {
+  if (!ip) return false
+  const { data, error } = await service.from('security_blocked_ips')
+    .select('active,expires_at').eq('ip_address', ip).maybeSingle()
+  if (error) throw error
+  return Boolean(data?.active && (!data.expires_at || new Date(data.expires_at).getTime() > Date.now()))
+}
+
+function maskEmail(value: unknown) {
+  const email = String(value || '').trim().toLowerCase()
+  const at = email.indexOf('@')
+  return at > 0 ? `${email[0]}***@${email.slice(at + 1)}` : null
+}
+
 function parseAgent(value: string) {
   const browser = /Edg\//.test(value) ? 'Edge' : /OPR\//.test(value) ? 'Opera' :
     /CriOS|Chrome\//.test(value) ? 'Chrome' : /FxiOS|Firefox\//.test(value) ? 'Firefox' :
@@ -66,6 +80,7 @@ async function logAccess(req: Request, entry: Record<string, unknown>) {
     device_type: agent.deviceType,
     origin: (req.headers.get('origin') || '').slice(0, 240) || null,
     ...entry,
+    email_snapshot: maskEmail(entry.email_snapshot),
   })
   if (error) console.error('security log insert failed', error.message)
 }
@@ -91,6 +106,11 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Confira os dados informados.' }), { status: 400, headers })
   }
 
+  if (await blockedIp(ip === 'unknown' ? null : ip)) {
+    await logAccess(req, { email_snapshot: email, event_type: 'access_denied', outcome: 'blocked', risk_level: 'high', reason: 'Endereço IP bloqueado pelo administrador', timezone, locale, path })
+    return new Response(JSON.stringify({ error: 'Este endereço IP foi bloqueado pelo administrador.', blocked: true }), { status: 403, headers })
+  }
+
   const limit = action === 'signup'
     ? await consume(`signup:ip:${ip}`, 5, 86400)
     : await consume(`login:ip:${ip}`, 30, 900)
@@ -110,6 +130,13 @@ Deno.serve(async (req) => {
       await logAccess(req, { email_snapshot: email, event_type: 'login_failure', outcome: 'failure', risk_level: 'medium', reason: 'Credenciais recusadas', timezone, locale, path })
       return new Response(JSON.stringify({ error: error?.message?.includes('Email not confirmed') ? 'Confirme seu e-mail antes de entrar.' : 'E-mail ou senha incorretos.' }), { status: 401, headers })
     }
+    if (data.user.user_metadata?.phone) {
+      const { error: metadataError } = await service.auth.admin.updateUserById(data.user.id, { user_metadata: { ...data.user.user_metadata, phone: null } })
+      if (metadataError) {
+        await logAccess(req, { user_id: data.user.id, email_snapshot: data.user.email || email, event_type: 'access_denied', outcome: 'blocked', risk_level: 'medium', reason: 'Falha ao proteger metadados da conta', timezone, locale, path })
+        return new Response(JSON.stringify({ error: 'Não foi possível concluir a proteção desta sessão. Tente novamente.' }), { status: 503, headers })
+      }
+    }
     await logAccess(req, { user_id: data.user.id, email_snapshot: data.user.email || email, event_type: 'login_success', outcome: 'success', risk_level: 'low', timezone, locale, path, session_fingerprint: await fingerprint(data.session.access_token) })
     return new Response(JSON.stringify({ session: data.session, user: data.user }), { status: 200, headers })
   }
@@ -121,6 +148,11 @@ Deno.serve(async (req) => {
   if (error || !data.user) {
     await logAccess(req, { email_snapshot: email, event_type: 'signup_failure', outcome: 'failure', risk_level: 'medium', reason: 'Cadastro recusado', timezone, locale, path })
     return new Response(JSON.stringify({ error: 'Não foi possível concluir o cadastro. Confira os dados ou faça login se o e-mail já estiver cadastrado.' }), { status: 400, headers })
+  }
+  const { error: metadataError } = await service.auth.admin.updateUserById(data.user.id, { user_metadata: { name, phone: null } })
+  if (metadataError) {
+    await logAccess(req, { user_id: data.user.id, email_snapshot: data.user.email || email, event_type: 'signup_failure', outcome: 'failure', risk_level: 'medium', reason: 'Falha ao proteger metadados da conta', timezone, locale, path })
+    return new Response(JSON.stringify({ error: 'Não foi possível concluir a proteção da conta. Tente novamente.' }), { status: 503, headers })
   }
   await logAccess(req, { user_id: data.user.id, email_snapshot: data.user.email || email, event_type: 'signup_success', outcome: 'success', risk_level: 'low', timezone, locale, path, session_fingerprint: await fingerprint(data.session?.access_token) })
   return new Response(JSON.stringify({ session: data.session, user: data.user }), { status: 200, headers })

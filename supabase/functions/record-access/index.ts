@@ -11,6 +11,13 @@ function cors(req: Request) {
   return {'Access-Control-Allow-Origin':allowedOrigins.has(origin)?origin:'https://app.magemind.com.br','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Content-Type':'application/json','Vary':'Origin','Cache-Control':'no-store'}
 }
 function ip(req: Request) { const value=req.headers.get('cf-connecting-ip')||req.headers.get('x-real-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||null; return value&&value.length<=64?value:null }
+async function blockedIp(address: string | null) {
+  if(!address)return false
+  const {data,error}=await service.from('security_blocked_ips').select('active,expires_at').eq('ip_address',address).maybeSingle()
+  if(error)throw error
+  return Boolean(data?.active&&(!data.expires_at||new Date(data.expires_at).getTime()>Date.now()))
+}
+function maskEmail(value: unknown){const email=String(value||'').trim().toLowerCase(),at=email.indexOf('@');return at>0?`${email[0]}***@${email.slice(at+1)}`:null}
 function agent(ua: string) {
   const browser=/Edg\//.test(ua)?'Edge':/OPR\//.test(ua)?'Opera':/CriOS|Chrome\//.test(ua)?'Chrome':/FxiOS|Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'Outro'
   const operating_system=/iPhone|iPad|iPod/.test(ua)?'iOS':/Android/.test(ua)?'Android':/Windows/.test(ua)?'Windows':/Mac OS X|Macintosh/.test(ua)?'macOS':/Linux/.test(ua)?'Linux':'Outro'
@@ -31,6 +38,11 @@ Deno.serve(async (req) => {
   const auth=createClient(SUPABASE_URL,ANON_KEY,{global:{headers:{Authorization:`Bearer ${token}`}},auth:{persistSession:false}})
   const {data,error}=await auth.auth.getUser(token)
   if(error||!data.user) return new Response(JSON.stringify({error:'Sessão inválida.'}),{status:401,headers})
+  const requestIp=ip(req)
+  if(await blockedIp(requestIp)){
+    await service.from('security_access_logs').insert({user_id:data.user.id,email_snapshot:maskEmail(data.user.email),event_type:'access_denied',outcome:'blocked',risk_level:'high',reason:'Endereço IP bloqueado pelo administrador',ip_address:requestIp,path:'/',origin:origin.slice(0,240)||null})
+    return new Response(JSON.stringify({error:'Este endereço IP foi bloqueado pelo administrador.',blocked:true}),{status:403,headers})
+  }
   let body:Record<string,unknown>={}
   try{body=await req.json()}catch{/* empty body is acceptable */}
   const event=String(body.eventType||'session_access')
@@ -38,9 +50,9 @@ Deno.serve(async (req) => {
   const ua=(req.headers.get('user-agent')||'').slice(0,512)
   const parsed=agent(ua)
   const {error:insertError}=await service.from('security_access_logs').insert({
-    user_id:data.user.id,email_snapshot:data.user.email||null,event_type:event,
+    user_id:data.user.id,email_snapshot:maskEmail(data.user.email),event_type:event,
     outcome:event==='access_denied'?'blocked':'success',risk_level:event==='access_denied'?'medium':'low',
-    reason:String(body.reason||'').slice(0,300)||null,ip_address:ip(req),
+    reason:String(body.reason||'').slice(0,300)||null,ip_address:requestIp,
     country_code:(req.headers.get('cf-ipcountry')||req.headers.get('cloudfront-viewer-country')||'').slice(0,8)||null,
     timezone:String(body.timezone||'').slice(0,80)||null,locale:String(body.locale||'').slice(0,35)||null,
     user_agent:ua||null,...parsed,session_fingerprint:await fingerprint(token),
