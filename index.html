@@ -486,7 +486,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260915-1">
-<link rel="stylesheet" href="security-rich-text.css?v=20260915-1">
+<link rel="stylesheet" href="security-rich-text.css?v=20260923-1">
 </head>
 <body>
 
@@ -742,10 +742,10 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <div class="page" id="pg-sales">
         <div class="ph">
           <div class="ph-info">
-            <div class="ph-title" id="sales-page-title">Vendas</div>
+            <div class="ph-title" id="sales-page-title">Financias</div>
             <div class="ph-sub" id="sales-page-subtitle">Receitas, gastos e resultados</div>
           </div>
-          <div class="ph-actions"><button class="btn btn-ghost" id="expense-create" onclick="openNewExpense()">− Adicionar gasto</button></div>
+          <div class="ph-actions"><button class="btn btn-ghost" id="expense-create" onclick="openNewExpense()">− Adicionar gasto</button><button class="btn btn-primary" id="sale-create" onclick="openNewSale()">+ Nova venda</button></div>
         </div>
         <div class="wallet-shell" id="affiliate-wallet">
           <div class="wallet-primary">
@@ -1439,10 +1439,11 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
+<script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260915-1"></script>
-<script src="mobile-app.js?v=20260910-2"></script>
+<script src="mobile-app.js?v=20260923-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -2805,11 +2806,11 @@ function buildNav(){
     {id:'dashboard', icon:ico('home'),     label:'Menu'},
     {id:'clients',   icon:ico('users'),    label:'Clientes', badge:DB.clients.filter(c=>c.status==='Ativo').length},
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
-    {id:'sales',     icon:ico('dollar'),   label:'Vendas'},
-    {id:'goals', icon:ico('grid'), label:'Metas'},
-    {id:'solutions', icon:ico('package'),  label:'Soluções'},
+    {id:'sales',     icon:ico('dollar'),   label:'Financias'},
+    {id:'goals', icon:ico('goalCheck'), label:'Metas'},
+    {id:'solutions', icon:ico('solutionTarget'),  label:'Soluções'},
     {id:'affiliates',icon:ico('gift'),     label:'Indique & Ganhe'},
-    {id:'team',      icon:ico('users'),    label:'Equipe'},
+    {id:'team',      icon:ico('teamGroup'),    label:'Equipe'},
     {id:'docs',      icon:ico('file'),     label:'Documentos'},
     {id:'firewall',  icon:ico('shield'),   label:'Firewall'},
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
@@ -2818,7 +2819,7 @@ function buildNav(){
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
-    {id:'team',      icon:ico('users'),label:'Equipe'},
+    {id:'team',      icon:ico('teamGroup'),label:'Equipe'},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
@@ -2838,7 +2839,7 @@ function buildNav(){
   const clientItems = [
     {id:'dashboard', icon:ico('home'), label:'Menu'},
     {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
-    {id:'solutions',icon:ico('package'),label:'Soluções'},
+    {id:'solutions',icon:ico('solutionTarget'),label:'Soluções'},
     {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
     {id:'settings',icon:ico('settings'),label:'Configurações'},
@@ -2874,14 +2875,14 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:isAffiliate()?'Finanças':'Vendas',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
-  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Pipeline de vendas',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
+  const T = {goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.getElementById('tb-title').textContent = T[page]||page;
   document.getElementById('tb-crumb').textContent = S[page]||'';
 
   // CTA da topbar respeita permissões (editor/afiliado/cliente não criam venda/cliente livremente)
-  const ctaLabel = {demands:'Nova demanda', clients:'Novo cliente', sales:'Nova venda', team:'Novo usuário'};
-  const ctaFn    = {demands:openNewDemand, clients:openNewClient, sales:openNewSale, team:openNewTeamMember};
+  const ctaLabel = {demands:'Nova demanda', clients:'Novo cliente', team:'Novo usuário'};
+  const ctaFn    = {demands:openNewDemand, clients:openNewClient, team:openNewTeamMember};
   const ctaPerm  = {demands:'demands.create', clients:'clients.create', sales:'sales.create'};
   const ctaBtn = document.getElementById('tb-cta');
   const ctaAllowed = page==='team'
@@ -4363,11 +4364,12 @@ function getSalesFiltered(){return MagemindCore.filterSales(DB.sales,MagemindCor
 function loadSales(){
   syncSalesPeriod();
   document.getElementById('expense-create').hidden=!isAdmin();
+  document.getElementById('sale-create').hidden=!hasPermission('sales.create');
   const salesPage=document.getElementById('pg-sales');
   salesPage?.classList.toggle('affiliate-finance',isAffiliate());
   const salesTitle=document.getElementById('sales-page-title');
   const salesSubtitle=document.getElementById('sales-page-subtitle');
-  if(salesTitle) salesTitle.textContent=isAffiliate()?'Finanças':'Vendas';
+  if(salesTitle) salesTitle.textContent='Financias';
   if(salesSubtitle) salesSubtitle.textContent=isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados';
   renderAffiliateWallet();
   const allSales = getSalesFiltered();
@@ -5758,18 +5760,29 @@ function securityDate(value){
   if(!value)return '—';
   return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
 }
+function openFirewallSteps(index){
+  if(!isCEO())return;
+  const group=window.firewallVisibleSessions?.[index];if(!group)return;
+  if(!document.getElementById('modal-firewall-steps')){
+    document.body.insertAdjacentHTML('beforeend',`<div class="overlay" id="modal-firewall-steps" onclick="if(event.target===this)closeModal('modal-firewall-steps')"><div class="modal" style="width:600px"><div class="m-head"><div><div class="m-title">Passos deste acesso</div><div class="m-sub">Histórico registrado em ordem cronológica</div></div><button class="m-close" aria-label="Fechar" onclick="closeModal('modal-firewall-steps')">✕</button></div><div class="m-body" id="firewall-steps-body"></div></div></div>`);
+  }
+  document.getElementById('firewall-steps-body').innerHTML=`<p class="firewall-context">${escapeHTML(group.email_snapshot||'Conta identificada')} · ${escapeHTML(group.ip_address||'IP indisponível')}<br>Movimentos disponíveis no histórico carregado (até 500 eventos).</p><ol class="firewall-timeline">${group.steps.map(step=>`<li><time>${escapeHTML(new Date(step.occurred_at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}))}</time><strong>${escapeHTML(SECURITY_EVENT_LABELS[step.event_type]||step.event_type)}</strong><span>${escapeHTML(step.path||'/')}</span>${step.reason?`<span>${escapeHTML(step.reason)}</span>`:''}</li>`).join('')}</ol>`;
+  openModal('modal-firewall-steps');
+}
 function renderFirewall(){
   if(!isCEO())return;
   const search=(document.getElementById('firewall-search')?.value||'').trim().toLowerCase();
   const outcome=document.getElementById('firewall-outcome')?.value||'all';
   const period=document.getElementById('firewall-period')?.value||'24';
   const cutoff=period==='all'?0:Date.now()-Number(period)*3600000;
-  const list=DB.securityLogs.filter(row=>{
+  const sessions=groupFirewallSessions(DB.securityLogs);
+  const list=sessions.filter(group=>group.steps.some(row=>{
     if(outcome!=='all'&&row.outcome!==outcome)return false;
     if(cutoff&&new Date(row.occurred_at).getTime()<cutoff)return false;
     const haystack=`${row.email_snapshot||''} ${row.ip_address||''} ${row.browser||''} ${row.operating_system||''} ${row.country_code||''}`.toLowerCase();
     return !search||haystack.includes(search);
-  });
+  }));
+  window.firewallVisibleSessions=list;
   const last24=DB.securityLogs.filter(row=>new Date(row.occurred_at).getTime()>=Date.now()-86400000);
   const uniqueIps=new Set(last24.map(row=>row.ip_address).filter(Boolean)).size;
   const failures=last24.filter(row=>row.outcome==='failure').length;
@@ -5782,20 +5795,20 @@ function renderFirewall(){
     <div class="stat"><div class="stat-label">IPs bloqueados</div><div class="stat-val" style="color:var(--rose)">${blocked}</div><div class="stat-delta delta-neutral">bloqueios ativos</div></div>`;
   const body=document.getElementById('firewall-body');
   if(!body)return;
-  body.innerHTML=list.length?list.map(row=>{
+  body.innerHTML=list.length?list.map((row,index)=>{
     const profile=DB.users.find(user=>user.id===row.user_id)||(DB.me?.id===row.user_id?DB.me:null);
-    const account=row.email_snapshot||profile?.name||'Visitante não identificado';
+    const account=profile?.name||row.email_snapshot||'Visitante não identificado';
     const location=[row.country_code,row.timezone].filter(Boolean).join(' · ')||'Local não informado';
     const device=[row.browser,row.operating_system,row.device_type].filter(Boolean).join(' · ')||'Dispositivo não identificado';
     const ip=row.ip_address||'',ipBlocked=ip&&firewallIpIsActive(ip);
     return `<tr>
       <td><strong>${escapeHTML(securityDate(row.occurred_at))}</strong><div class="firewall-context">${escapeHTML(row.path||'')}</div></td>
-      <td><div style="display:flex;align-items:center;gap:9px"><div class="av av-xs">${profile?avatarHTML(profile,profile.name,''):escapeHTML(avatarInitials(account))}</div><div><strong>${escapeHTML(account)}</strong><div class="firewall-context">${escapeHTML(row.session_fingerprint?'Sessão '+row.session_fingerprint.slice(0,8):'Sem sessão')}</div></div></div></td>
+      <td><div style="display:flex;align-items:center;gap:9px"><div class="av av-xs">${profile?avatarHTML(profile,profile.name,''):escapeHTML(avatarInitials(account))}</div><div><strong>${escapeHTML(account)}</strong><div class="firewall-context">${escapeHTML(row.steps.length+' movimento'+(row.steps.length===1?'':'s'))}</div></div></div></td>
       <td><span class="badge ${row.outcome==='success'?'b-emerald':row.outcome==='blocked'?'b-rose':'b-amber'}">${escapeHTML(SECURITY_EVENT_LABELS[row.event_type]||row.event_type)}</span>${row.reason?`<div class="firewall-context">${escapeHTML(row.reason)}</div>`:''}</td>
       <td><div class="firewall-ip">${escapeHTML(row.ip_address||'IP indisponível')}</div><div class="firewall-context">${escapeHTML(location)}</div></td>
       <td>${escapeHTML(device)}<div class="firewall-context">${escapeHTML(row.locale||'')}</div></td>
       <td><span><i class="risk-dot ${escapeHTML(row.risk_level||'low')}"></i>${escapeHTML(row.risk_level==='high'?'Alto':row.risk_level==='medium'?'Médio':'Baixo')}</span></td>
-      <td>${ip?`<button type="button" class="btn ${ipBlocked?'btn-ghost':'btn-danger'} btn-xs firewall-action" onclick="toggleFirewallIp('${escapeHTML(ip)}',${ipBlocked})">${ipBlocked?'Liberar IP':'Bloquear IP'}</button>`:'<span class="firewall-context">Indisponível</span>'}</td>
+      <td><div class="firewall-row-actions"><button type="button" class="btn btn-ghost btn-xs firewall-steps" title="Ver passos deste acesso" aria-label="Ver passos deste acesso" onclick="openFirewallSteps(${index})">${ico('footsteps')}</button>${ip?`<button type="button" class="btn ${ipBlocked?'btn-ghost':'btn-danger'} btn-xs firewall-action" onclick="toggleFirewallIp('${escapeHTML(ip)}',${ipBlocked})">${ipBlocked?'Liberar IP':'Bloquear IP'}</button>`:'<span class="firewall-context">Indisponível</span>'}</div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="firewall-empty">Nenhum acesso corresponde aos filtros.</td></tr>';
 }
@@ -5836,6 +5849,11 @@ function prBadge(p){ const m={Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'};
 /* ═══ ICONS ═══ */
 function ico(n){
   const icons = {
+    goalCheck:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m7 12 3 3 7-7"/></svg>`,
+    solutionTarget:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="8"/><circle cx="10" cy="14" r="4"/><path d="m10 14 10-10m-4 0h4v4"/></svg>`,
+    teamGroup:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3M4 7a2 2 0 1 0 0 4M20 7a2 2 0 1 1 0 4M2 20v-3a4 4 0 0 1 3-4M22 20v-3a4 4 0 0 0-3-4"/></svg>`,
+    footsteps:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="3" ry="5" transform="rotate(-20 8 7)"/><path d="M6 14h4v3a2 2 0 0 1-4 0z"/><ellipse cx="17" cy="12" rx="3" ry="5" transform="rotate(20 17 12)"/><path d="M15 19h4v1a2 2 0 0 1-4 0z"/></svg>`,
+
     home:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
     users:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
     grid:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,

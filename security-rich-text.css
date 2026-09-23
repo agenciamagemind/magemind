@@ -18,6 +18,21 @@
 #modal-detail .demand-rich-input{min-height:240px}
 .firewall-action{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .firewall-action svg{width:14px;height:14px}
+.firewall-toolbar select.fs{appearance:none;color:var(--text2);background:var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23b9a5df' stroke-width='1.8'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--border2);border-radius:12px;padding:11px 36px 11px 13px;font:400 12px 'Poppins',sans-serif;min-height:42px;cursor:pointer;color-scheme:dark}
+.firewall-toolbar select.fs:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
+.firewall-row-actions{display:flex;align-items:center;gap:8px}
+.firewall-steps{min-width:40px;min-height:40px;justify-content:center}
+.firewall-steps svg{width:19px;height:19px}
+.firewall-timeline{list-style:none;padding:12px 0 0 12px;margin:0}
+.firewall-timeline li{position:relative;display:grid;gap:5px;border-left:1px solid var(--violetborder);padding:0 0 24px 22px;overflow-wrap:anywhere}
+.firewall-timeline li:before{content:'';position:absolute;left:-5px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--violet2)}
+.firewall-timeline time{font-size:11px;color:var(--text3)}
+.firewall-timeline strong{font-size:13px;color:var(--text)}
+.firewall-timeline span{font-size:12px;color:var(--text2)}
+#modal-firewall-steps{align-items:center;padding:18px}#modal-firewall-steps .modal{border-radius:20px;max-height:calc(100dvh - 36px);background:var(--bg2)}#modal-firewall-steps .m-body{overflow-y:auto}
+#pg-sales .ph-actions{display:flex;gap:9px;flex-wrap:wrap}
+#pg-sales .ph-actions [hidden]{display:none!important}
+@media(max-width:600px){#pg-sales .ph-actions{width:100%;flex-wrap:nowrap;align-items:stretch}#pg-sales .ph-actions .btn{flex:1;min-width:0;padding:10px 6px;font-size:11px;white-space:nowrap}#pg-firewall .firewall-row-actions .firewall-steps{width:42px!important;flex:0 0 42px}}
 #modal-firewall-block .modal,#modal-firewall-block .m-body{background:var(--bg2)}
 @media(max-width:900px){
  .demand-format-toolbar{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;padding:7px}.demand-format-toolbar button{min-height:36px;padding:6px 5px}.demand-format-toolbar button:nth-of-type(-n+4){grid-column:span 3}.demand-format-toolbar button:nth-of-type(n+5){grid-column:span 4}
