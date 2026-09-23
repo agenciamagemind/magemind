@@ -486,7 +486,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260923-2">
-<link rel="stylesheet" href="security-rich-text.css?v=20260923-2">
+<link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 </head>
 <body>
 
@@ -582,10 +582,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </div>
       <div class="topbar-right">
         <span id="saved-ind" style="font-size:10px;color:var(--emerald);opacity:0;transition:opacity .4s;white-space:nowrap">✓ salvo</span>
-        <button class="btn btn-primary" id="tb-cta" style="display:none" onclick="ctaAction()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          <span id="tb-cta-label">Ação</span>
-        </button>
         <div style="position:relative" id="notif-wrapper">
           <button class="btn btn-ghost btn-icon" title="Notificações" onclick="toggleNotifPanel()" id="btn-notif">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -686,6 +682,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <option value="az">A–Z</option>
           </select>
           <div class="filter-row" id="client-filters" style="padding:0;flex-shrink:0"></div>
+          <button class="btn btn-primary page-create" id="client-create" type="button" onclick="openNewClient()" hidden>+ Novo cliente</button>
         </div>
         <div class="table-wrap" style="padding-top:12px">
           <div class="tbl-container">
@@ -714,9 +711,12 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista
               </button>
             </div>
+            <div class="demand-client-actions">
             <select class="fi" id="client-filter-dd" onchange="renderKanban()" style="width:auto;padding:6px 10px;font-size:12px;display:none">
               <option value="">Todos os clientes</option>
             </select>
+            <button class="btn btn-primary page-create" id="demand-create" type="button" onclick="openNewDemand()" hidden>+ Nova demanda</button>
+            </div>
             <label id="mine-filter-wrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
               <input type="checkbox" id="mine-filter-chk" onchange="renderKanban()"> Minhas demandas
             </label>
@@ -817,6 +817,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div class="ph-title">Equipe</div>
             <div class="ph-sub">Cargos e permissões dos usuários internos</div>
           </div>
+          <div class="ph-actions"><button class="btn btn-primary page-create" id="team-create" type="button" onclick="openNewTeamMember()" hidden>+ Novo usuário</button></div>
         </div>
         <div class="table-wrap">
           <div class="tbl-container">
@@ -2877,20 +2878,9 @@ function goTo(page){
   const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.title = `${T[page]||page} · Magemind`;
 
-  // CTA da topbar respeita permissões (editor/afiliado/cliente não criam venda/cliente livremente)
-  const ctaLabel = {demands:'Nova demanda', clients:'Novo cliente', team:'Novo usuário'};
-  const ctaFn    = {demands:openNewDemand, clients:openNewClient, team:openNewTeamMember};
-  const ctaPerm  = {demands:'demands.create', clients:'clients.create', sales:'sales.create'};
-  const ctaBtn = document.getElementById('tb-cta');
-  const ctaAllowed = page==='team'
-    ? (hasPermission('users.create')||hasPermission('users.create_editor'))
-    : hasPermission(ctaPerm[page]);
-  if(ctaFn[page] && ctaAllowed){
-    ctaBtn.style.display='inline-flex';
-    document.getElementById('tb-cta-label').textContent=ctaLabel[page];
-    ctaBtn.setAttribute('aria-label',ctaLabel[page]);
-    ctaBtn.onclick=()=>ctaFn[page]();
-  } else { ctaBtn.style.display='none'; }
+  document.getElementById('client-create').hidden=!hasPermission('clients.create');
+  document.getElementById('demand-create').hidden=!hasPermission('demands.create');
+  document.getElementById('team-create').hidden=!(hasPermission('users.create')||hasPermission('users.create_editor'));
 
   updateSidebarUser();
   const loaders = {
@@ -2902,7 +2892,6 @@ function goTo(page){
   recordSecurityAccess('page_view',{path:page});
   refreshAvatarDirectoryIfStale();
 }
-function ctaAction(){}
 
 /* ═══ DASHBOARD ═══ */
 /* ═══ DASHBOARD — dispatcher por cargo ═══

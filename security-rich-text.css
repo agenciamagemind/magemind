@@ -18,6 +18,10 @@
 #modal-detail .demand-rich-input{min-height:240px}
 .firewall-action{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .firewall-action svg{width:14px;height:14px}
+.page-create[hidden]{display:none!important}
+#pg-clients .search-row{flex-wrap:wrap}#client-create{margin-left:auto;white-space:nowrap}
+.demand-client-actions{display:flex;align-items:center;gap:8px;min-width:0}.demand-client-actions .page-create{white-space:nowrap}
+@media(max-width:900px){#pg-clients .search-row{display:flex}#pg-clients .search-input{flex:1 1 100%}#client-filters{flex:1 1 auto;flex-wrap:wrap!important;min-width:0}#client-create{flex:none;min-height:40px;padding:9px 10px;font-size:11px}#pg-demands .demand-client-actions{width:100%;flex-wrap:nowrap}#pg-demands .demand-client-actions #client-filter-dd{width:auto!important;flex:1;min-width:0!important}#demand-create{flex:none;min-height:40px;padding:9px 10px;font-size:11px}#pg-team .ph-actions{margin-left:auto}}
 #pg-sales .sale-row-actions{display:grid;grid-template-columns:repeat(3,36px);align-items:center;justify-content:start;gap:6px;width:120px;min-width:120px;max-width:none}
 #pg-sales .sale-row-actions>.btn{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .firewall-toolbar select.fs{appearance:none;color:var(--text2);background:var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23b9a5df' stroke-width='1.8'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--border2);border-radius:12px;padding:11px 36px 11px 13px;font:400 12px 'Poppins',sans-serif;min-height:42px;cursor:pointer;color-scheme:dark}
