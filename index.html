@@ -487,6 +487,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260923-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
+<link rel="stylesheet" href="product-ui.css?v=20260923-5">
 </head>
 <body>
 
@@ -989,6 +990,14 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <div class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" aria-hidden="true" onclick="closeMobileMenu()"></div>
 <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegação principal"></nav>
 
+<!-- Read-only client details; editing and deletion remain in the client list. -->
+<div class="overlay" id="modal-client-preview" onclick="if(event.target===this)closeModal('modal-client-preview')">
+ <div class="modal">
+  <div class="m-head"><div class="m-title" id="client-preview-name">Cliente</div><button type="button" class="btn btn-ghost btn-xs" aria-label="Fechar visualização do cliente" onclick="closeModal('modal-client-preview')">✕</button></div>
+  <div class="m-body" id="client-preview-content"></div>
+  <div class="m-foot"><button type="button" class="btn btn-ghost" onclick="closeModal('modal-client-preview')">Fechar</button></div>
+ </div>
+</div>
 <!-- MODAL: Nova/Editar Demanda -->
 <div class="overlay" id="modal-demand" onclick="if(event.target===this)closeModal('modal-demand')">
   <div class="modal" style="width:600px">
@@ -1438,6 +1447,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
+<script src="product-ui.js?v=20260923-5"></script>
 <script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
@@ -2851,11 +2861,11 @@ function buildNav(){
   else items = clientItems;
   // Filtra por página realmente acessível (defesa extra além da lista acima)
   items = items.filter(i=>canAccessPage(i.id));
-  document.getElementById('sb-nav').innerHTML = items.map(i=>`
+  document.getElementById('sb-nav').innerHTML = groupSidebarNavigation(items, i=>`
     <button type="button" class="sb-item" id="nav-${i.id}" onclick="goTo('${i.id}')">
       <span class="sb-icon">${i.icon}</span><span class="sb-label" data-mobile-label="${escapeHTML(i.id==='demands'?'Demandas':i.label)}">${escapeHTML(i.label)}</span>
       ${i.badge ? `<span class="sb-badge${i.warn?' warn':''}">${i.badge}</span>` : ''}
-    </button>`).join('');
+    </button>`);
   if(typeof buildMobileNav==='function') buildMobileNav(items);
 }
 
@@ -3183,6 +3193,7 @@ function renderClients(filter){
       <td><div style="display:flex;gap:6px">
         ${canEditC?`<button class="btn btn-ghost btn-xs" onclick="openEditClient('${c.id}')">✎ Editar</button>`:''}
         ${canDelC?`<button class="btn btn-danger btn-xs" onclick="removeClient('${c.id}')">✕</button>`:''}
+        <button type="button" class="btn btn-ghost btn-xs client-preview-eye" title="Visualizar cliente" aria-label="Visualizar cliente" onclick="openClientPreview('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         ${(!canEditC&&!canDelC)?'<span style="font-size:11px;color:var(--text3)">leitura</span>':''}
       </div></td>
     </tr>`).join('')
@@ -5867,6 +5878,7 @@ function loadAgencySettings(){
     document.getElementById('cfg-phone').value = cfg.phone || '';
   }
   loadProfile();
+  setupSettingsTabs();
 }
 let companySettings={name:'',email:'',phone:'554899391390'};
 async function loadCompanySettings(){
