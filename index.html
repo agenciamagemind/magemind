@@ -485,8 +485,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
-<link rel="stylesheet" href="goals.css?v=20260915-1">
-<link rel="stylesheet" href="security-rich-text.css?v=20260923-1">
+<link rel="stylesheet" href="goals.css?v=20260923-2">
+<link rel="stylesheet" href="security-rich-text.css?v=20260923-2">
 </head>
 <body>
 
@@ -4387,7 +4387,7 @@ function loadSales(){
   } else {
     document.getElementById('sales-stats').innerHTML=`
       <div class="stat"><div class="stat-label">Receita fechada</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(revC)}</div><div class="stat-delta delta-up">${closed.length} vendas</div></div>
-      <div class="stat"><div class="stat-label">Em negociação</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(revP)}</div><div class="stat-delta delta-neutral">${pending.length} negócios</div></div>
+      <div class="stat"><div class="stat-label">À receber</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(revP)}</div><div class="stat-delta delta-neutral">${pending.length} negócios</div></div>
       <div class="stat"><div class="stat-label">Ticket médio</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(closed.length?revC/closed.length:0)}</div><div class="stat-delta delta-up">Média exata</div></div>
       <div class="stat expense-stat"><div class="stat-label">Total de gastos</div><div class="stat-val" style="color:var(--rose)">${formatCurrencyBRL(totals.expenses)}</div><div class="stat-delta">${allSales.filter(s=>s.status==='Gasto').length} lançamentos</div></div><div class="stat profit-stat"><div class="stat-label">Lucro líquido</div><div class="stat-val" style="color:${totals.profit<0?'var(--rose)':'var(--emerald)'}">${formatCurrencyBRL(totals.profit)}</div><div class="stat-delta">Receita fechada − gastos</div></div>`;
   }
@@ -4415,10 +4415,10 @@ function loadSales(){
       <td>${s.status==='Gasto'?'<span class="badge b-rose">Gasto</span>':s.status==='Fechado'?'<span class="badge b-emerald">Fechado</span>':s.status==='Pendente'?'<span class="badge b-amber">Pendente</span>':'<span class="badge b-rose">Cancelado</span>'}</td>
       <td style="font-size:12px;color:var(--text2)">${fDate(s.date)}</td>
       <td style="font-size:12px;color:var(--text2)">${escapeHTML(s.assignee)}</td>
-      <td><div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${s.demand?`<button class="btn btn-ghost btn-xs sale-icon" title="Ver demanda vinculada" aria-label="Ver demanda vinculada" onclick="openSaleDemand('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>`:''}
+      <td><div class="sale-row-actions">
         ${canEditS?`<button class="btn btn-ghost btn-xs" onclick="openEditSale('${s.id}')">✎</button>`:''}
         ${canDelS?`<button class="btn btn-danger btn-xs" onclick="removeSale('${s.id}')">✕</button>`:''}
+        ${s.demand?`<button class="sale-eye" type="button" title="Ver demanda vinculada" aria-label="Ver demanda vinculada" onclick="openSaleDemand('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>`:''}
         ${(!canEditS&&!canDelS)?'<span style="font-size:11px;color:var(--text3)">leitura</span>':''}
       </div></td>
     </tr>`).join('')
