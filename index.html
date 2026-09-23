@@ -488,7 +488,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="goals.css?v=20260923-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20260923-6">
-<link rel="stylesheet" href="partners.css?v=20260923-6">
+<link rel="stylesheet" href="partners.css?v=20260923-7">
 </head>
 <body>
 
@@ -705,6 +705,11 @@ body.solution-reordering{user-select:none;cursor:grabbing}
             <div id="demands-plan-banner" style="display:none;align-items:center;margin-top:6px;background:var(--violetbg);border:1px solid var(--violetborder);border-radius:var(--r2);padding:6px 12px;gap:6px"></div>
           </div>
           <div class="ph-actions">
+            <div class="demand-view-controls">
+            <label id="mine-filter-wrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
+              <input type="checkbox" id="mine-filter-chk" onchange="renderKanban()"> Minhas demandas
+            </label>
+
             <div style="display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:3px">
               <button class="btn btn-sm" id="view-kanban" onclick="setView('kanban')" style="background:var(--bg5);color:var(--text);border:none;padding:4px 12px">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Kanban
@@ -713,15 +718,14 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista
               </button>
             </div>
+            </div>
             <div class="demand-client-actions">
             <select class="fi" id="client-filter-dd" onchange="renderKanban()" style="width:auto;padding:6px 10px;font-size:12px;display:none">
               <option value="">Todos os clientes</option>
             </select>
             <button class="btn btn-primary page-create" id="demand-create" type="button" onclick="openNewDemand()" hidden>+ Nova demanda</button>
             </div>
-            <label id="mine-filter-wrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
-              <input type="checkbox" id="mine-filter-chk" onchange="renderKanban()"> Minhas demandas
-            </label>
+
 
           </div>
         </div>
@@ -843,11 +847,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           <div class="payout-section">
             <div class="payout-section-head"><div><div class="payout-section-title">Solicitações de participação</div><div class="payout-section-sub">Aprove quem poderá indicar clientes e receber comissões</div></div><span class="payout-status pending" id="referral-request-count">0 em análise</span></div>
             <div class="tbl-container"><table><thead><tr><th>Perfil</th><th>Tipo de conta</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="referral-requests-body"></tbody></table></div>
-          </div>
-          <div class="stats stats-4" style="margin:16px 24px 0" id="payout-admin-stats"></div>
-          <div class="payout-section">
-            <div class="payout-section-head"><div><div class="payout-section-title">Aprovação de saques</div><div class="payout-section-sub">Fila financeira visível exclusivamente para CEO e Gerente</div></div><span class="payout-status pending" id="payout-queue-count">0 em análise</span></div>
-            <div class="tbl-container"><table><thead><tr><th>Participante</th><th>Valor</th><th>PIX</th><th>Solicitação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="payout-approval-body"></tbody></table></div>
           </div>
           <div class="table-wrap"><div class="tbl-container"><table><thead><tr><th>Participante</th><th>Perfil</th><th>Comissão %</th><th>Clientes indicados</th><th>Receita gerada</th><th>Saldo disponível</th><th>Status</th><th>Ações</th></tr></thead><tbody id="affiliates-body"></tbody></table></div></div>
         </div>
@@ -1448,13 +1447,14 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="product-ui.js?v=20260923-6"></script>
-<script src="partners.js?v=20260923-6"></script>
+<script src="product-ui.js?v=20260923-7"></script>
+<script src="partners.js?v=20260923-7"></script>
+<script src="partner-workspace.js?v=20260923-7"></script>
 <script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260915-1"></script>
-<script src="mobile-app.js?v=20260923-6"></script>
+<script src="mobile-app.js?v=20260923-7"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -1538,7 +1538,7 @@ const ROLE_PERMISSIONS = {
   ],
   partner: [
     'dashboard.partner','partners.view','demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
-    'users.view_operational','users.create','users.edit_roles','users.delete','settings.view','profile.edit'
+    'users.view_operational','users.create','users.edit_roles','users.delete','settings.view','profile.edit','docs.view','docs.create','docs.edit','solutions.view'
   ],
   gestor: [
     'dashboard.gestor',
@@ -1565,9 +1565,9 @@ const ROLE_PERMISSIONS = {
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','partners','goals','solutions','affiliates','team','docs','firewall','settings'],
-  manager:   ['dashboard','clients','demands','sales','partners','goals','solutions','affiliates','team','docs','settings'],
-  partner:   ['dashboard','partners','demands','team','settings'],
+  ceo:       ['dashboard','clients','demands','sales','withdrawals','goals','solutions','affiliates','team','docs','firewall','settings'],
+  manager:   ['dashboard','clients','demands','sales','withdrawals','goals','solutions','affiliates','team','docs','settings'],
+  partner:   ['dashboard','partners','demands','team','docs','solutions','settings'],
   gestor:    ['dashboard','demands','affiliates','team','docs','settings'],
   editor:    ['dashboard','demands','affiliates','docs','settings'],
   affiliate: ['dashboard','affiliates','docs','settings'],
@@ -2376,7 +2376,7 @@ async function loadAllData(){
 
     // Planos contêm preços e dados comerciais. Gestor e Editor não recebem
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
-    if(role!=='gestor' && role!=='editor' && role!=='partner'){
+    if(role!=='gestor' && role!=='editor'){
       const {data:plans} = await supa.from('plans').select('*').order('sort_order').order('created_at');
       DB.plans = (plans||[]).map(p=>({
         id:p.id, name:p.name, type:p.type, qty:p.qty,
@@ -2872,8 +2872,8 @@ function buildNav(){
     {id:'settings',icon:ico('settings'),label:'Configurações'},
   ];
   let items;
-  if(isCEO()||isManager()) items = [...staffItems.slice(0,4),{id:'partners',icon:partnerIcon,label:'Parceiros'},...staffItems.slice(4)];
-  else if(isPartner()) items = [{id:'dashboard',icon:ico('home'),label:'Menu'},{id:'partners',icon:ico('dollar'),label:'Meu Financeiro'},{id:'demands',icon:ico('grid'),label:'Demandas'},{id:'team',icon:ico('users'),label:'Equipe'},{id:'settings',icon:ico('settings'),label:'Configurações'}];
+  if(isCEO()||isManager()) items = [...staffItems.slice(0,4),{id:'withdrawals',icon:ico('dollar'),label:'Saques'},...staffItems.slice(4)];
+  else if(isPartner()) items = [{id:'dashboard',icon:ico('home'),label:'Menu'},{id:'partners',icon:ico('dollar'),label:'Carteira'},{id:'demands',icon:ico('grid'),label:'Demandas'},{id:'team',icon:ico('teamGroup'),label:'Equipe'},{id:'docs',icon:ico('file'),label:'Documentos'},{id:'solutions',icon:ico('solutionTarget'),label:'Soluções'},{id:'settings',icon:ico('settings'),label:'Configurações'}];
   else if(isGestor()) items = gestorItems;
   else if(isEditor()) items = editorItems;
   else if(isAffiliate()) items = affiliateItems;
@@ -2903,7 +2903,7 @@ function goTo(page){
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isPartner()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {partners:isPartner()?'Meu Financeiro':'Parceiros',goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const T = {withdrawals:'Saques',partners:'Carteira',goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
   const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isPartner()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.title = `${T[page]||page} · Magemind`;
 
@@ -2913,7 +2913,7 @@ function goTo(page){
 
   updateSidebarUser();
   const loaders = {
-    partners:loadPartners, goals:loadGoals, dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
+    withdrawals:loadUnifiedWithdrawals, partners:loadPartners, goals:loadGoals, dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
     affiliates:loadAffiliates, team:loadTeam, docs:loadDocs, firewall:loadFirewall,
     settings:loadAgencySettings
   };
@@ -3407,7 +3407,7 @@ function loadTeam(){
   renderTeam();
 }
 function renderTeam(){
-  const staff = DB.users.filter(u=>isPartner()?['partner','gestor','editor'].includes(u.role):isGestor()?u.role==='editor':!['client','affiliate'].includes(u.role));
+  const staff = DB.users.filter(u=>isAdmin()?!['partner','client','affiliate'].includes(u.role):isGestor()?u.role==='editor':!['client','affiliate'].includes(u.role));
   document.getElementById('team-body').innerHTML = staff.length ? staff.map(u=>{
     const isProtected = isProtectedCEO(u);
     const canManage = canEditTeamMember(u);
@@ -3426,6 +3426,8 @@ function renderTeam(){
       </div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum usuário interno cadastrado</td></tr>';
+  renderTeamPartners();
+  if(isAdmin())loadPartnerData().then(renderTeamPartners).catch(()=>renderTeamPartners());
 }
 
 const ROLE_CREATE_LABELS = {partner:'Parceiro',manager:'Gerente',gestor:'Gestor',editor:'Editor'};
@@ -3796,29 +3798,7 @@ async function cancelWithdrawal(id){
   if(error){toast('Erro: '+error.message,'err');return;}
   await refreshWithdrawalData(); toast('Solicitação cancelada','ok');
 }
-function renderWithdrawalApproval(){
-  const stats=document.getElementById('payout-admin-stats'); const body=document.getElementById('payout-approval-body');
-  if(!stats||!body) return;
-  const pending=DB.withdrawals.filter(w=>w.status==='pending');
-  const approved=DB.withdrawals.filter(w=>w.status==='approved');
-  const paid=DB.withdrawals.filter(w=>w.status==='paid');
-  const pendingTotal=pending.reduce((s,w)=>s+Number(w.amount||0),0);
-  const approvedTotal=approved.reduce((s,w)=>s+Number(w.amount||0),0);
-  const paidTotal=paid.reduce((s,w)=>s+Number(w.amount||0),0);
-  stats.innerHTML=`<div class="stat"><div class="stat-label">Em análise</div><div class="stat-val" style="color:var(--amber)">${formatCurrencyBRL(pendingTotal)}</div><div class="stat-delta delta-neutral">${pending.length} solicitações</div></div><div class="stat"><div class="stat-label">Aprovado, aguardando PIX</div><div class="stat-val" style="color:var(--cyan)">${formatCurrencyBRL(approvedTotal)}</div><div class="stat-delta delta-neutral">${approved.length} pagamentos</div></div><div class="stat"><div class="stat-label">Total pago</div><div class="stat-val" style="color:var(--emerald)">${formatCurrencyBRL(paidTotal)}</div></div><div class="stat"><div class="stat-label">Histórico</div><div class="stat-val" style="color:var(--violet2)">${DB.withdrawals.length}</div><div class="stat-delta delta-neutral">registros auditados</div></div>`;
-  document.getElementById('payout-queue-count').textContent=`${pending.length} em análise`;
-  const ordered=DB.withdrawals.slice().sort((a,b)=>{
-    const rank={pending:0,approved:1,paid:2,reversed:3,rejected:4,cancelled:5};
-    return (rank[a.status]-rank[b.status])||new Date(b.requested_at)-new Date(a.requested_at);
-  });
-  body.innerHTML=ordered.length?ordered.map(row=>`<tr>
-    <td><div class="payout-person"><div class="av av-xs">${profileAvatarHTML(row.affiliate_id,row.affiliate_name_snapshot)}</div><strong>${escapeHTML(row.affiliate_name_snapshot)}</strong></div></td>
-    <td class="financial-value" style="font-weight:700">${formatCurrencyBRL(row.amount)}</td>
-    <td><div style="font-size:10px;color:var(--text3)">${escapeHTML(PIX_TYPE_LABEL[row.pix_key_type]||row.pix_key_type)}</div><div class="pix-preview" title="${escapeHTML(row.pix_key)}">${escapeHTML(row.pix_key)}</div></td>
-    <td style="font-size:11px;color:var(--text2)">${withdrawalDate(row.requested_at)}</td><td>${withdrawalStatusBadge(row.status)}</td>
-    <td>${['pending','approved','paid'].includes(row.status)?`<button class="btn btn-ghost btn-xs" onclick="openWithdrawalReview('${row.id}')">${row.status==='paid'?'Estornar':'Analisar'}</button>`:'<span style="font-size:11px;color:var(--text3)">Concluído</span>'}</td>
-  </tr>`).join(''):'<tr><td colspan="6" class="payout-empty">Nenhuma solicitação de saque</td></tr>';
-}
+function renderWithdrawalApproval(){ if(isAdmin())renderUnifiedWithdrawals(); }
 function openWithdrawalReview(id){
   const row=DB.withdrawals.find(w=>w.id===id); if(!row)return;
   currentWithdrawalReviewId=id; document.getElementById('wr-note').value='';
@@ -5704,7 +5684,8 @@ async function clickNotif(nid,demandId){
     if(error){toast('Não foi possível marcar a notificação como lida.','err');return;}
     n.read=true;updateNotifBadge();renderNotifPanel();
   }
-  if(n?.eventType?.startsWith('partner_')){closeNotifPanel();goTo('partners');return;}
+  if(n?.eventType?.startsWith('partner_')){closeNotifPanel();goTo(isAdmin()?(n.eventType.startsWith('partner_withdrawal_')?'withdrawals':'team'):'partners');return;}
+  if(isAdmin()&&n?.eventType?.startsWith('withdrawal_')){closeNotifPanel();goTo('withdrawals');return;}
   if(demandId){closeNotifPanel();await openDetail(demandId);}
   else if(n?.eventType==='sale_payment_pending'){closeNotifPanel();await refreshSales();document.getElementById('payment-alert')?.scrollIntoView({block:'nearest'});}
 }

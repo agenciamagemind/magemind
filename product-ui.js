@@ -2,7 +2,7 @@
 function groupSidebarNavigation(items, renderItem) {
   const groups = [
     ['trabalho', 'Trabalho', ['dashboard', 'demands', 'docs']],
-    ['negocio', 'Negócio', ['clients', 'sales', 'partners', 'goals', 'solutions', 'affiliates']],
+    ['negocio', 'Negócio', ['clients', 'sales', 'partners', 'withdrawals', 'goals', 'solutions', 'affiliates']],
     ['gestao', 'Gestão', ['team', 'firewall', 'settings']]
   ];
   return groups.map(([id, label, pages]) => {

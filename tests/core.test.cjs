@@ -40,5 +40,5 @@ test('sale mapping and persisted editing keep the linked demand',async()=>{
 });
 test('all shipped JavaScript parses',()=>{
  const html=fs.readFileSync('index.html','utf8');for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
- for(const path of ['partners.js','product-ui.js','goals.js','security-rich-text.js','mobile-app.js','app-core.js','app-accessibility.js','push-notifications.js','service-worker.js'])new vm.Script(fs.readFileSync(path,'utf8'));
+ for(const path of ['partner-workspace.js','partners.js','product-ui.js','goals.js','security-rich-text.js','mobile-app.js','app-core.js','app-accessibility.js','push-notifications.js','service-worker.js'])new vm.Script(fs.readFileSync(path,'utf8'));
 });

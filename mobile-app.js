@@ -33,7 +33,7 @@
     const nav=document.getElementById('mobile-bottom-nav');
     if(!nav) return;
     const direct=items.filter(item=>item.id!=='settings').slice(0,4);
-    const compactLabels={partners:'Financeiro',dashboard:'Menu',demands:'Demandas',clients:'Clientes',sales:'Financias',solutions:'Soluções',affiliates:'Indique',team:'Equipe',docs:'Arquivos'};
+    const compactLabels={partners:'Carteira',withdrawals:'Saques',dashboard:'Menu',demands:'Demandas',clients:'Clientes',sales:'Financias',solutions:'Soluções',affiliates:'Indique',team:'Equipe',docs:'Arquivos'};
     nav.innerHTML=direct.map(i=>`
       <button class="mobile-tab" type="button" data-mobile-page="${i.id}" onclick="navigateMobile('${i.id}')" aria-label="${i.label}">
         <span class="mobile-tab-icon">${i.icon}</span><span class="mobile-tab-label">${compactLabels[i.id]||i.label.replace('Minhas ','').replace('Meus ','')}</span>
