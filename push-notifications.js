@@ -71,6 +71,13 @@
       else status.textContent='Desativadas. Ative para receber os eventos importantes deste perfil.';
     }
     document.querySelectorAll('[data-push-pref]').forEach(input=>{
+      const partner=typeof isPartner==='function'&&isPartner(),row=input.closest('.push-category');
+      if(row){
+        row.hidden=partner&&input.dataset.pushPref==='team_activity';
+        if(!row.dataset.originalCopy)row.dataset.originalCopy=row.querySelector('span').innerHTML;
+        const copy={sales:'<strong>Participações</strong>Vendas vinculadas e valores liberados.',general:'<strong>Saques</strong>Análise, aprovação e registro de pagamento.',demand_updates:'<strong>Demandas</strong>Atualizações das demandas sob sua responsabilidade.',comments:'<strong>Comentários</strong>Mensagens nas demandas sob sua responsabilidade.'};
+        row.querySelector('span').innerHTML=partner&&copy[input.dataset.pushPref]?copy[input.dataset.pushPref]:row.dataset.originalCopy;
+      }
       input.checked=preferences[input.dataset.pushPref]!==false;
       input.disabled=!available;
     });

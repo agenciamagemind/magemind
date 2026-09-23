@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     if (callerAuthError || !callerAuth.user) return json({ error: "Sessão inválida" }, 401);
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: caller } = await admin.from("profiles").select("role,active,archived_at").eq("id", callerAuth.user.id).maybeSingle();
-    if (!caller || caller.active !== true || caller.archived_at || !["ceo", "manager"].includes(caller.role)) {
+    if (!caller || caller.active !== true || caller.archived_at || !["ceo", "manager", "partner"].includes(caller.role)) {
       return json({ error: "Conta inativa ou sem permissão" }, 403);
     }
 
@@ -45,6 +45,8 @@ Deno.serve(async (req) => {
     if (target.role === "ceo" || String(target.email || "").toLowerCase() === (Deno.env.get("ADMIN_EMAIL") || "ogabrielmrossi@gmail.com").toLowerCase()) {
       return json({ error: "O perfil do CEO é protegido" }, 403);
     }
+
+    if (caller.role === "partner" && !["gestor", "editor"].includes(target.role)) return json({ error: "Parceiros gerenciam somente Gestores e Editores" }, 403);
 
     if (target.active === active) {
       const { error } = await admin.auth.admin.updateUserById(targetId, { ban_duration: active ? "none" : banDuration });
@@ -75,4 +77,3 @@ Deno.serve(async (req) => {
     return json({ error: error instanceof Error ? error.message : "Erro inesperado" }, 500);
   }
 });
-

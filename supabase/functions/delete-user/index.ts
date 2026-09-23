@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       .select("role,active,archived_at")
       .eq("id", callerAuth.user.id)
       .maybeSingle();
-    if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager", "gestor"].includes(callerProfile.role)) {
+    if (callerProfileError || !callerProfile || callerProfile.active !== true || callerProfile.archived_at || !["ceo", "manager", "partner", "gestor"].includes(callerProfile.role)) {
       return json({ error: "Você não tem permissão para excluir contas" }, 403);
     }
 
@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
         return json({ error: "Gestores podem excluir apenas perfis de Editores" }, 403);
       }
 
+      if (callerProfile.role === "partner" && !["gestor", "editor"].includes(target.role)) return json({ error: "Parceiros gerenciam somente Gestores e Editores" }, 403);
+
       // Any profile may participate in Indique & Ganhe. Financial history is
       // always archived instead of deleted, independently of the team role.
       const [{ count: commissionCount, error: commissionError }, { count: withdrawalCount, error: withdrawalError }] = await Promise.all([
@@ -83,7 +85,7 @@ Deno.serve(async (req) => {
       if (commissionError || withdrawalError) {
         return json({ error: "Falha ao verificar o histórico financeiro do Indique & Ganhe" }, 500);
       }
-      if ((commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
+      if (target.role === "partner" || (commissionCount || 0) > 0 || (withdrawalCount || 0) > 0) {
         const { error: banError } = await admin.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
         if (banError) return json({ error: "Falha ao bloquear o acesso do participante" }, 500);
         const { error: archiveError } = await callerClient.rpc("admin_archive_affiliate", { p_affiliate_id: targetId });
@@ -103,7 +105,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, preserved_history: true });
     }
 
-    if (callerProfile.role === "gestor") return json({ error: "Gestores não podem excluir clientes" }, 403);
+    if (["gestor", "partner"].includes(callerProfile.role)) return json({ error: "Seu cargo não pode excluir clientes" }, 403);
 
     const { data: client, error: clientError } = await admin
       .from("clients")

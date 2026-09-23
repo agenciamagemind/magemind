@@ -1,5 +1,5 @@
-const CACHE_NAME='magemind-shell-20260923-5';
-const SHELL=['./','./index.html','./product-ui.css','./product-ui.js','./mobile.css','./auth.css','./goals.css','./goals.js','./firewall-sessions.js','./security-rich-text.css','./security-rich-text.js','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
+const CACHE_NAME='magemind-shell-20260923-6';
+const SHELL=['./','./index.html','./partners.js','./partners.css','./product-ui.css','./product-ui.js','./mobile.css','./auth.css','./goals.css','./goals.js','./firewall-sessions.js','./security-rich-text.css','./security-rich-text.js','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));

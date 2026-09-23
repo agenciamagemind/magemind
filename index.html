@@ -487,7 +487,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260923-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
-<link rel="stylesheet" href="product-ui.css?v=20260923-5">
+<link rel="stylesheet" href="product-ui.css?v=20260923-6">
+<link rel="stylesheet" href="partners.css?v=20260923-6">
 </head>
 <body>
 
@@ -1447,12 +1448,13 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="product-ui.js?v=20260923-5"></script>
+<script src="product-ui.js?v=20260923-6"></script>
+<script src="partners.js?v=20260923-6"></script>
 <script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260915-1"></script>
-<script src="mobile-app.js?v=20260923-1"></script>
+<script src="mobile-app.js?v=20260923-6"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = 'https://tsawxmlfvnvepzgcztfc.supabase.co';
@@ -1504,10 +1506,10 @@ const DB = {
    ifs soltos de permissão pelo resto do código: sempre use os
    helpers abaixo (hasPermission, canAccessPage, canViewX, etc).
    ═══════════════════════════════════════════════════════════════ */
-const ROLES = ['ceo','manager','gestor','editor','affiliate','client'];
+const ROLES = ['ceo','manager','partner','gestor','editor','affiliate','client'];
 
 const ROLE_LABELS = {
-  ceo:'CEO', manager:'Gerente', gestor:'Gestor', editor:'Editor', affiliate:'Participante legado', client:'Cliente'
+  ceo:'CEO', manager:'Gerente', partner:'Parceiro', gestor:'Gestor', editor:'Editor', affiliate:'Participante legado', client:'Cliente'
 };
 
 /* E-mail do admin master — sempre tratado como CEO fixo e protegido */
@@ -1534,6 +1536,10 @@ const ROLE_PERMISSIONS = {
     'users.view','users.create','users.edit_roles','users.delete',
     'affiliates.view','affiliates.manage','commissions.view','commissions.manage'
   ],
+  partner: [
+    'dashboard.partner','partners.view','demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
+    'users.view_operational','users.create','users.edit_roles','users.delete','settings.view','profile.edit'
+  ],
   gestor: [
     'dashboard.gestor',
     'demands.view_all','demands.create','demands.edit','demands.move','demands.comment','demands.change_assignee','demands.change_client','demands.delete',
@@ -1559,8 +1565,9 @@ const ROLE_PERMISSIONS = {
 
 /* Páginas do sistema que cada cargo pode acessar */
 const ROLE_PAGES = {
-  ceo:       ['dashboard','clients','demands','sales','goals','solutions','affiliates','team','docs','firewall','settings'],
-  manager:   ['dashboard','clients','demands','sales','goals','solutions','affiliates','team','docs','settings'],
+  ceo:       ['dashboard','clients','demands','sales','partners','goals','solutions','affiliates','team','docs','firewall','settings'],
+  manager:   ['dashboard','clients','demands','sales','partners','goals','solutions','affiliates','team','docs','settings'],
+  partner:   ['dashboard','partners','demands','team','settings'],
   gestor:    ['dashboard','demands','affiliates','team','docs','settings'],
   editor:    ['dashboard','demands','affiliates','docs','settings'],
   affiliate: ['dashboard','affiliates','docs','settings'],
@@ -1571,27 +1578,28 @@ const ROLE_PAGES = {
    negócio reais estão em canManageRole()/canCreateRole() abaixo, porque
    "gerenciar" não é puramente "nível maior que o meu" (ex: Gestor está
    acima do Editor na hierarquia mas só pode CRIAR editor, não editar). */
-const ROLE_RANK = {ceo:5, manager:4, gestor:3, editor:2, affiliate:1, client:0};
+const ROLE_RANK = {ceo:6, manager:5, partner:4, gestor:3, editor:2, affiliate:1, client:0};
 
 function getRole(){ return DB.me ? (DB.me.role||'client') : null; }
 function isCEO(){ return getRole()==='ceo'; }
 function isManager(){ return getRole()==='manager'; }
+function isPartner(){ return getRole()==='partner'; }
 function isGestor(){ return getRole()==='gestor'; }
 function isEditor(){ return getRole()==='editor'; }
 function isAffiliate(){ return getRole()==='affiliate'; }
-function isReferralApproved(){ return DB.me?.affiliateStatus==='approved'; }
+function isReferralApproved(){ return !isPartner() && DB.me?.affiliateStatus==='approved'; }
 function isClient(){ return getRole()==='client'; }
 /* Compat: código legado usa isAdmin() para "tem acesso amplo" — mantido
    como sinônimo de CEO/Gerente para não quebrar chamadas existentes. */
 function isAdmin(){ return isCEO() || isManager(); }
-function isStaff(){ return isCEO() || isManager() || isGestor() || isEditor(); }
+function isStaff(){ return isCEO() || isManager() || isPartner() || isGestor() || isEditor(); }
 /* "Operacional" = quem participa da produção de demandas (pode ser responsável) */
-function isOperationalStaff(){ return isCEO() || isManager() || isGestor() || isEditor(); }
+function isOperationalStaff(){ return isCEO() || isManager() || isPartner() || isGestor() || isEditor(); }
 /* Alias semântico: qualquer cargo interno da equipe (nunca cliente/afiliado).
    Usado para decidir o texto de notificações (nunca chamar Gestor/Editor de "cliente"). */
 function isStaffRole(){ return isOperationalStaff(); }
 
-const OPERATIONAL_ROLES = new Set(['ceo','manager','gestor','editor']);
+const OPERATIONAL_ROLES = new Set(['ceo','manager','partner','gestor','editor']);
 function activeOperationalUsers(){
   return DB.users
     .filter(user=>user && OPERATIONAL_ROLES.has(user.role) && user.active!==false && !user.archivedAt)
@@ -1646,8 +1654,9 @@ function isProtectedCEO(u){
 /* Quais cargos o usuário atual pode CRIAR na Equipe (independe de poder
    editar/excluir depois — criação é sempre permitida para os cargos abaixo). */
 function canCreateRole(role){
-  if(isCEO()) return ['manager','gestor','editor'].includes(role);
-  if(isManager()) return ['manager','gestor','editor'].includes(role);
+  if(isCEO()) return ['manager','partner','gestor','editor'].includes(role);
+  if(isManager()) return ['manager','partner','gestor','editor'].includes(role);
+  if(isPartner()) return ['gestor','editor'].includes(role);
   if(isGestor()) return role==='editor';
   return false;
 }
@@ -1660,6 +1669,7 @@ function canManageRole(targetUser){
   if(isProtectedCEO(targetUser)) return false; // CEO protegido nunca é alterado por ninguém
   if(isCEO()) return true;
   if(isManager()) return true; // Gerente agora gerencia manager/gestor/editor/affiliate (nunca CEO)
+  if(isPartner()) return ['gestor','editor'].includes(targetUser.role);
   if(isGestor()) return targetUser.role==='editor'; // Gestor só mexe em editores
   return false;
 }
@@ -1671,7 +1681,7 @@ function canToggleUserActive(u){ return canManageRole(u); }
 function canHardDeleteTeamMember(u){
   if(!u) return false;
   if(isProtectedCEO(u)) return false;
-  return isCEO() || isManager() || (isGestor()&&u.role==='editor');
+  return isCEO() || isManager() || (isPartner()&&['gestor','editor'].includes(u.role)) || (isGestor()&&u.role==='editor');
 }
 
 function canSeeFinancials(){ return hasPermission('financial.view'); }
@@ -1696,7 +1706,7 @@ function canViewSale(sale){
 
 function canViewDemand(demand){
   if(!demand) return false;
-  if(isCEO()||isManager()||isGestor()) return true;
+  if(isCEO()||isManager()||isPartner()||isGestor()) return true;
   if(isEditor()) return demand.assigneeId===DB.me.id;
   if(isClient()) return demand.client===DB.me.clientId;
   return false; // afiliado não acessa demandas
@@ -1705,7 +1715,7 @@ function canViewDemand(demand){
 /* Editor comenta e move o status, mas não altera os demais campos. */
 function canEditDemand(demand){
   if(!demand) return false;
-  if(isCEO()||isManager()||isGestor()) return true;
+  if(isCEO()||isManager()||isPartner()||isGestor()) return true;
   if(isEditor()) return false;
   if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
@@ -1714,7 +1724,7 @@ function canEditDemand(demand){
 /* Quem pode arrastar/mover a demanda no kanban */
 function canMoveDemand(demand){
   if(!demand) return false;
-  if(isCEO()||isManager()||isGestor()) return true;
+  if(isCEO()||isManager()||isPartner()||isGestor()) return true;
   if(isEditor()) return demand.assigneeId===DB.me.id && hasPermission('demands.move');
   if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
@@ -2366,7 +2376,7 @@ async function loadAllData(){
 
     // Planos contêm preços e dados comerciais. Gestor e Editor não recebem
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
-    if(role!=='gestor' && role!=='editor'){
+    if(role!=='gestor' && role!=='editor' && role!=='partner'){
       const {data:plans} = await supa.from('plans').select('*').order('sort_order').order('created_at');
       DB.plans = (plans||[]).map(p=>({
         id:p.id, name:p.name, type:p.type, qty:p.qty,
@@ -2439,7 +2449,7 @@ async function loadAllData(){
       }));
       walletRows.filter(Boolean).forEach(w=>{ DB.affiliateWallets[w.affiliate_id]=w; });
 
-    } else if(role==='gestor' || role==='editor'){
+    } else if(role==='gestor' || role==='editor' || role==='partner'){
       // Gestor vê a operação completa; Editor recebe apenas demandas atribuídas.
       const {data:clientsMin, error:clientsErr} = await supa
         .from('demand_client_directory').select('*').order('name');
@@ -2453,9 +2463,9 @@ async function loadAllData(){
       DB.users = (teamMin||[]).map(p=>({id:p.id, name:p.name, email:null, phone:'', role:p.role, av:p.av||p.name.slice(0,2).toUpperCase(), photo:p.photo||null, active:p.active!==false, clientId:null, commissionRate:0}));
 
       // Gestor administra somente Editores e recebe os contatos apenas desses perfis.
-      if(role==='gestor'){
+      if(role==='gestor'||role==='partner'){
         const {data:editors} = await supa.from('profiles')
-          .select('id,name,email,phone,role,av,photo,active').eq('role','editor');
+          .select('id,name,email,phone,role,av,photo,active').in('role',role==='partner'?['gestor','editor']:['editor']);
         (editors||[]).forEach(p=>{
           const idx = DB.users.findIndex(u=>u.id===p.id);
           const full = {id:p.id,name:p.name,email:p.email||null,phone:p.phone||'',role:p.role,av:p.av||p.name.slice(0,2).toUpperCase(),photo:p.photo||null,active:p.active!==false,clientId:null,commissionRate:0};
@@ -2571,10 +2581,11 @@ async function loadAllData(){
         .select('*').eq('to_user_id',DB.me.id).order('created_at',{ascending:false}).limit(50);
       DB.notifications = (notifs||[]).map(mapNotif);
     }
+    if(isAdmin()||isPartner()) await loadPartnerData();
     await refreshNotifications();
     await loadCompanySettings();
     renderPaymentAlert();
-    if(isReferralApproved()) await loadReferralData();
+    if(!isPartner()&&isReferralApproved()) await loadReferralData();
   } catch(e){
     console.error('loadAllData error:', e);
     toast('Erro ao carregar dados','err');
@@ -2687,7 +2698,7 @@ function setupRealtime(){
         DB.me.affiliateStatus=p.affiliate_status||'locked';
         DB.me.affiliateRequestedAt=p.affiliate_requested_at||null;
         DB.me.commissionRate=Number(p.commission_rate||0);
-        if(DB.me.affiliateStatus==='approved') loadReferralData().then(()=>renderReferralMemberPanel()).catch(console.error);
+        if(!isPartner()&&DB.me.affiliateStatus==='approved') loadReferralData().then(()=>renderReferralMemberPanel()).catch(console.error);
         else renderReferralMemberPanel();
       }
       if(isAdmin()){
@@ -2697,6 +2708,13 @@ function setupRealtime(){
       }
     }).subscribe();
   realtimeChannels.push(profileChannel);
+  if(isAdmin()||isPartner()){
+    const partnerChannel=supa.channel('partner-finance-'+DB.me.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:'partner_sale_shares'},()=>refreshPartnerPanel())
+      .on('postgres_changes',{event:'*',schema:'public',table:'partner_withdrawals'},()=>refreshPartnerPanel())
+      .on('postgres_changes',{event:'*',schema:'public',table:'partner_defaults'},()=>refreshPartnerPanel()).subscribe();
+    realtimeChannels.push(partnerChannel);
+  }
 
   // O perfil legado de participante não acessa demandas.
   if(isAffiliate()) return;
@@ -2715,7 +2733,7 @@ async function reloadDemandsForRole(){
   let q;
   if(isEditor()){
     q = supa.from('demands').select(sel).eq('assignee_id',DB.me.id).order('sort_order').order('created_at',{ascending:false});
-  } else if(isCEO()||isManager()||isGestor()){
+  } else if(isCEO()||isManager()||isPartner()||isGestor()){
     q = supa.from('demands').select(sel).order('sort_order').order('created_at',{ascending:false});
   } else if(isClient()){
     q = supa.from('demands').select(sel).eq('client_id',DB.me.clientId).order('sort_order').order('created_at',{ascending:false});
@@ -2854,7 +2872,8 @@ function buildNav(){
     {id:'settings',icon:ico('settings'),label:'Configurações'},
   ];
   let items;
-  if(isCEO()||isManager()) items = staffItems;
+  if(isCEO()||isManager()) items = [...staffItems.slice(0,4),{id:'partners',icon:partnerIcon,label:'Parceiros'},...staffItems.slice(4)];
+  else if(isPartner()) items = [{id:'dashboard',icon:ico('home'),label:'Menu'},{id:'partners',icon:ico('dollar'),label:'Meu Financeiro'},{id:'demands',icon:ico('grid'),label:'Demandas'},{id:'team',icon:ico('users'),label:'Equipe'},{id:'settings',icon:ico('settings'),label:'Configurações'}];
   else if(isGestor()) items = gestorItems;
   else if(isEditor()) items = editorItems;
   else if(isAffiliate()) items = affiliateItems;
@@ -2883,9 +2902,9 @@ function goTo(page){
   const pg = document.getElementById('pg-'+page); if(pg) pg.classList.add('active');
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
-  const demandsTitle = (isAdmin()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
-  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
+  const demandsTitle = (isAdmin()||isPartner()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
+  const T = {partners:isPartner()?'Meu Financeiro':'Parceiros',goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isPartner()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.title = `${T[page]||page} · Magemind`;
 
   document.getElementById('client-create').hidden=!hasPermission('clients.create');
@@ -2894,7 +2913,7 @@ function goTo(page){
 
   updateSidebarUser();
   const loaders = {
-    goals:loadGoals, dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
+    partners:loadPartners, goals:loadGoals, dashboard:loadDash, clients:loadClients, demands:loadDemands, sales:loadSales, solutions:loadSolutions,
     affiliates:loadAffiliates, team:loadTeam, docs:loadDocs, firewall:loadFirewall,
     settings:loadAgencySettings
   };
@@ -2916,6 +2935,8 @@ function showDashCards(visibleIds){
 }
 
 function loadDash(){
+  document.getElementById('pg-dashboard').classList.toggle('partner-view',isPartner());
+  if(isPartner()) return loadDashPartner();
   const summary=document.getElementById('dash-summary-sub');
   if(summary) summary.style.display=isOperationalStaff()?'':'none';
   if(isCEO()||isManager()) return loadDashFull();
@@ -3368,13 +3389,13 @@ async function removeClient(id){
 function loadDemands(){
   const dd = document.getElementById('client-filter-dd');
   const mineWrap = document.getElementById('mine-filter-wrap');
-  if(isAdmin()||isGestor()||isEditor()){
+  if(isAdmin()||isPartner()||isGestor()||isEditor()){
     dd.style.display='block';
     dd.innerHTML='<option value="">Todos os clientes</option>'+
       DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   } else { dd.style.display='none'; }
-  mineWrap.style.display = isGestor() ? 'flex' : 'none';
-  document.getElementById('demands-sub').textContent = (isAdmin()||isGestor()||isEditor()) ? 'Kanban de tarefas e projetos' : 'Suas demandas ativas';
+  mineWrap.style.display = (isGestor()||isPartner()) ? 'flex' : 'none';
+  document.getElementById('demands-sub').textContent = (isAdmin()||isPartner()||isGestor()||isEditor()) ? 'Kanban de tarefas e projetos' : 'Suas demandas ativas';
   renderKanban();
 }
 
@@ -3386,7 +3407,7 @@ function loadTeam(){
   renderTeam();
 }
 function renderTeam(){
-  const staff = DB.users.filter(u=>isGestor()?u.role==='editor':!['client','affiliate'].includes(u.role));
+  const staff = DB.users.filter(u=>isPartner()?['partner','gestor','editor'].includes(u.role):isGestor()?u.role==='editor':!['client','affiliate'].includes(u.role));
   document.getElementById('team-body').innerHTML = staff.length ? staff.map(u=>{
     const isProtected = isProtectedCEO(u);
     const canManage = canEditTeamMember(u);
@@ -3407,9 +3428,9 @@ function renderTeam(){
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum usuário interno cadastrado</td></tr>';
 }
 
-const ROLE_CREATE_LABELS = {manager:'Gerente',gestor:'Gestor',editor:'Editor'};
+const ROLE_CREATE_LABELS = {partner:'Parceiro',manager:'Gerente',gestor:'Gestor',editor:'Editor'};
 function buildRoleOptionsForCreation(){
-  return ['manager','gestor','editor']
+  return ['manager','partner','gestor','editor']
     .filter(r=>canCreateRole(r))
     .map(r=>`<option value="${r}">${ROLE_CREATE_LABELS[r]}</option>`).join('');
 }
@@ -3445,7 +3466,7 @@ function openEditTeamMember(id){
   document.getElementById('tm-phone').value = u.phone||'';
   document.getElementById('tm-pass-wrap').style.display='none'; // senha não é alterada por aqui
   document.getElementById('tm-active').value = u.active!==false?'true':'false';
-  document.getElementById('tm-convert-btn').style.display = isGestor() ? 'none' : 'inline-flex';
+  document.getElementById('tm-convert-btn').style.display = (isGestor()||isPartner()) ? 'none' : 'inline-flex';
   const roleSel = document.getElementById('tm-role');
   // Gestor não pode alterar cargo de ninguém — trava o select no valor atual
   if(isGestor()){
@@ -3981,7 +4002,7 @@ function getMyDemands(){
     const assigned = DB.demands.filter(d=>d.assigneeId===DB.me.id);
     return cid ? assigned.filter(d=>d.client===cid) : assigned;
   }
-  if(isGestor()){
+  if(isGestor()||isPartner()){
     const cid = document.getElementById('client-filter-dd')?.value;
     const mineOnly = document.getElementById('mine-filter-chk')?.checked;
     let list = DB.demands;
@@ -4500,9 +4521,9 @@ async function openNewSale(){
   document.getElementById('s-value').value=''; document.getElementById('s-desc').value='';
   document.getElementById('s-status').value='Fechado';
   document.getElementById('s-date').value=MagemindCore.civilDate();
-  openModal('modal-sale');
+  try{await preparePartnerSale(null);openModal('modal-sale');}catch(e){toast('Não foi possível carregar os parceiros: '+e.message,'err');}
 }
-function openEditSale(id){
+async function openEditSale(id){
   if(!hasPermission('sales.edit'))return;
   const expense=DB.sales.find(s=>s.id===id);if(expense?.status==='Gasto'){openExpense(id);return;}
   editSaleId = id;
@@ -4518,10 +4539,11 @@ function openEditSale(id){
   document.getElementById('s-desc').value     = s.desc||'';
   document.getElementById('s-status').value   = s.status;
   document.getElementById('s-date').value     = s.date;
-  openModal('modal-sale');
+  try{await preparePartnerSale(id);openModal('modal-sale');}catch(e){toast('Não foi possível carregar as participações: '+e.message,'err');}
 }
 
 async function saveSale(){
+  if(!hasPermission(editSaleId?'sales.edit':'sales.create')||!validatePartnerDraft())return;
   const v       = Number(document.getElementById('s-value').value);
   const planId  = document.getElementById('s-plan').value;
   const plan    = DB.plans.find(p=>p.id===planId);
@@ -4544,13 +4566,13 @@ async function saveSale(){
   if(btn){ btn.disabled=true; document.getElementById('ms-btn-label').textContent='Salvando...'; }
   try {
     if(editSaleId){
-      const {data:saved,error} = await supa.from('sales').update(saleData).eq('id',editSaleId).select('*, clients(name), plans(name)').single();
+      const {data:saved,error} = await supa.rpc('save_sale_with_partners',{p_id:editSaleId,p_sale:saleData,p_partners:PartnerState.draft});
       if(error){ toast('Erro: '+error.message,'err'); return; }
       const s = DB.sales.find(x=>x.id===editSaleId);
       if(s) Object.assign(s,mapSale(saved));
       closeModal('modal-sale'); toast('Venda atualizada! ✓','ok');
     } else {
-      const {data:ns, error} = await supa.from('sales').insert(saleData).select('*, clients(name), plans(name)').single();
+      const {data:ns, error} = await supa.rpc('save_sale_with_partners',{p_id:null,p_sale:saleData,p_partners:PartnerState.draft});
       if(error){ toast('Erro: '+error.message,'err'); return; }
       DB.sales.unshift(mapSale(ns));
       if(clientId){
@@ -4558,7 +4580,7 @@ async function saveSale(){
       }
       closeModal('modal-sale'); toast('Venda registrada! ✓','ok');
     }
-    loadSales();renderPaymentAlert();
+    await loadPartnerData();loadSales();renderPaymentAlert();
   } catch(error){toast('Não foi possível salvar a venda: '+error.message,'err');} finally {
     if(btn){ btn.disabled=false; document.getElementById('ms-btn-label').textContent=editSaleId?'Salvar alterações':'Registrar venda'; }
   }
@@ -4567,7 +4589,7 @@ async function saveSale(){
 async function removeSale(id){
   const sale=DB.sales.find(s=>s.id===id);
   const commission=(DB.commissions||[]).find(c=>c.sale_id===id);
-  if(commission){
+  if(commission||PartnerState.shares.some(s=>s.sale_id===id)){
     if(sale?.status==='Cancelado'){
       toast('Venda cancelada preservada no histórico financeiro','err');
       return;
@@ -4576,7 +4598,7 @@ async function removeSale(id){
     const {error}=await supa.from('sales').update({status:'Cancelado'}).eq('id',id);
     if(error){
       const paid=/reservada|paga|saque/i.test(error.message||'');
-      toast(paid?'A comissão já foi usada em um saque. Estorne o pagamento em Indique & Ganhe antes de cancelar a venda.':'Erro: '+error.message,'err');
+      toast(paid?'Há valores reservados ou pagos nesta venda. Regularize o saque na carteira correspondente antes de cancelar.':'Erro: '+error.message,'err');
       return;
     }
     if(sale) sale.status='Cancelado';
@@ -5682,6 +5704,7 @@ async function clickNotif(nid,demandId){
     if(error){toast('Não foi possível marcar a notificação como lida.','err');return;}
     n.read=true;updateNotifBadge();renderNotifPanel();
   }
+  if(n?.eventType?.startsWith('partner_')){closeNotifPanel();goTo('partners');return;}
   if(demandId){closeNotifPanel();await openDetail(demandId);}
   else if(n?.eventType==='sale_payment_pending'){closeNotifPanel();await refreshSales();document.getElementById('payment-alert')?.scrollIntoView({block:'nearest'});}
 }
@@ -5954,6 +5977,6 @@ async function clearDB(){
 }
 </script>
 <script src="app-accessibility.js?v=20260910-2"></script>
-<script src="push-notifications.js?v=20260910-2"></script>
+<script src="push-notifications.js?v=20260923-6"></script>
 </body>
 </html>

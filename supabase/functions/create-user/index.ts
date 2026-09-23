@@ -11,10 +11,11 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 
-const creatableRoles = ["manager", "gestor", "editor"];
+const creatableRoles = ["manager", "partner", "gestor", "editor"];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const canCreateRole = (callerRole: string, role: string) => {
   if (["ceo", "manager"].includes(callerRole)) return creatableRoles.includes(role);
+  if (callerRole === "partner") return ["gestor", "editor"].includes(role);
   return callerRole === "gestor" && role === "editor";
 };
 const phoneDigits = (value: unknown) =>

@@ -32,13 +32,13 @@ test('sale mapping and persisted editing keep the linked demand',async()=>{
  const fields={'s-value':'369','s-plan':'','s-client':'client','s-demand':'demand','s-desc':'test','s-assignee':'staff','s-status':'Pendente','s-date':'2026-09-10'};
  let stored;let closed=false;const errors=[];
  Object.assign(ctx,{DB:{sales:[{id:'sale',demand:''}],demands:[{id:'demand',client:'client'}],plans:[]},editSaleId:'sale',document:{getElementById:id=>({value:fields[id]}),querySelector:()=>null},Number,
-  supa:{from:()=>({update:data=>({eq:()=>({select:()=>({single:async()=>{stored=data;return {data:{id:'sale',...data}};}})})})})},toast:(msg,type)=>{if(type==='err')errors.push(msg);},closeModal:()=>{closed=true;},loadSales:()=>{},renderPaymentAlert:()=>{}});
+  hasPermission:()=>true,validatePartnerDraft:()=>true,PartnerState:{draft:[]},loadPartnerData:async()=>{},supa:{rpc:async(_,{p_sale})=>{stored=p_sale;return {data:{id:'sale',...p_sale}};}},toast:(msg,type)=>{if(type==='err')errors.push(msg);},closeModal:()=>{closed=true;},loadSales:()=>{},renderPaymentAlert:()=>{}});
  vm.runInContext(save,ctx);await ctx.saveSale();assert.equal(stored.demand_id,'demand');assert.equal(ctx.DB.sales[0].demand,'demand');assert.equal(closed,true);assert.equal(errors.length,0);
  // A rejected update must keep the modal open and not report success.
- closed=false;ctx.supa.from=()=>({update:()=>({eq:()=>({select:()=>({single:async()=>({error:{message:'RLS denied'}})})})})});
+ closed=false;ctx.supa.rpc=async()=>({error:{message:'RLS denied'}});
  await ctx.saveSale();assert.equal(closed,false);assert.equal(errors.length,1);
 });
 test('all shipped JavaScript parses',()=>{
  const html=fs.readFileSync('index.html','utf8');for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
- for(const path of ['goals.js','security-rich-text.js','mobile-app.js','app-core.js','app-accessibility.js','push-notifications.js','service-worker.js'])new vm.Script(fs.readFileSync(path,'utf8'));
+ for(const path of ['partners.js','product-ui.js','goals.js','security-rich-text.js','mobile-app.js','app-core.js','app-accessibility.js','push-notifications.js','service-worker.js'])new vm.Script(fs.readFileSync(path,'utf8'));
 });

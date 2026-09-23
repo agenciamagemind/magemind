@@ -25,6 +25,8 @@ type Preference = {
 function preferenceColumn(eventType: string): keyof Omit<Preference, "user_id" | "push_enabled"> {
   if (eventType.startsWith("demand_")) return "demand_updates";
   if (eventType.startsWith("comment_")) return "comments";
+  if (eventType.startsWith("partner_sale_")) return "sales";
+  if (eventType.startsWith("partner_withdrawal_")) return "general";
   if (eventType.startsWith("sale_")) return "sales";
   if (eventType.startsWith("team_")) return "team_activity";
   return "general";
@@ -121,14 +123,14 @@ Deno.serve(async (req) => {
       const { data: target,error:targetError } = await admin.from("profiles").select("id,role")
         .eq("id", notification.to_user_id).eq("active",true).is("archived_at",null).maybeSingle();
       if(targetError)throw targetError;
-      if (target && (target.role !== "editor" || target.id === linkedAssigneeId)) targetIds = [target.id];
+      if (target && ((target.role !== "editor" || target.id === linkedAssigneeId) && (target.role !== "partner" || notification.event_type.startsWith("partner_") || target.id === linkedAssigneeId))) targetIds = [target.id];
     } else if (notification.to_role === "admin") {
       const { data: staff,error:staffError } = await admin.from("profiles").select("id,role")
-        .in("role", ["ceo", "manager", "gestor", "editor"])
+        .in("role", ["ceo", "manager", "partner", "gestor", "editor"])
         .eq("active", true).is("archived_at", null);
       if(staffError)throw staffError;
       targetIds = (staff || [])
-        .filter((profile) => profile.role !== "editor" || profile.id === linkedAssigneeId)
+        .filter((profile) => !["editor", "partner"].includes(profile.role) || profile.id === linkedAssigneeId)
         .map((profile) => profile.id);
     }
     if (!targetIds.length) return finish({ ok: true, sent: 0, skipped: 0 });
