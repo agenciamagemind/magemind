@@ -7,7 +7,7 @@
  const field=(id,label,input)=>`<div class="fg"><label class="fl" for="${id}">${label}</label>${input}</div>`;
  const input=(id,type='text',extra='')=>`<input class="fi" id="${id}" type="${type}" ${extra}>`;
  const cancel=id=>`<button type="button" class="btn btn-ghost" onclick="closeModal('${id}')">Cancelar</button>`;
- window.clearGoalsState=function(){loading++;goals=[];owner='';editing=null;expenseId=null;previewDemand=null;const grid=el('goals-grid'),summary=el('goals-summary');if(grid)grid.innerHTML='';if(summary)summary.innerHTML='';};
+ window.clearGoalsState=function(){loading++;goals=[];owner='';editing=null;expenseId=null;previewDemand=null;window.MagemindTasks?.clear();const grid=el('goals-grid'),summary=el('goals-summary');if(grid)grid.innerHTML='';if(summary)summary.innerHTML='';};
  document.body.insertAdjacentHTML('beforeend',
  frame('modal-goal','Nova meta',
  field('g-title','Nome da meta',input('g-title','text','maxlength="160" placeholder="Ex.: Fechar 3 planos Supreme"'))+
