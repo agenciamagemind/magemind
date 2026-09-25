@@ -80,3 +80,13 @@ function openClientPreview(id) {
   document.getElementById('client-preview-content').innerHTML = `<dl class="client-preview-fields">${fields.map(([label, value]) => `<div><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value || '—')}</dd></div>`).join('')}</dl><div class="client-preview-notes"><h3>Observações</h3><p>${escapeHTML(client.notes || 'Nenhuma observação cadastrada.')}</p></div>`;
   openModal('modal-client-preview');
 }
+
+function setupFloatingNotifications() {
+  const main = document.querySelector('#app .main');
+  if (!main) return;
+  const sync = () => main.classList.toggle('content-scrolled', main.scrollTop > 64);
+  main.addEventListener('scroll', sync, { passive: true });
+  sync();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupFloatingNotifications);
+else setupFloatingNotifications();

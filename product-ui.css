@@ -1,7 +1,14 @@
 /* Match the content background without changing header geometry. */
 .main .topbar{background:var(--bg);border-bottom:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-/* The page owns vertical scrolling, so its heading moves with the content. */
-.page.active,#pg-demands.page.active{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+/* Scroll the whole workspace, including the upper bar, as one page. */
+.main{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+.content{flex:0 0 auto;overflow:visible}
+.page.active,#pg-demands.page.active{flex:0 0 auto;overflow:visible;overscroll-behavior-y:auto}
+#pg-sales.affiliate-finance.page.active{overflow-y:visible}
+#notif-wrapper{position:fixed!important;top:10px;right:24px;z-index:350;transition:top .24s ease,right .24s ease}
+#btn-notif{width:38px;height:38px;border-radius:12px;background:var(--bg2);box-shadow:0 8px 24px rgba(0,0,0,.24)}
+.main.content-scrolled #notif-wrapper{top:calc(100dvh - 62px)}
+.main.content-scrolled #notif-panel{top:auto!important;bottom:calc(100% + 10px)!important}
 .page.active>.table-wrap,.page.active>.docs-grid,.page.active>.solutions-scroll,.page.active>.goals-workspace,.page.active>.dash-grid,.page.active>.referral-view,.page.active>.kanban-wrap,.page.active>#demand-list-view{flex:0 0 auto;min-height:0;overflow-y:visible}
 .page.active>.table-wrap{overflow-x:auto}
 .page.active>.dash-grid,.page.active>.solutions-scroll,.page.active>.docs-grid,.page.active>.goals-workspace,.page.active>.referral-view,.page.active>#demand-list-view{overflow-x:visible}
@@ -51,8 +58,14 @@
 .solution-custom-cta .btn{flex:none;min-height:35px;padding:7px 11px;font-size:10px}
 .solution-custom-cta .btn{text-decoration:none}
 @media(max-width:900px){
- .page.active,#pg-demands.page.active{overflow-y:auto;scrollbar-width:none}
- .page.active::-webkit-scrollbar{display:none}
+ .main{scrollbar-width:none}
+ .main::-webkit-scrollbar{display:none}
+ .page.active,#pg-demands.page.active{overflow-y:visible}
+ #notif-wrapper{top:10px;right:72px}
+ .main.content-scrolled #notif-wrapper{top:calc(100dvh - var(--mobile-nav-h) - var(--safe-bottom) - 56px);right:16px}
+ .main.content-scrolled #notif-panel{top:auto!important;bottom:calc(var(--mobile-nav-h) + var(--safe-bottom) + 64px)!important}
+ .main.content-scrolled:has(#pg-solutions.page.active) #notif-wrapper{top:calc(100dvh - var(--mobile-nav-h) - var(--safe-bottom) - 178px)}
+ .main.content-scrolled:has(#pg-solutions.page.active) #notif-panel{bottom:calc(var(--mobile-nav-h) + var(--safe-bottom) + 186px)!important}
  .sidebar .sb-nav{display:block;overflow-y:auto}
  .sb-group+.sb-group{margin-top:16px}
  .sb-group-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
