@@ -46,6 +46,7 @@
     if(!card||!hasSession()) return;
     await loadPreferences();
     const toggle=document.getElementById('push-master-toggle');
+    const deviceTitle=document.getElementById('push-device-title');
     const status=document.getElementById('push-status');
     const button=document.getElementById('push-enable-button');
     const available=supported();
@@ -55,19 +56,22 @@
     if(subscription){const {data,error}=await supa.from('push_subscriptions').select('enabled').eq('user_id',DB.me.id).eq('endpoint',subscription.endpoint).maybeSingle();if(error)throw error;serverEnabled=data?.enabled===true;}
     const active=Boolean(preferences.push_enabled&&serverEnabled&&subscription&&Notification.permission==='granted');
     currentDeviceActive=active;
+    const deviceName=isIOS()||isAndroid()?'celular':'computador';
+    if(deviceTitle) deviceTitle.textContent=`Notificações no ${deviceName}`;
+    toggle?.setAttribute('aria-label',`Ativar notificações no ${deviceName}`);
 
     toggle?.classList.toggle('on',active);
     toggle?.setAttribute('aria-checked',String(active));
     if(toggle) toggle.disabled=!available||Notification.permission==='denied';
     if(button){
       button.style.display=active?'none':'inline-flex';
-      button.textContent=isIOS()&&!isStandalone()?'Instalar para ativar':'Ativar notificações';
+      button.textContent=isIOS()&&!isStandalone()?'Instalar para ativar':Notification.permission==='denied'?'Como permitir':'Ativar notificações';
     }
     if(status){
       if(!available) status.textContent='Este navegador não oferece suporte a notificações Web Push.';
-      else if(Notification.permission==='denied') status.textContent='As notificações estão bloqueadas nas permissões do navegador.';
+      else if(Notification.permission==='denied') status.textContent=`A permissão foi bloqueada. Libere as notificações deste site nas configurações do navegador do ${deviceName}.`;
       else if(isIOS()&&!isStandalone()) status.textContent='No iPhone, instale e abra a Magemind pela Tela de Início para ativar.';
-      else if(active) status.textContent='Ativas neste aparelho. As categorias abaixo valem para seu perfil em todos os dispositivos.';
+      else if(active) status.textContent=`Ativas neste ${deviceName}. As categorias abaixo valem para seu perfil em todos os dispositivos.`;
       else status.textContent='Desativadas. Ative para receber os eventos importantes deste perfil.';
     }
     document.querySelectorAll('[data-push-pref]').forEach(input=>{
@@ -92,14 +96,19 @@
       toast('No iPhone, abra o app pela Tela de Início para liberar notificações.','err');
       return;
     }
+    if(Notification.permission==='denied'){
+      toast('Libere as notificações deste site nas configurações do navegador e tente novamente.','err');
+      return;
+    }
     try{
-      await loadPreferences();
-      const permission=await Notification.requestPermission();
+      // The browser permission must be requested directly from the user's click.
+      const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
       if(permission!=='granted'){
         toast(permission==='denied'?'Permissão bloqueada no navegador.':'Ativação cancelada.','err');
         await window.renderPushSettings();
         return;
       }
+      await loadPreferences();
       const registration=await registerServiceWorker();
       if(!registration) throw new Error('Não foi possível preparar o aplicativo');
       let subscription=await registration.pushManager.getSubscription();
@@ -146,7 +155,6 @@
 
   window.togglePushNotifications=async function(){
     try{
-      await window.renderPushSettings();
       if(currentDeviceActive) await window.disablePushNotifications();
       else await window.enablePushNotifications();
     }catch(error){toast('Não foi possível consultar a inscrição deste aparelho.','err');}
@@ -170,9 +178,10 @@
   async function maybePromptOnboarding(){
     if(!hasSession()||!supported()) return;
     await loadPreferences();
-    if(preferences.push_enabled||Notification.permission==='denied') return;
-    const installed=isStandalone()||localStorage.getItem('mm_app_just_installed')==='1';
-    if(!installed) return;
+    if(Notification.permission==='denied') return;
+    const eligible=!isIOS()&&!isAndroid()||isStandalone()||localStorage.getItem('mm_app_just_installed')==='1';
+    if(!eligible) return;
+    if(preferences.push_enabled&&Notification.permission==='granted'&&await currentSubscription()) return;
     const dismissed=Number(localStorage.getItem(promptKey())||0);
     if(dismissed&&Date.now()-dismissed<PROMPT_DAYS*86400000) return;
     setTimeout(()=>document.getElementById('push-onboarding')?.classList.add('open'),900);

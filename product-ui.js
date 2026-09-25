@@ -36,9 +36,9 @@ function setupSettingsTabs() {
     });
     host.prepend(tabs);
     document.getElementById('settings-panel-security').append(
-      document.getElementById('prof-pass-cur').closest('.settings-card'),
-      document.querySelector('#profile-layout button[onclick="doLogout()"]')
+      document.getElementById('prof-pass-cur').closest('.settings-card')
     );
+    mount.append(document.querySelector('#profile-layout button[onclick="doLogout()"]'));
     document.getElementById('settings-panel-notifications').append(
       document.getElementById('push-settings-card'), document.getElementById('mobile-install-settings')
     );

@@ -1,14 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-function fixture(){
+function fixture({device='Android',permission='granted'}={}){
  const calls=[];let subscriptionExists=true;let failDisable=false;
  const subscription={endpoint:'https://push.example.invalid/device',toJSON:()=>({keys:{p256dh:'fixture',auth:'fixture'}}),unsubscribe:async()=>{subscriptionExists=false;return true;}};
  const registration={pushManager:{getSubscription:async()=>subscriptionExists?subscription:null,subscribe:async()=>subscription}};
- const context={console,Uint8Array,atob,URLSearchParams,Date,setTimeout:()=>0,DB:{me:{id:'current-user'}},Notification:{permission:'granted',requestPermission:async()=>'granted'},matchMedia:()=>({matches:true}),
-  navigator:{userAgent:'Android',platform:'Linux',maxTouchPoints:1,serviceWorker:{register:async()=>registration,addEventListener:()=>{}}},
+ const context={console,Uint8Array,atob,URLSearchParams,Date,setTimeout:()=>0,DB:{me:{id:'current-user'}},Notification:{permission,requestPermission:async()=>{calls.push({action:'permission'});return 'granted';}},matchMedia:()=>({matches:device==='Android'}),
+  navigator:{userAgent:device,platform:'Linux',maxTouchPoints:1,serviceWorker:{register:async()=>registration,addEventListener:()=>{}}},
   document:{getElementById:()=>null,querySelectorAll:()=>[],addEventListener:()=>{}},localStorage:{getItem:()=>null,removeItem:()=>{},setItem:()=>{}},toast:(message,type)=>calls.push({type,message}),
   supa:{from:table=>{
     let action='select',values;
-    const query={select:()=>query,eq:()=>query,maybeSingle:async()=>({data:{push_enabled:true,comments:false,sales:false}}),
+    const query={select:()=>query,eq:()=>query,maybeSingle:async()=>{calls.push({action:'preferences-read'});return {data:{push_enabled:true,comments:false,sales:false}};},
       upsert:data=>{action='upsert';values=data;return query;},update:data=>{action='update';values=data;return query;},
       then:resolve=>{calls.push({table,action,values});return Promise.resolve({error:table==='push_subscriptions'&&failDisable?{message:'network failure'}:null}).then(resolve);}};
     return query;
@@ -29,4 +29,10 @@ test('disabling push affects only this device, preserving other devices and cate
 });
 test('failed device persistence is reported and the subscription is retained',async()=>{
  const f=fixture();f.fail();await f.context.disablePushNotifications();assert.equal(f.subscribed(),true);assert.ok(f.calls.some(c=>c.type==='err'));assert.equal(f.calls.some(c=>c.type==='ok'),false);
+});
+test('desktop activation asks browser permission directly from the click',async()=>{
+ const {context,calls}=fixture({device:'Windows NT 10.0',permission:'default'});
+ await context.enablePushNotifications();
+ assert.equal(calls[0].action,'permission');
+ assert.ok(calls.some(c=>c.table==='push_subscriptions'&&c.action==='upsert'));
 });

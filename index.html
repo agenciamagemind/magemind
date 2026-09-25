@@ -485,9 +485,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
-<link rel="stylesheet" href="goals.css?v=20260924-1">
+<link rel="stylesheet" href="goals.css?v=20260925-1">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
-<link rel="stylesheet" href="product-ui.css?v=20260923-6">
+<link rel="stylesheet" href="product-ui.css?v=20260925-1">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
 </head>
 <body>
@@ -779,8 +779,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
       <!-- METAS -->
       <div class="page" id="pg-goals">
-        <div class="ph"><div><div class="ph-title">Metas</div><div class="ph-sub">Objetivos de resultado e tarefas do dia a dia.</div></div><div class="ph-actions"><button id="goal-create-action" class="btn btn-primary" onclick="openGoal()">+ Nova meta</button><button id="task-create-action" class="btn btn-primary" onclick="MagemindTasks.openEditor()" hidden>+ Nova tarefa</button></div></div>
-        <div class="goals-workspace"><div class="goals-mode-switch" role="tablist" aria-label="Áreas de planejamento"><button type="button" id="goals-mode-goals" role="tab" aria-selected="true" aria-controls="goals-panel" onkeydown="MagemindTasks.handleTabKey(event)" onclick="MagemindTasks.setMode('goals')">Metas</button><button type="button" id="goals-mode-tasks" role="tab" aria-selected="false" aria-controls="tasks-panel" tabindex="-1" onkeydown="MagemindTasks.handleTabKey(event)" onclick="MagemindTasks.setMode('tasks')">Tarefas</button></div><div id="goals-panel" role="tabpanel" aria-labelledby="goals-mode-goals"><div id="goals-summary" class="goals-summary"></div><div class="goals-toolbar"><div class="goals-filters" role="group" aria-label="Filtrar metas"><button class="btn btn-ghost btn-sm" data-goal-filter="all" onclick="setGoalFilter('all')">Todas</button><button class="btn btn-ghost btn-sm" data-goal-filter="active" onclick="setGoalFilter('active')">Em andamento</button><button class="btn btn-ghost btn-sm" data-goal-filter="achieved" onclick="setGoalFilter('achieved')">Atingidas</button><button class="btn btn-ghost btn-sm" data-goal-filter="missed" onclick="setGoalFilter('missed')">Encerradas</button><button class="btn btn-ghost btn-sm" data-goal-filter="archived" onclick="setGoalFilter('archived')">Arquivadas</button></div><input class="fi" id="goals-search" type="search" placeholder="Buscar meta..." aria-label="Buscar meta" oninput="renderGoals()"></div><div id="goals-grid" class="goals-grid" aria-live="polite"></div></div><div id="tasks-panel" role="tabpanel" aria-labelledby="goals-mode-tasks" hidden><div id="tasks-content" aria-live="polite"></div></div></div>
+        <div class="ph"><div><div class="ph-title">Metas</div><div class="ph-sub">Objetivos de resultado e tarefas do dia a dia.</div></div></div>
+        <div class="goals-workspace"><div class="goals-overview"><section id="goals-panel" aria-labelledby="goals-section-title"><div class="goals-section-heading"><div><span class="daily-task-eyebrow">Visão de resultados</span><h2 id="goals-section-title">Metas</h2></div><button id="goal-create-action" class="btn btn-primary btn-sm" onclick="openGoal()">+ Nova meta</button></div><div id="goals-summary" class="goals-summary"></div><div class="goals-toolbar"><div class="goals-filters" role="group" aria-label="Filtrar metas"><button class="btn btn-ghost btn-sm" data-goal-filter="all" onclick="setGoalFilter('all')">Todas</button><button class="btn btn-ghost btn-sm" data-goal-filter="active" onclick="setGoalFilter('active')">Em andamento</button><button class="btn btn-ghost btn-sm" data-goal-filter="achieved" onclick="setGoalFilter('achieved')">Atingidas</button><button class="btn btn-ghost btn-sm" data-goal-filter="missed" onclick="setGoalFilter('missed')">Encerradas</button><button class="btn btn-ghost btn-sm" data-goal-filter="archived" onclick="setGoalFilter('archived')">Arquivadas</button></div><input class="fi" id="goals-search" type="search" placeholder="Buscar meta..." aria-label="Buscar meta" oninput="renderGoals()"></div><div id="goals-grid" class="goals-grid" aria-live="polite"></div></section><section id="tasks-panel" aria-labelledby="tasks-section-title"><div class="goals-section-heading"><div><span class="daily-task-eyebrow">Rotina</span><h2 id="tasks-section-title">Tarefas</h2></div><button id="task-create-action" class="btn btn-primary btn-sm" onclick="MagemindTasks.openEditor()">+ Nova tarefa</button></div><div id="tasks-content" aria-live="polite"></div></section></div></div>
       </div>
       <!-- SOLUCOES -->
       <div class="page" id="pg-solutions">
@@ -797,8 +797,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           </div>
           <div id="solutions-catalog"></div>
           <div class="solution-custom-cta" id="solutions-custom-cta">
-            <div><strong>Precisa de algo desenhado para a sua operação?</strong><span>Monte um pacote, plano ou serviço com escopo personalizado.</span></div>
-            <a class="btn btn-primary btn-sm" id="solutions-custom-link" href="#" target="_blank" rel="noopener noreferrer">Solicitar personalizado</a>
+            <div><strong>Precisa de algo sob medida?</strong><span>Criamos uma solução para sua operação.</span></div>
+            <a class="btn btn-primary btn-sm" id="solutions-custom-link" href="#" target="_blank" rel="noopener noreferrer">Solicitar algo personalizado</a>
           </div>
         </div>
       </div>
@@ -938,6 +938,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 <div style="display:flex;flex-direction:column;gap:12px">
                   <div class="fg"><label class="fl">Nome completo</label><input class="fi" id="prof-name" placeholder="Seu nome"></div>
                   <div class="fg"><label class="fl">Email (somente leitura)</label><input class="fi" id="prof-email" disabled style="opacity:.5"></div>
+                  <div class="fg"><label class="fl" for="prof-phone">WhatsApp</label><input class="fi" id="prof-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
                   <button class="btn btn-primary btn-sm" onclick="saveProfile()">Salvar alterações</button>
                 </div>
               </div>
@@ -962,9 +963,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div class="push-settings-head">
                 <div class="push-settings-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-                  <div><div class="settings-card-title" style="margin:0">Notificações no celular</div><div class="push-status" id="push-status">Verificando compatibilidade...</div></div>
+                  <div><div class="settings-card-title" id="push-device-title" style="margin:0">Notificações neste aparelho</div><div class="push-status" id="push-status">Verificando compatibilidade...</div></div>
                 </div>
-                <button class="switch" id="push-master-toggle" type="button" role="switch" aria-checked="false" aria-label="Ativar notificações no celular" onclick="togglePushNotifications()"></button>
+                <button class="switch" id="push-master-toggle" type="button" role="switch" aria-checked="false" aria-label="Ativar notificações neste aparelho" onclick="togglePushNotifications()"></button>
               </div>
               <div class="push-categories" id="push-categories">
                 <label class="push-category"><input type="checkbox" data-push-pref="demand_updates" onchange="savePushCategory(this)"><span><strong>Demandas</strong>Criação, produção, mudanças e conclusão.</span></label>
@@ -1447,14 +1448,14 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="product-ui.js?v=20260923-7"></script>
+<script src="product-ui.js?v=20260925-1"></script>
 <script src="partners.js?v=20260923-7"></script>
 <script src="partner-workspace.js?v=20260923-7"></script>
 <script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260915-1"></script>
-<script src="tasks.js?v=20260924-1"></script>
+<script src="tasks.js?v=20260925-1"></script>
 <script src="mobile-app.js?v=20260923-7"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
@@ -2340,7 +2341,7 @@ async function afterLogin(authUser){
     }
 
     DB.me = {
-      id:prof.id, name:prof.name, email:authUser.email,
+      id:prof.id, name:prof.name, email:authUser.email, phone:prof.phone||'',
       role: authUser.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? 'ceo' : prof.role,
       av:prof.av||prof.name.slice(0,2).toUpperCase(),
       photo:prof.photo||null, clientId:prof.client_id||null,
@@ -4764,6 +4765,7 @@ function loadProfile(){
   const u = DB.me;
   document.getElementById('prof-name').value  = u.name;
   document.getElementById('prof-email').value = u.email;
+  document.getElementById('prof-phone').value = u.phone||'';
   const bigAv = document.getElementById('profile-av-big');
   bigAv.innerHTML = safeImageUrl(u.photo)
     ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`
@@ -4799,12 +4801,15 @@ function loadProfile(){
 
 async function saveProfile(){
   const name = document.getElementById('prof-name').value.trim();
+  const phone = sanitizePhoneInput(document.getElementById('prof-phone'));
   if(!name){ toast('Digite seu nome','err'); return; }
-  const {error} = await supa.from('profiles').update({name, av:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}).eq('id',DB.me.id);
+  if((phone||isClient())&&!isValidPhoneDigits(phone)) return fieldError('prof-phone','Informe um WhatsApp válido com 10 a 15 números.');
+  const {error} = await supa.from('profiles').update({name, phone:phone||null, av:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}).eq('id',DB.me.id);
   if(error){ toast('Erro: '+error.message,'err'); return; }
   DB.me.name = name;
+  DB.me.phone = phone;
   DB.me.av   = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const c = DB.clients.find(x=>x.id===DB.me.clientId); if(c) c.name=name;
+  const c = DB.clients.find(x=>x.id===DB.me.clientId); if(c){c.name=name;c.phone=phone;}
   updateSidebarUser(); toast('Perfil atualizado! ✓','ok');
 }
 
@@ -5310,18 +5315,40 @@ function solutionCardHTML(plan,currentPlanIds,adminView){
     <p class="solution-tagline">${escapeHTML(plan.tagline||'Solução Magemind configurada para esta necessidade.')}</p>
     <div class="solution-includes">${includes.length?includes.map(item=>`<div class="solution-include"><span class="solution-check">✓</span><span>${escapeHTML(item)}</span></div>`).join(''):'<div class="solution-include"><span class="solution-check">✓</span><span>Escopo definido durante o atendimento</span></div>'}</div>
     <div class="solution-price">${solutionPriceHTML(plan)}</div>
-    ${adminView?`<div class="solution-actions"><button class="btn btn-ghost btn-xs" onclick="openEditPlan('${plan.id}')">Editar</button><button class="btn btn-ghost btn-xs" onclick="togglePlan('${plan.id}')">${plan.active?'Desativar':'Ativar'}</button><button class="btn btn-danger btn-xs" style="flex:0 0 auto" aria-label="Excluir solução" title="Excluir solução" onclick="removePlan('${plan.id}')">✕</button></div>`:`<a class="solution-whatsapp" href="${solutionWhatsAppLink(plan.name)}" target="_blank" rel="noopener noreferrer">Contratar pelo WhatsApp <span aria-hidden="true">↗</span></a>`}
+    ${adminView?`<div class="solution-actions"><button class="btn btn-ghost btn-xs" onclick="openEditPlan('${plan.id}')">Editar</button><button class="btn btn-ghost btn-xs" onclick="togglePlan('${plan.id}')">${plan.active?'Desativar':'Ativar'}</button><button class="btn btn-danger btn-xs" style="flex:0 0 auto" aria-label="Excluir solução" title="Excluir solução" onclick="removePlan('${plan.id}')">✕</button></div>`:`<a class="solution-whatsapp" href="${solutionWhatsAppLink(plan.name)}" target="_blank" rel="noopener noreferrer">Contratar <span aria-hidden="true">↗</span></a>`}
   </article>`;
 }
 function renderSolutionSection(category,plans,currentPlanIds,adminView){
   if(!adminView&&!plans.length) return '';
-  return `<section class="solution-section" style="--solution-accent:${category.accent}">
-    <div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>${escapeHTML(category.label)}</div><div class="solution-section-sub">${escapeHTML(category.sub)}</div></div><span class="badge b-muted">${plans.length}</span></div>
-    <div class="solution-grid">${plans.length?plans.map(plan=>solutionCardHTML(plan,currentPlanIds,adminView)).join(''):'<div class="solution-empty">Nenhuma solução cadastrada nesta categoria.</div>'}</div>
+  return `<section class="solution-section${adminView?'':' solution-section-carousel'}" style="--solution-accent:${category.accent}">
+    <div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>${escapeHTML(category.label)}</div><div class="solution-section-sub">${escapeHTML(category.sub)}</div></div><div class="solution-section-controls"><span class="badge b-muted">${plans.length}</span>${adminView?'':`<button type="button" class="solution-carousel-arrow" data-direction="-1" aria-label="Soluções anteriores em ${escapeHTML(category.label)}" onclick="scrollSolutionCarousel(this,-1)" disabled>‹</button><button type="button" class="solution-carousel-arrow" data-direction="1" aria-label="Próximas soluções em ${escapeHTML(category.label)}" onclick="scrollSolutionCarousel(this,1)">›</button>`}</div></div>
+    <div class="solution-grid${adminView?'':' solution-carousel'}" ${adminView?'':`role="region" aria-label="${escapeHTML(category.label)}; deslize para ver mais soluções" tabindex="0"`}>${plans.length?plans.map(plan=>solutionCardHTML(plan,currentPlanIds,adminView)).join(''):'<div class="solution-empty">Nenhuma solução cadastrada nesta categoria.</div>'}</div>
   </section>`;
+}
+function scrollSolutionCarousel(button,direction){
+  const carousel=button.closest('.solution-section')?.querySelector('.solution-carousel');
+  if(carousel) carousel.scrollBy({left:direction*(carousel.querySelector('.solution-card')?.getBoundingClientRect().width||300)+direction*12,behavior:'smooth'});
+}
+let solutionCarouselObservers=[];
+function setupSolutionCarousels(){
+  document.querySelectorAll('.solution-section-carousel').forEach(section=>{
+    const carousel=section.querySelector('.solution-carousel');
+    const arrows=[...section.querySelectorAll('.solution-carousel-arrow')];
+    const update=()=>{const max=carousel.scrollWidth-carousel.clientWidth;arrows[0].disabled=carousel.scrollLeft<=2;arrows[1].disabled=carousel.scrollLeft>=max-2;};
+    carousel.addEventListener('scroll',update,{passive:true});
+    if('ResizeObserver' in window){const observer=new ResizeObserver(update);observer.observe(carousel);solutionCarouselObservers.push(observer);}
+    let startX=0,startScroll=0,pointerId=null,dragged=false;
+    carousel.addEventListener('pointerdown',event=>{if(event.pointerType!=='mouse'||event.button!==0)return;pointerId=event.pointerId;startX=event.clientX;startScroll=carousel.scrollLeft;dragged=false;});
+    carousel.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||event.pointerId!==pointerId)return;const delta=event.clientX-startX;if(Math.abs(delta)>5&&!dragged){dragged=true;carousel.setPointerCapture(event.pointerId);}if(dragged){carousel.classList.add('dragging');carousel.scrollLeft=startScroll-delta;}});
+    const finish=()=>{pointerId=null;carousel.classList.remove('dragging');setTimeout(()=>{dragged=false;},0);};
+    carousel.addEventListener('pointerup',finish);carousel.addEventListener('pointercancel',finish);
+    carousel.addEventListener('click',event=>{if(dragged){event.preventDefault();event.stopPropagation();dragged=false;}},true);
+    update();
+  });
 }
 function loadSolutions(){
   if(!hasPermission('solutions.view')) return;
+  solutionCarouselObservers.forEach(observer=>observer.disconnect());solutionCarouselObservers=[];
   const adminView=isAdmin();
   const actions=document.getElementById('solutions-page-actions');
   const toolbar=document.getElementById('solutions-admin-toolbar');
@@ -5343,6 +5370,7 @@ function loadSolutions(){
     if(customPlans.length) html+=`<section class="solution-section" style="--solution-accent:var(--pink)"><div class="solution-section-head"><div><div class="solution-section-title"><span class="solution-section-mark"></span>Planos personalizados</div><div class="solution-section-sub">Visíveis somente no perfil dos clientes vinculados.</div></div><span class="solution-private-note">Acesso privado</span></div><div class="solution-grid">${customPlans.map(plan=>solutionCardHTML(plan,currentPlanIds,true)).join('')}</div></section>`;
   }
   document.getElementById('solutions-catalog').innerHTML=html||'<div class="solution-empty" style="margin-top:22px">Nenhuma solução disponível no momento.</div>';
+  if(!adminView) setupSolutionCarousels();
 }
 
 let solutionReorderState=null;
@@ -5960,6 +5988,6 @@ async function clearDB(){
 }
 </script>
 <script src="app-accessibility.js?v=20260910-2"></script>
-<script src="push-notifications.js?v=20260923-6"></script>
+<script src="push-notifications.js?v=20260925-1"></script>
 </body>
 </html>
