@@ -8,6 +8,8 @@
   };
   let preferences={...defaults};
   let currentDeviceActive=false;
+  let onboardingTimer=null;
+  let onboardingSuppressedFor='';
 
   function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
   function isAndroid(){ return /android/i.test(navigator.userAgent); }
@@ -48,7 +50,7 @@
     const toggle=document.getElementById('push-master-toggle');
     const deviceTitle=document.getElementById('push-device-title');
     const status=document.getElementById('push-status');
-    const button=document.getElementById('push-enable-button');
+    const categories=document.getElementById('push-categories');
     const available=supported();
     let subscription=null;
     if(available) subscription=await currentSubscription();
@@ -62,11 +64,9 @@
 
     toggle?.classList.toggle('on',active);
     toggle?.setAttribute('aria-checked',String(active));
-    if(toggle) toggle.disabled=!available||Notification.permission==='denied';
-    if(button){
-      button.style.display=active?'none':'inline-flex';
-      button.textContent=isIOS()&&!isStandalone()?'Instalar para ativar':Notification.permission==='denied'?'Como permitir':'Ativar notificações';
-    }
+    if(toggle) toggle.disabled=!available;
+    categories?.classList.toggle('is-disabled',!active);
+    categories?.setAttribute('aria-disabled',String(!active));
     if(status){
       if(!available) status.textContent='Este navegador não oferece suporte a notificações Web Push.';
       else if(Notification.permission==='denied') status.textContent=`A permissão foi bloqueada. Libere as notificações deste site nas configurações do navegador do ${deviceName}.`;
@@ -83,15 +83,21 @@
         row.querySelector('span').innerHTML=partner&&copy[input.dataset.pushPref]?copy[input.dataset.pushPref]:row.dataset.originalCopy;
       }
       input.checked=preferences[input.dataset.pushPref]!==false;
-      input.disabled=!available;
+      input.disabled=!active;
     });
   };
+
+  function closeOnboarding(){
+    if(onboardingTimer){ clearTimeout(onboardingTimer); onboardingTimer=null; }
+    if(hasSession()) onboardingSuppressedFor=DB.me.id;
+    document.getElementById('push-onboarding')?.classList.remove('open');
+  }
 
   window.enablePushNotifications=async function(fromOnboarding=false){
     if(!hasSession()){ toast('Entre na sua conta antes de ativar notificações.','err'); return; }
     if(!supported()){ toast('Este navegador não oferece suporte a notificações.','err'); return; }
     if(isIOS()&&!isStandalone()){
-      if(fromOnboarding) document.getElementById('push-onboarding')?.classList.remove('open');
+      if(fromOnboarding) closeOnboarding();
       openInstallGuide(true);
       toast('No iPhone, abra o app pela Tela de Início para liberar notificações.','err');
       return;
@@ -104,10 +110,13 @@
       // The browser permission must be requested directly from the user's click.
       const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
       if(permission!=='granted'){
+        if(permission==='denied') closeOnboarding();
         toast(permission==='denied'?'Permissão bloqueada no navegador.':'Ativação cancelada.','err');
         await window.renderPushSettings();
         return;
       }
+      // Permission is the user's decision; close the prompt before network work begins.
+      closeOnboarding();
       await loadPreferences();
       const registration=await registerServiceWorker();
       if(!registration) throw new Error('Não foi possível preparar o aplicativo');
@@ -129,7 +138,6 @@
       if(preferenceError) throw preferenceError;
       preferences.push_enabled=true;
       localStorage.removeItem('mm_app_just_installed');
-      document.getElementById('push-onboarding')?.classList.remove('open');
       toast('Notificações ativadas neste aparelho.','ok');
       await window.renderPushSettings();
     }catch(error){
@@ -161,7 +169,7 @@
   };
 
   window.savePushCategory=async function(input){
-    if(!hasSession()||!input?.dataset?.pushPref) return;
+    if(!hasSession()||!currentDeviceActive||!input?.dataset?.pushPref) return;
     const key=input.dataset.pushPref;
     const previous=preferences[key];
     preferences[key]=input.checked;
@@ -171,20 +179,27 @@
   };
 
   window.dismissPushOnboarding=function(){
-    document.getElementById('push-onboarding')?.classList.remove('open');
+    closeOnboarding();
     try{ localStorage.setItem(promptKey(),String(Date.now())); }catch(_){}
   };
 
   async function maybePromptOnboarding(){
     if(!hasSession()||!supported()) return;
+    if(onboardingSuppressedFor===DB.me.id||onboardingTimer||document.getElementById('push-onboarding')?.classList.contains('open')) return;
     await loadPreferences();
+    if(onboardingSuppressedFor===DB.me.id||onboardingTimer||document.getElementById('push-onboarding')?.classList.contains('open')) return;
     if(Notification.permission==='denied') return;
     const eligible=!isIOS()&&!isAndroid()||isStandalone()||localStorage.getItem('mm_app_just_installed')==='1';
     if(!eligible) return;
     if(preferences.push_enabled&&Notification.permission==='granted'&&await currentSubscription()) return;
     const dismissed=Number(localStorage.getItem(promptKey())||0);
     if(dismissed&&Date.now()-dismissed<PROMPT_DAYS*86400000) return;
-    setTimeout(()=>document.getElementById('push-onboarding')?.classList.add('open'),900);
+    const userId=DB.me.id;
+    onboardingTimer=setTimeout(()=>{
+      onboardingTimer=null;
+      if(hasSession()&&DB.me.id===userId&&onboardingSuppressedFor!==userId)
+        document.getElementById('push-onboarding')?.classList.add('open');
+    },900);
   }
 
   function openDemandFromPush(demandId){

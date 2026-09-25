@@ -433,9 +433,17 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.5}
 .switch.on::after{transform:translateX(18px);background:#fff}
 .switch:disabled{opacity:.45;cursor:not-allowed}
 .push-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
-.push-category{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;line-height:1.4;cursor:pointer}
+.push-category{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;line-height:1.4;cursor:pointer}
 .push-category strong{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
-.push-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.push-category>span{min-width:0}
+.push-category input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.push-mini-switch{position:relative;flex:0 0 34px;width:34px;height:20px;border:1px solid var(--border2);border-radius:999px;background:var(--bg4);transition:background .18s,border-color .18s}
+.push-mini-switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text3);transition:transform .18s,background .18s}
+.push-category:has(input:checked) .push-mini-switch{background:var(--violet);border-color:var(--violet2)}
+.push-category:has(input:checked) .push-mini-switch::after{transform:translateX(14px);background:#fff}
+.push-category:has(input:focus-visible){outline:2px solid var(--violet2);outline-offset:2px}
+.push-categories.is-disabled{opacity:.48}
+.push-categories.is-disabled .push-category{cursor:not-allowed}
 .solutions-scroll{flex:1;overflow-y:auto;padding:0 24px 28px}
 .solutions-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0 4px}
 .solutions-summary{display:flex;gap:8px;flex-wrap:wrap}
@@ -485,9 +493,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20260911-3">
 <link rel="stylesheet" href="auth.css?v=20260911-4">
-<link rel="stylesheet" href="goals.css?v=20260925-1">
+<link rel="stylesheet" href="goals.css?v=20260925-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
-<link rel="stylesheet" href="product-ui.css?v=20260925-1">
+<link rel="stylesheet" href="product-ui.css?v=20260925-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
 </head>
 <body>
@@ -557,7 +565,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
            style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 0;background:#25D366;color:#fff;border-radius:var(--r2);font-size:12px;font-weight:700;text-decoration:none;transition:opacity .15s"
            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          Falar no WhatsApp
+          Preciso de Ajuda
         </a>
       </div>
       <button class="sb-user" type="button" onclick="goTo('settings')" aria-label="Abrir configurações da conta">
@@ -779,7 +787,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
       <!-- METAS -->
       <div class="page" id="pg-goals">
-        <div class="ph"><div><div class="ph-title">Metas</div><div class="ph-sub">Objetivos de resultado e tarefas do dia a dia.</div></div></div>
         <div class="goals-workspace"><div class="goals-overview"><section id="goals-panel" aria-labelledby="goals-section-title"><div class="goals-section-heading"><div><span class="daily-task-eyebrow">Visão de resultados</span><h2 id="goals-section-title">Metas</h2></div><button id="goal-create-action" class="btn btn-primary btn-sm" onclick="openGoal()">+ Nova meta</button></div><div id="goals-summary" class="goals-summary"></div><div class="goals-toolbar"><div class="goals-filters" role="group" aria-label="Filtrar metas"><button class="btn btn-ghost btn-sm" data-goal-filter="all" onclick="setGoalFilter('all')">Todas</button><button class="btn btn-ghost btn-sm" data-goal-filter="active" onclick="setGoalFilter('active')">Em andamento</button><button class="btn btn-ghost btn-sm" data-goal-filter="achieved" onclick="setGoalFilter('achieved')">Atingidas</button><button class="btn btn-ghost btn-sm" data-goal-filter="missed" onclick="setGoalFilter('missed')">Encerradas</button><button class="btn btn-ghost btn-sm" data-goal-filter="archived" onclick="setGoalFilter('archived')">Arquivadas</button></div><input class="fi" id="goals-search" type="search" placeholder="Buscar meta..." aria-label="Buscar meta" oninput="renderGoals()"></div><div id="goals-grid" class="goals-grid" aria-live="polite"></div></section><section id="tasks-panel" aria-labelledby="tasks-section-title"><div class="goals-section-heading"><div><span class="daily-task-eyebrow">Rotina</span><h2 id="tasks-section-title">Tarefas</h2></div><button id="task-create-action" class="btn btn-primary btn-sm" onclick="MagemindTasks.openEditor()">+ Nova tarefa</button></div><div id="tasks-content" aria-live="polite"></div></section></div></div>
       </div>
       <!-- SOLUCOES -->
@@ -937,7 +944,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:12px">
                   <div class="fg"><label class="fl">Nome completo</label><input class="fi" id="prof-name" placeholder="Seu nome"></div>
-                  <div class="fg"><label class="fl">Email (somente leitura)</label><input class="fi" id="prof-email" disabled style="opacity:.5"></div>
+                  <div class="fg"><label class="fl">Email</label><input class="fi" id="prof-email" disabled style="opacity:.5"></div>
                   <div class="fg"><label class="fl" for="prof-phone">WhatsApp</label><input class="fi" id="prof-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
                   <button class="btn btn-primary btn-sm" onclick="saveProfile()">Salvar alterações</button>
                 </div>
@@ -968,15 +975,11 @@ body.solution-reordering{user-select:none;cursor:grabbing}
                 <button class="switch" id="push-master-toggle" type="button" role="switch" aria-checked="false" aria-label="Ativar notificações neste aparelho" onclick="togglePushNotifications()"></button>
               </div>
               <div class="push-categories" id="push-categories">
-                <label class="push-category"><input type="checkbox" data-push-pref="demand_updates" onchange="savePushCategory(this)"><span><strong>Demandas</strong>Criação, produção, mudanças e conclusão.</span></label>
-                <label class="push-category"><input type="checkbox" data-push-pref="comments" onchange="savePushCategory(this)"><span><strong>Comentários</strong>Novas mensagens nas demandas.</span></label>
-                <label class="push-category"><input type="checkbox" data-push-pref="sales" onchange="savePushCategory(this)"><span><strong>Vendas</strong>Registros e movimentos comerciais relevantes.</span></label>
-                <label class="push-category"><input type="checkbox" data-push-pref="team_activity" onchange="savePushCategory(this)"><span><strong>Equipe</strong>Atividades operacionais destinadas ao seu perfil.</span></label>
-                <label class="push-category"><input type="checkbox" data-push-pref="general" onchange="savePushCategory(this)"><span><strong>Indique &amp; Ganhe</strong>Aprovações de participação, saques e pagamentos.</span></label>
-              </div>
-              <div class="push-settings-actions">
-                <button class="btn btn-primary btn-sm" id="push-enable-button" type="button" onclick="enablePushNotifications()">Ativar notificações</button>
-                <button class="btn btn-ghost btn-sm push-install-inline" type="button" onclick="openInstallGuide(true)">Ver instalação do app</button>
+                <label class="push-category"><input type="checkbox" role="switch" data-push-pref="demand_updates" onchange="savePushCategory(this)"><span><strong>Demandas</strong>Criação, produção, mudanças e conclusão.</span><i class="push-mini-switch" aria-hidden="true"></i></label>
+                <label class="push-category"><input type="checkbox" role="switch" data-push-pref="comments" onchange="savePushCategory(this)"><span><strong>Comentários</strong>Novas mensagens nas demandas.</span><i class="push-mini-switch" aria-hidden="true"></i></label>
+                <label class="push-category"><input type="checkbox" role="switch" data-push-pref="sales" onchange="savePushCategory(this)"><span><strong>Vendas</strong>Registros e movimentos comerciais relevantes.</span><i class="push-mini-switch" aria-hidden="true"></i></label>
+                <label class="push-category"><input type="checkbox" role="switch" data-push-pref="team_activity" onchange="savePushCategory(this)"><span><strong>Equipe</strong>Atividades operacionais destinadas ao seu perfil.</span><i class="push-mini-switch" aria-hidden="true"></i></label>
+                <label class="push-category"><input type="checkbox" role="switch" data-push-pref="general" onchange="savePushCategory(this)"><span><strong>Indique &amp; Ganhe</strong>Aprovações de participação, saques e pagamentos.</span><i class="push-mini-switch" aria-hidden="true"></i></label>
               </div>
             </div>
             <button class="btn btn-danger btn-sm" onclick="doLogout()" style="align-self:flex-start">Sair da conta</button>
@@ -1454,8 +1457,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <script src="firewall-sessions.js?v=20260923-1"></script>
 <script src="security-rich-text.js?v=20260915-1"></script>
 <script src="app-core.js?v=20260915-1"></script>
-<script src="goals.js?v=20260915-1"></script>
-<script src="tasks.js?v=20260925-1"></script>
+<script src="goals.js?v=20260925-2"></script>
+<script src="tasks.js?v=20260925-2"></script>
 <script src="mobile-app.js?v=20260923-7"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
@@ -5936,7 +5939,7 @@ function renderPaymentAlert(){
   if(el.hidden){el.innerHTML='';return;}
   const value=formatCurrencyBRL(cents/100);
   const message='Olá, Magemind! Gostaria de acertar o pagamento pendente de '+value+'.';
-  el.innerHTML=`<div><strong>Pagamento pendente: ${escapeHTML(value)}</strong><p>Para acertar esse valor, entre em contato com a Magemind pelo WhatsApp.</p></div><a class="btn btn-sm" href="https://wa.me/${getAgencyPhone()}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>`;
+  el.innerHTML=`<div><strong>Pagamento pendente: ${escapeHTML(value)}</strong><p>Para acertar esse valor, entre em contato com a Magemind pelo WhatsApp.</p></div><a class="btn btn-sm" href="https://wa.me/${getAgencyPhone()}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">Preciso de Ajuda</a>`;
 }
 async function refreshSales(){
   if(!DB.me||(!isAdmin()&&!isClient()))return;
@@ -5988,6 +5991,6 @@ async function clearDB(){
 }
 </script>
 <script src="app-accessibility.js?v=20260910-2"></script>
-<script src="push-notifications.js?v=20260925-1"></script>
+<script src="push-notifications.js?v=20260925-2"></script>
 </body>
 </html>

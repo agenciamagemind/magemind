@@ -1,5 +1,19 @@
 /* Match the content background without changing header geometry. */
 .main .topbar{background:var(--bg);border-bottom:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+/* The page owns vertical scrolling, so its heading moves with the content. */
+.page.active,#pg-demands.page.active{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+.page.active>.table-wrap,.page.active>.docs-grid,.page.active>.solutions-scroll,.page.active>.goals-workspace,.page.active>.dash-grid,.page.active>.referral-view,.page.active>.kanban-wrap,.page.active>#demand-list-view{flex:0 0 auto;min-height:0;overflow-y:visible}
+.page.active>.table-wrap{overflow-x:auto}
+.page.active>.dash-grid,.page.active>.solutions-scroll,.page.active>.docs-grid,.page.active>.goals-workspace,.page.active>.referral-view,.page.active>#demand-list-view{overflow-x:visible}
+.page.active>.dash-grid .dash-left,.page.active>.dash-grid .dash-right,.page.active .referral-member-shell{overflow:visible;flex:0 0 auto}
+.page.active>.kanban-wrap{overflow-x:auto;align-items:flex-start}
+.page.active>.kanban-wrap .k-col{max-height:none}
+.page.active>.kanban-wrap .k-cards{overflow:visible;flex:0 0 auto}
+.page.active>#demand-list-view{overflow:visible!important;flex:0 0 auto!important}
+.page.active>#demand-list-view .table-wrap{overflow:visible;flex:0 0 auto}
+.page.active #dash-activity{max-height:none;overflow:visible}
+.page.active .payout-section .tbl-container,#pg-sales.affiliate-finance>.table-wrap .tbl-container{max-height:none;overflow-y:visible}
+#pg-settings>.ph+div,#pg-profile>.ph+div{overflow:visible!important;flex:0 0 auto!important}
 .sb-group+.sb-group{margin-top:20px}
 .sb-group-title{margin:0 10px 8px;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text2)}
 .settings-sections{padding-bottom:24px!important}
@@ -37,6 +51,8 @@
 .solution-custom-cta .btn{flex:none;min-height:35px;padding:7px 11px;font-size:10px}
 .solution-custom-cta .btn{text-decoration:none}
 @media(max-width:900px){
+ .page.active,#pg-demands.page.active{overflow-y:auto;scrollbar-width:none}
+ .page.active::-webkit-scrollbar{display:none}
  .sidebar .sb-nav{display:block;overflow-y:auto}
  .sb-group+.sb-group{margin-top:16px}
  .sb-group-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}

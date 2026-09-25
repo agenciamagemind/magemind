@@ -5,7 +5,7 @@ function fixture({device='Android',permission='granted'}={}){
  const registration={pushManager:{getSubscription:async()=>subscriptionExists?subscription:null,subscribe:async()=>subscription}};
  const context={console,Uint8Array,atob,URLSearchParams,Date,setTimeout:()=>0,DB:{me:{id:'current-user'}},Notification:{permission,requestPermission:async()=>{calls.push({action:'permission'});return 'granted';}},matchMedia:()=>({matches:device==='Android'}),
   navigator:{userAgent:device,platform:'Linux',maxTouchPoints:1,serviceWorker:{register:async()=>registration,addEventListener:()=>{}}},
-  document:{getElementById:()=>null,querySelectorAll:()=>[],addEventListener:()=>{}},localStorage:{getItem:()=>null,removeItem:()=>{},setItem:()=>{}},toast:(message,type)=>calls.push({type,message}),
+  document:{getElementById:id=>id==='push-onboarding'?{classList:{remove:name=>calls.push({action:'close-onboarding',name})}}:null,querySelectorAll:()=>[],addEventListener:()=>{}},localStorage:{getItem:()=>null,removeItem:()=>{},setItem:()=>{}},toast:(message,type)=>calls.push({type,message}),
   supa:{from:table=>{
     let action='select',values;
     const query={select:()=>query,eq:()=>query,maybeSingle:async()=>{calls.push({action:'preferences-read'});return {data:{push_enabled:true,comments:false,sales:false}};},
@@ -34,5 +34,25 @@ test('desktop activation asks browser permission directly from the click',async(
  const {context,calls}=fixture({device:'Windows NT 10.0',permission:'default'});
  await context.enablePushNotifications();
  assert.equal(calls[0].action,'permission');
+ assert.ok(calls.findIndex(c=>c.action==='close-onboarding')<calls.findIndex(c=>c.action==='preferences-read'));
  assert.ok(calls.some(c=>c.table==='push_subscriptions'&&c.action==='upsert'));
+});
+test('category switches become unavailable when the master device switch is off',async()=>{
+ const {context}=fixture({device:'Windows NT 10.0'});let serverEnabled=false;
+ const attrs={},classes={};
+ const row={dataset:{},hidden:false,querySelector:()=>({innerHTML:'<strong>Comentários</strong>Novas mensagens'})};
+ const input={dataset:{pushPref:'comments'},closest:()=>row,checked:true,disabled:false};
+ const elements={
+  'push-settings-card':{},'push-device-title':{},'push-status':{},
+  'push-master-toggle':{classList:{toggle:(key,value)=>{classes[key]=value;}},setAttribute:(key,value)=>{attrs[key]=value;}},
+  'push-categories':{classList:{toggle:(key,value)=>{classes[key]=value;}},setAttribute:(key,value)=>{attrs[key]=value;}}
+ };
+ context.document.getElementById=id=>elements[id]||null;
+ context.document.querySelectorAll=()=>[input];
+ context.supa.from=table=>{const query={select:()=>query,eq:()=>query,maybeSingle:async()=>({data:table==='notification_preferences'?{push_enabled:true,comments:true}:{enabled:serverEnabled}})};return query;};
+ vm.runInContext(fs.readFileSync('push-notifications.js','utf8'),context);
+ await context.renderPushSettings();
+ assert.equal(attrs['aria-checked'],'false');assert.equal(attrs['aria-disabled'],'true');assert.equal(classes['is-disabled'],true);assert.equal(input.disabled,true);
+ serverEnabled=true;await context.renderPushSettings();
+ assert.equal(attrs['aria-checked'],'true');assert.equal(attrs['aria-disabled'],'false');assert.equal(classes['is-disabled'],false);assert.equal(input.disabled,false);
 });
