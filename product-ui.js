@@ -2,7 +2,7 @@
 function groupSidebarNavigation(items, renderItem) {
   const groups = [
     ['trabalho', 'Trabalho', ['dashboard', 'demands', 'docs']],
-    ['negocio', 'Negócio', ['clients', 'sales', 'partners', 'withdrawals', 'goals', 'solutions', 'affiliates']],
+    ['negocio', 'Negócio', ['campaigns', 'orders', 'integrations', 'clients', 'sales', 'partners', 'withdrawals', 'goals', 'solutions', 'affiliates']],
     ['gestao', 'Gestão', ['team', 'firewall', 'settings']]
   ];
   return groups.map(([id, label, pages]) => {
@@ -20,7 +20,7 @@ function setupSettingsTabs() {
     tabs.className = 'settings-tabs';
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Setores das configurações');
-    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['company','Empresa']];
+    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['tracking','Custos'], ['company','Empresa']];
     sections.forEach(([id, label]) => {
       const panel = id === 'profile' ? mount : document.createElement('div');
       if (id !== 'profile') { panel.id = `settings-panel-${id}`; host.appendChild(panel); }
@@ -42,6 +42,9 @@ function setupSettingsTabs() {
     document.getElementById('settings-panel-notifications').append(
       document.getElementById('push-settings-card'), document.getElementById('mobile-install-settings')
     );
+    const salesNotifications=document.createElement('div');
+    salesNotifications.id='tracking-notifications-mount';salesNotifications.className='mt-root';
+    document.getElementById('settings-panel-notifications').prepend(salesNotifications);
     document.getElementById('settings-panel-company').append(document.getElementById('agency-settings-card').parentElement);
     tabs.addEventListener('keydown', event => {
       if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
@@ -54,6 +57,8 @@ function setupSettingsTabs() {
     });
   }
   document.getElementById('settings-tab-company').hidden = !isAdmin();
+  document.getElementById('settings-tab-tracking').hidden=!window.trackingEnabled();
+  document.getElementById('tracking-notifications-mount').hidden=!window.trackingEnabled();
   const selected = host.querySelector('[role="tab"][aria-selected="true"]');
   selectSettingsTab(selected && !selected.hidden ? selected.dataset.section : 'profile');
 }

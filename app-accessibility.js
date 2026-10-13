@@ -46,6 +46,9 @@
     let added=false;
     opened.forEach(d=>{if(!stack.includes(d)){restore.set(d,document.activeElement===document.body?lastActivator:document.activeElement);stack.push(d);added=true;}});
     const top=stack.at(-1);
+    // Dynamic modules may move inside the APP while a dialog is open.
+    // Restore every saved element, including ones no longer under body.
+    if(!top)for(const [el,previous] of background){el.toggleAttribute('inert',previous.inert);if(previous.aria===null)el.removeAttribute('aria-hidden');else el.setAttribute('aria-hidden',previous.aria);background.delete(el);}
     dialogs.forEach(d=>{
       const active=d===top;
       d.toggleAttribute('inert',!active);d.setAttribute('aria-hidden',String(!active));d.setAttribute('role','dialog');
