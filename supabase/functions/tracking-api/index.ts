@@ -37,7 +37,7 @@ Deno.serve(async(req)=>{
    const connected=await client.rpc('tracking_connect',{w,p_provider:provider,p_account:accountId,p_name:account?.name||'Kiwify',p_mode:'real_test_pending'});if(connected.error)throw connected.error;
    const saved=await db.rpc('tracking_internal_save_credential',{i:connected.data,p_cipher:await encrypt(secrets),p_hash:null});if(saved.error)throw saved.error;
    if(account){const selected=await db.rpc('tracking_internal_account',{i:connected.data,p:account});if(selected.error)throw selected.error;}
-   const updated=await db.from('tracking_integrations').update({mode:'approved_test',error_code:'sync_requested',last_sync_at:null,sync_cursor:{}}).eq('id',connected.data);if(updated.error)throw updated.error;
+   const updated=await db.from('tracking_integrations').update({mode:'approved_test',error_code:'sync_requested',last_sync_at:null,sync_cursor:{},retry_after_at:null,error_count:0}).eq('id',connected.data);if(updated.error)throw updated.error;
    return json(req,{integration:connected.data,connected:true,...(provider==='kiwify'?{webhook:env('TRACKING_CALLBACK_ORIGIN')+'/functions/v1/tracking-webhook?provider=kiwify&integration='+connected.data+'&ingress_key='+encodeURIComponent(secrets.ingressToken)}:{})});
   }
   if(input.action==='fixtures'){

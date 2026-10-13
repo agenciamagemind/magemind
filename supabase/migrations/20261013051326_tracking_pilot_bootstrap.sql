@@ -928,9 +928,16 @@ begin
  if o.approved_at is not null then new_gross:=o.gross_minor; end if;
  new_net:=case when o.approved_at is null then 0 when o.recipient_minor is null or (o.refund_minor>0 and o.recipient_refund_minor is null) then null else o.recipient_minor-coalesce(o.recipient_refund_minor,0) end;
  costs:=0;
- if first_paid then
+ if old.approved_at is null and o.approved_at is not null then
   -- Snapshot cost rules at approval. Later rule changes do not rewrite prior ledger entries.
   costs:=public.tracking_order_costs(intg.workspace_id,o.id);
+  if not first_paid then
+   -- Reconciliation may first discover an already-refunded payment.
+   -- Recover approval in its original period, then book only the refund delta.
+   insert into public.tracking_ledger(workspace_id,order_id,event_key,occurred_at,currency,amount_scale,gross_delta_minor,refund_delta_minor,recipient_delta_minor,cost_delta_minor)
+   values(intg.workspace_id,o.id,rec.event_key||':approval',o.approved_at,o.currency,o.amount_scale,o.gross_minor,0,o.recipient_minor,costs);
+   old_gross:=o.gross_minor;old_net:=o.recipient_minor;costs:=0;
+  end if;
  end if;
  if new_gross<>old_gross or o.refund_minor<>old_refund or (new_net is not null and new_net is distinct from old_net) then
   insert into public.tracking_ledger(workspace_id,order_id,event_key,occurred_at,currency,amount_scale,gross_delta_minor,refund_delta_minor,recipient_delta_minor,cost_delta_minor)
@@ -1076,6 +1083,8 @@ $$;
 revoke all on function private.tracking_tick() from public,anon,authenticated;
 grant execute on function private.tracking_tick() to service_role;
 select cron.schedule('tracking-pilot-worker','* * * * *','select private.tracking_tick();');
+-- Supabase may grant authenticated EXECUTE by default; these RPCs are worker-only.
+revoke execute on function public.tracking_ingest(uuid,jsonb,text,boolean),public.tracking_process_receipt(uuid),public.tracking_claim_jobs(integer),public.tracking_fail_job(uuid,text),public.tracking_prune() from authenticated;
 do $$ declare t text;begin foreach t in array array['tracking_order_events','tracking_ad_stats_daily'] loop if exists(select 1 from pg_publication where pubname='supabase_realtime') and not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=t) then execute format('alter publication supabase_realtime add table public.%I',t);end if;end loop;end $$;
 
 do $$declare r record;begin for r in select n.nspname,c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in('public','private') and c.relkind='r' and c.relname like 'tracking_%' loop execute format('grant all on %I.%I to service_role',r.nspname,r.relname);if r.nspname='private' then execute format('revoke all on %I.%I from public,anon,authenticated',r.nspname,r.relname);end if;end loop;for r in select p.oid::regprocedure fn from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('public','private') and p.proname like 'tracking_%' loop execute format('revoke execute on function %s from public,anon',r.fn);end loop;end $$;
