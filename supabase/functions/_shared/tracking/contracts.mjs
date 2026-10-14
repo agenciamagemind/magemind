@@ -29,7 +29,7 @@ export function bridgeClick(t) {
 }
 export function validateOrder(e) {
  if(e?.schema_version!=='1'||typeof e.event_id!=='string'||!e.event_id||e.event_id.length>200||typeof e.order_id!=='string'||!e.order_id||e.order_id.length>200) throw new Error('Invalid event/order identity');
- if(!CHECKOUTS.custom.states.includes(e.status)||SCALES[e.currency]!==e.amount_scale||e.is_test!==true) throw new Error('Invalid status/currency/test marker');
+ if(!CHECKOUTS.custom.states.includes(e.status)||SCALES[e.currency]!==e.amount_scale||typeof e.is_test!=='boolean') throw new Error('Invalid status/currency/test marker');
  for(const name of ['gross_amount_minor','gateway_fee_minor','recipient_revenue_minor','refunded_amount_minor','recipient_refunded_minor']) {
   if(e[name]!=null&&(!Number.isSafeInteger(e[name])||e[name]<0)) throw new Error('Invalid money: '+name);
  }
@@ -45,7 +45,7 @@ export function validateOrder(e) {
  if(customer&&!customer.external_id) throw new Error('Customer requires provider identity; email is not a global ID');
  const safe=Object.fromEntries(['schema_version','event_id','order_id','status','currency','amount_scale','gross_amount_minor','gateway_fee_minor','recipient_revenue_minor','refunded_amount_minor','recipient_refunded_minor','renewal','root_order_id','payment_method','is_test','money_components'].filter(k=>e[k]!==undefined).map(k=>[k,e[k]]));
  safe.items=e.items.map(i=>({external_product_id:i.external_product_id,name:i.name,quantity:i.quantity,amount_minor:i.amount_minor}));
- if(safe.money_components)safe.money_components=Object.fromEntries(['recipient_native_minor','recipient_currency','recipient_scale','fee_native_minor','fee_currency','net_includes_gateway','timestamp_source'].filter(k=>['string','number','boolean'].includes(typeof safe.money_components[k])).map(k=>[k,safe.money_components[k]]));
+ if(safe.money_components)safe.money_components=Object.fromEntries(['recipient_native_minor','recipient_currency','recipient_scale','fee_native_minor','fee_currency','net_includes_gateway','timestamp_source','item_amounts_allocated','manual_fees'].filter(k=>['string','number','boolean'].includes(typeof safe.money_components[k])).map(k=>[k,safe.money_components[k]]));
  return {...safe,customer,tracking:bridgeClick(e.tracking),created_at:timestamp(e.created_at),occurred_at:timestamp(e.occurred_at),approved_at:timestamp(e.approved_at)};
 }
 export async function sha256(value) {
@@ -75,7 +75,7 @@ export function normalizeHotmart(p,context) {
  customer:buyer?.ucode||buyer?.email?{external_id:String(buyer.ucode||purchase.transaction),identity_reliable:Boolean(buyer.ucode),name:buyer.name,email:buyer.email,phone:buyer.checkout_phone||null}:null,
  items:[{external_product_id:String(product.id),name:product.name,quantity:1,amount_minor:gross}],
  tracking:purchase.origin||{},payment_method:purchase.payment?.type,renewal:Number(purchase.recurrence_number||1)>1,
- root_order_id:purchase.parent_transaction||null,is_test:true});
+ root_order_id:purchase.parent_transaction||null,is_test:context.isTest??true});
 }
 export function normalizeKiwify(p,context) {
  if(context.authoritative!==true)throw new Error('Kiwify payment must be verified using authorized sales API');
@@ -97,7 +97,7 @@ export function normalizeKiwify(p,context) {
  customer:p.customer?.id?{external_id:String(p.customer.id),identity_reliable:true,name:p.customer.name,email:p.customer.email,phone:p.customer.mobile||null}:p.Customer?.email?{external_id:String(p.order_id),identity_reliable:false,name:p.Customer.full_name,email:p.Customer.email,phone:p.Customer.mobile}:null,
  items:[{external_product_id:String(p.product?.id||p.Product?.product_id),name:p.product?.name||p.Product?.product_name,quantity:1,amount_minor:gross}],
  tracking:p.tracking||p.TrackingParameters||{},payment_method:p.payment_method?.toUpperCase(),renewal:Number(p.subscription?.recurrence_number||1)>1,
- money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],fee_native_minor:p.payment?.fee??fee,fee_currency:p.payment?.fee_currency||currency,net_includes_gateway:true},is_test:true});
+ money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],fee_native_minor:p.payment?.fee??fee,fee_currency:p.payment?.fee_currency||currency,net_includes_gateway:true},is_test:context.isTest??true});
 }
 export function normalizeCustom(p) { return validateOrder(p); }
 export function normalizeHotmartHistory(row,context,commissions=[]) {
@@ -118,7 +118,7 @@ export function normalizeHotmartHistory(row,context,commissions=[]) {
  customer:row.buyer?.ucode?{external_id:row.buyer.ucode,name:row.buyer.name,email:row.buyer.email,phone:null}:null,
  items:[{external_product_id:String(row.product.id),name:row.product.name,quantity:1,amount_minor:gross}],
  tracking:{src:p.tracking?.source,sck:p.tracking?.source_sck,xcod:p.tracking?.external_code},payment_method:p.payment?.method,
- renewal:Number(p.recurrency_number||1)>1,money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],net_includes_gateway:true,timestamp_source:'reconciliation_received_at'},is_test:true});
+ renewal:Number(p.recurrency_number||1)>1,money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],net_includes_gateway:true,timestamp_source:'reconciliation_received_at'},is_test:context.isTest??true});
 }
 export async function reconciliationIdentity(e) {
  const copy={...e};delete copy.event_id;

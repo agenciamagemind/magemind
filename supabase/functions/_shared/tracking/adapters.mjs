@@ -4,7 +4,7 @@ export async function providerFetch(url,options={},fetcher=fetch) {
  const u=new URL(url);if(u.protocol!=='https:'||!HOSTS.has(u.hostname))throw new Error('External host not allowlisted');
  const method=options.method||'GET';
  if(/mutate|budgets|withdrawals|payouts|\/refund(?:\/|$)/i.test(u.pathname))throw new Error('Management and financial mutations forbidden');
- if(method!=='GET'&&u.hostname==='graph.facebook.com'&&!u.pathname.endsWith('/events'))throw new Error('Only explicit test conversions may write to Meta');
+ if(method!=='GET'&&u.hostname==='graph.facebook.com'&&!u.pathname.endsWith('/events')&&!/^\/v\d+\.\d+\/oauth\/access_token$/.test(u.pathname))throw new Error('Only OAuth exchange and explicit test conversions may write to Meta');
  if(method!=='GET'&&u.hostname==='public-api.kiwify.com'&&u.pathname!=='/v1/oauth/token')throw new Error('Kiwify integration is read only');
  if(method!=='GET'&&u.hostname==='developers.hotmart.com')throw new Error('Hotmart integration is read only');
  const response=await fetcher(u,{...options,redirect:'error',signal:AbortSignal.timeout(20000)});
@@ -56,16 +56,20 @@ checkoutAdapters.hotmart.listOrdersForReconciliation=async(c,from,to,page,fetche
 // Require official API base configured server-side; the documented host is developers.hotmart.com.
 HOSTS.add('developers.hotmart.com');
 checkoutAdapters.hotmart.fetchCommissions=async(id,status,c,fetcher=fetch)=>providerFetch('https://developers.hotmart.com/payments/api/v1/sales/commissions?'+new URLSearchParams({transaction:id,transaction_status:status,commission_as:c.recipientSource}),{headers:{Authorization:'Bearer '+c.access_token}},fetcher);
-export async function oauthStart(provider,{clientId,redirectUri,state,version='v25.0'}) {
+export async function oauthStart(provider,{clientId,redirectUri,state,version='v25.0',configId,allowManagement=false}) {
  const url=new URL(provider==='google'?'https://accounts.google.com/o/oauth2/v2/auth':'https://www.facebook.com/'+version+'/dialog/oauth');
- const args={client_id:clientId,redirect_uri:redirectUri,state,response_type:'code',scope:provider==='google'?'https://www.googleapis.com/auth/adwords':'ads_read'};
+ const args={client_id:clientId,redirect_uri:redirectUri,state,response_type:'code',scope:provider==='google'?'https://www.googleapis.com/auth/adwords':allowManagement?'ads_read,ads_management':'ads_read'};
+ if(provider==='meta'&&configId){delete args.scope;args.config_id=configId;}
  if(provider==='google')Object.assign(args,{access_type:'offline',prompt:'consent'});
  url.search=new URLSearchParams(args);return url.href;
 }
 export async function exchangeOAuth(provider,c,code,fetcher=fetch) {
  const args={client_id:c.clientId,client_secret:c.clientSecret,redirect_uri:c.redirectUri,code};
  if(provider==='google')return providerFetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...args,grant_type:'authorization_code'})},fetcher);
- return providerFetch('https://graph.facebook.com/'+c.version+'/oauth/access_token?'+new URLSearchParams(args),{},fetcher);
+ const post=params=>providerFetch('https://graph.facebook.com/'+c.version+'/oauth/access_token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params)},fetcher);
+ const first=await post(args);if(!first.access_token)throw new Error('token_revoked');
+ const long=await post({grant_type:'fb_exchange_token',client_id:c.clientId,client_secret:c.clientSecret,fb_exchange_token:first.access_token});
+ if(!long.access_token)throw new Error('token_revoked');return {...long,token_expires_at:Date.now()+Number(long.expires_in||first.expires_in||3600)*1000};
 }
 export async function refreshGoogle(c,fetcher=fetch) {
  return providerFetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:c.clientId,client_secret:c.clientSecret,refresh_token:c.refresh_token,grant_type:'refresh_token'})},fetcher);

@@ -4,7 +4,7 @@
  const client=supa;
  const checked=r=>{if(r.error)throw new Error(r.error.message);return r.data;};
  const rpc=async(name,args)=>checked(await client.rpc(name,args));
- const edge=async(data)=>checked(await client.functions.invoke('tracking-api',{body:data}));
+ const edge=async(data)=>{const r=await client.functions.invoke('tracking-api',{body:data});if(r.error){let message;try{message=(await r.error.context.json()).error;}catch{}throw new Error(message||'Não foi possível concluir a conexão. Tente novamente.');}return r.data;};
  window.MagemindTrackingBackend={
   client,
   edge,

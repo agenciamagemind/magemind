@@ -3,7 +3,7 @@
  const script=document.currentScript,endpoint=script?.dataset.endpoint,key=script?.dataset.site;
  if(!endpoint||!key)return;
  const target=new URL(endpoint,location.href);
- if(target.hostname==='tsawxmlfvnvepzgcztfc.supabase.co'||target.hostname==='app.magemind.com.br')return;
+ if(target.hostname==='tsawxmlfvnvepzgcztfc.supabase.co'&&(target.protocol!=='https:'||target.pathname!=='/functions/v1/tracking-webhook'||target.searchParams.get('provider')!=='collector'))return;
  const allowed=new Set((script.dataset.checkouts||'').split(',').filter(Boolean));
  const windowDays=Math.max(1,Math.min(90,Number(script.dataset.windowDays)||7));
  const fields=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','campaign_id','adset_id','ad_id','gclid','gbraid','wbraid','fbclid'];

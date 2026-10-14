@@ -15,7 +15,7 @@
   return '<div class="mt-admin-filters">'+c.select('admin-client','Cliente',clients,s.admin_client||'')+
    (kind==='orders'?c.select('admin-sort','Ordem',[['newest','Mais recentes'],['oldest','Mais antigos'],['amount_desc','Maior valor'],['amount_asc','Menor valor'],['client','Nome do cliente']],['newest','oldest','amount_desc','amount_asc','client'].includes(s.admin_sort)?s.admin_sort:'newest'):
    kind==='operations'?c.select('admin-sort','Ordem',[['spend','Maior investimento'],['revenue','Maior faturamento']],s.admin_sort==='revenue'?'revenue':'spend'):
-   c.select('admin-platform','Plataforma',[['','Todas as plataformas'],...['meta','google','tiktok','kiwify','hotmart','custom'].map(p=>[p,c.brand.name(p)])],s.admin_platform||''))+'</div>';
+   c.select('admin-platform','Plataforma',[['','Todas as plataformas'],...['meta','google','tiktok','kiwify','hotmart','cartpanda','perfectpay','custom'].map(p=>[p,c.brand.name(p)])],s.admin_platform||''))+'</div>';
  }
  function operationCard(c,w){
   const s=w.s,profit=s.estimated_minor;
@@ -39,7 +39,7 @@
   const card=p=>{const v=d.platforms.find(i=>i.provider===p)||{accounts:0,clients:0,connections:0,attention:0};
    return '<article class="integration-card mt-integration-'+p+'"><div class="mt-integration-brand">'+c.brand.logo(p)+'<h3>'+c.esc(c.brand.name(p))+'</h3></div><p>'+(['meta','google','tiktok'].includes(p)?'Contas, campanhas e desempenho dos anúncios.':'Pedidos, pagamentos e informações dos compradores.')+'</p><div class="list-row"><span class="small">Contas integradas</span><strong class="mt-admin-account-count">'+number(v.accounts)+'</strong></div><div class="mt-admin-platform-meta"><span>'+number(v.clients)+' clientes</span>'+(v.attention?'<span class="negative">'+number(v.attention)+' com atenção</span>':'')+'</div><div class="actions">'+c.button('Ver conexões','admin-connections','data-provider="'+p+'"')+'</div></article>';
   };
-  return c.brand.integrationSections(card);
+  const status=await window.MagemindTrackingBackend.edge({action:'platform_status'});return c.brand.integrationSections(card)+(status.can_configure?'<div class="mt-platform-settings"><div><strong>Login da Meta</strong><p class="small">'+(status.configured?'Aplicativo configurado.':'Configure o aplicativo para habilitar o login dos clientes.')+'</p></div>'+c.button('Configurar aplicativo Meta','meta-platform')+'</div>':'');
  }
  function connectionList(c,q=''){
   const term=q.trim().toLocaleLowerCase('pt-BR'),rows=connectionRows.filter(i=>[i.client_name,i.name,i.account_id].join(' ').toLocaleLowerCase('pt-BR').includes(term));

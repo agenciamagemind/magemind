@@ -22,7 +22,7 @@ Deno.serve(async(req)=>{
     try{
      const {secrets}=await credential(db,i.id);
      if(['meta','google'].includes(i.provider)){
-      let config={...secrets,version:env('TRACKING_'+i.provider.toUpperCase()+'_VERSION')};
+      let config={...secrets,version:secrets.version||env('TRACKING_'+i.provider.toUpperCase()+'_VERSION')};
       if(i.provider==='google'&&config.refresh_token)config={...config,...await refreshGoogle({...config,clientId:env('TRACKING_GOOGLE_CLIENT_ID'),clientSecret:env('TRACKING_GOOGLE_CLIENT_SECRET')})};
       const {data:account}=await db.from('tracking_ad_accounts').select('*').eq('workspace_id',i.workspace_id).eq('provider',i.provider).eq('account_id',i.account_id).eq('selected',true).maybeSingle();
       if(!account)continue;const rows=i.provider==='meta'?await syncMeta(config,account,from,to):await syncGoogle(config,account,from,to);
@@ -31,24 +31,24 @@ Deno.serve(async(req)=>{
        const prior=await db.from('tracking_ad_entities').select('revision,status').eq('workspace_id',i.workspace_id).eq('provider','meta').eq('account_id',i.account_id).eq('entity_id',e.entity_id).maybeSingle();
        const saved=await db.from('tracking_ad_entities').upsert({...e,workspace_id:i.workspace_id,provider:'meta',account_id:i.account_id,revision:(prior.data?.revision||0)+(prior.data&&prior.data.status!==e.status?1:0)},{onConflict:'workspace_id,provider,account_id,entity_id'});if(saved.error)throw saved.error;
       }
-     }else if(i.provider==='kiwify'){
+     }else if(i.provider==='kiwify'&&!secrets.webhook_only){
       const cursor=i.sync_cursor||{},page=Number(cursor.page||1),offset=Number(cursor.offset||0);
       const response=await checkoutAdapters.kiwify.listOrdersForReconciliation(secrets,cursor.from||from,cursor.to||to,page);
       const rows=response.data||response.items||[];
       for(const raw of rows.slice(offset,offset+20)){
         const full=await checkoutAdapters.kiwify.fetchOrder(String(raw.id),secrets);
-        const e=normalizeKiwify(full,{...secrets,authoritative:true,eventId:'reconcile:'+full.id+':'+full.updated_at+':'+full.status});
+        const e=normalizeKiwify(full,{...secrets,isTest:false,authoritative:true,eventId:'reconcile:'+full.id+':'+full.updated_at+':'+full.status});
         await rpc(db,'tracking_ingest',{i:i.id,e,h:await sha256(JSON.stringify(e)),p_historical:true});
       }
       const next=offset+20<rows.length?{page,offset:offset+20,from:cursor.from||from,to:cursor.to||to}:rows.length===100||response.pagination?.has_more||response.has_more?{page:page+1,offset:0,from:cursor.from||from,to:cursor.to||to}:{};
       await db.from('tracking_integrations').update({sync_cursor:next,...(Object.keys(next).length?{}:{last_sync_at:date.toISOString()}),error_code:null,error_count:0,retry_after_at:null}).eq('id',i.id);
-     }else if(i.provider==='hotmart'){
+     }else if(i.provider==='hotmart'&&!secrets.webhook_only){
       const statuses=['APPROVED','COMPLETE','WAITING_PAYMENT','PRINTED_BILLET','REFUNDED','CHARGEBACK','CANCELLED','PROTESTED'];
       const cursor=i.sync_cursor||{},index=Number(cursor.status_index||0);
       const response=await checkoutAdapters.hotmart.listOrdersForReconciliation(secrets,cursor.from||from,cursor.to||to,cursor.page_token||null,fetch,undefined,statuses[index]);
       for(const row of (response.items||[]).slice(Number(cursor.offset||0),Number(cursor.offset||0)+20)){
        const commissions=await checkoutAdapters.hotmart.fetchCommissions(row.purchase.transaction,row.purchase.status,secrets);
-       const e=await reconciliationIdentity(normalizeHotmartHistory(row,{...secrets,reconciledAt:date.toISOString()},commissions.items?.find(c=>c.transaction===row.purchase.transaction)?.commissions||[]));
+       const e=await reconciliationIdentity(normalizeHotmartHistory(row,{...secrets,isTest:false,reconciledAt:date.toISOString()},commissions.items?.find(c=>c.transaction===row.purchase.transaction)?.commissions||[]));
        await rpc(db,'tracking_ingest',{i:i.id,e,h:e.reconciliation_hash,p_historical:true});
       }
       const offset=Number(cursor.offset||0)+20,nextPage=response.page_info?.next_page_token;
@@ -76,8 +76,8 @@ Deno.serve(async(req)=>{
      webpush.setVapidDetails(env('TRACKING_VAPID_SUBJECT'),env('TRACKING_VAPID_PUBLIC_KEY'),env('TRACKING_VAPID_PRIVATE_KEY'));
      for(const s of d.subscriptions){
       if(!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(new URL(s.endpoint).hostname))throw new Error('push_host_not_allowlisted');
-      const hidden=d.preference?.hide_amount!==false,labels={sale:'Venda de teste aprovada',renewal:'Renovação de teste aprovada',refund:'Devolução de teste registrada',failure:'Falha em integração de teste'};
-      const title=labels[d.category]||'Atualização de teste',amount=d.order?new Intl.NumberFormat('pt-BR',{style:'currency',currency:d.order.currency}).format(Number(d.category==='refund'?d.order.refund_minor:d.order.gross_minor)/10**d.order.amount_scale):null;
+      const hidden=d.preference?.hide_amount!==false,labels={sale:'Venda aprovada',renewal:'Renovação aprovada',refund:'Devolução registrada',failure:'Uma integração precisa de atenção'};
+      const title=labels[d.category]||'Atualização da sua operação',amount=d.order?new Intl.NumberFormat('pt-BR',{style:'currency',currency:d.order.currency}).format(Number(d.category==='refund'?d.order.refund_minor:d.order.gross_minor)/10**d.order.amount_scale):null;
       try{await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify({environment:'test',workspaceId:d.workspace_id,orderId:d.order_id,integrationId:d.integration_id,hideAmount:hidden,body:title+(hidden||amount==null?'':' · '+amount),url:env('TRACKING_FRONTEND_ORIGIN')+'/tracking.html?workspace='+d.workspace_id+(d.order_id?'&order='+d.order_id:'&tab=integrations')}),{TTL:3600});}
       catch(error){if([404,410].includes(error.statusCode))await rpc(db,'tracking_internal_expire_push',{i:s.id});else throw error;}
      }
