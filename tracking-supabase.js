@@ -9,7 +9,7 @@
   client,
   edge,
   subscription:null,
-  subscribe(w,callback){if(this.subscription)client.removeChannel(this.subscription);clearTimeout(this.refreshTimer);const update=()=>{clearTimeout(this.refreshTimer);this.refreshTimer=setTimeout(callback,500);};this.subscription=w?client.channel('tracking-'+w).on('postgres_changes',{event:'*',schema:'public',table:'tracking_order_events',filter:'workspace_id=eq.'+w},update).on('postgres_changes',{event:'*',schema:'public',table:'tracking_ad_stats_daily',filter:'workspace_id=eq.'+w},update).subscribe():null;},
+  subscribe(w,callback){if(this.subscription)client.removeChannel(this.subscription);clearTimeout(this.refreshTimer);const update=()=>{clearTimeout(this.refreshTimer);this.refreshTimer=setTimeout(callback,500);};const scope=w==='observer'?{}:{filter:'workspace_id=eq.'+w};this.subscription=w?client.channel('tracking-'+w).on('postgres_changes',{event:'*',schema:'public',table:'tracking_order_events',...scope},update).on('postgres_changes',{event:'*',schema:'public',table:'tracking_ad_stats_daily',...scope},update).subscribe():null;},
   async call(route,data,params,state){
    const w=state.workspace,p={...state,...params,action:route.slice(1)};
    if(route==='/auth/me'){const r=await client.auth.getUser();return r.error?{authenticated:false}:{user_id:r.data.user.id,email:r.data.user.email};}
@@ -18,6 +18,7 @@
     checked(r);if(!r.data.session)throw new Error('Confirme a conta no e-mail de teste do inbucket local.');return {user_id:r.data.user.id,email:r.data.user.email};
    }
    if(route==='/auth/logout'){checked(await client.auth.signOut());return {ok:true};}
+   if(route.startsWith('/admin/'))return rpc('tracking_admin_report',{p:{...p,action:route.slice(7)}});
    if(route==='/workspaces'){
     if(data)return {id:await rpc('tracking_create_workspace',{p_name:data.name,p_currency:data.currency||'BRL',p_timezone:data.timezone||'America/Sao_Paulo'})};
     const uid=(await client.auth.getUser()).data.user?.id;if(!uid)return [];

@@ -49,6 +49,7 @@ export async function credential(db:any,id:string){
  return {row:data,secrets};
 }
 export async function requireMember(client:any,w:string,userId:string,write=false){
+ if(write){const observer=await client.rpc('tracking_observer_access');if(observer.error||observer.data===true)throw new Error('Acompanhamento somente leitura');}
  const {data,error}=await client.from('tracking_members').select('role,can_view_buyers').eq('workspace_id',w).eq('user_id',userId).maybeSingle();
  if(error||!data||(write&&!['owner','admin'].includes(data.role)))throw new Error('Forbidden');return data;
 }

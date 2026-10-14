@@ -54,7 +54,7 @@ function setupSettingsTabs() {
     });
   }
   document.getElementById('settings-tab-company').hidden = !isAdmin();
-  if(window.trackingEnabled()){
+  if(window.trackingEnabled()&&!window.trackingObserver()){
     if(!document.getElementById('settings-tab-tracking')){
       const panel=document.createElement('div');panel.id='settings-panel-tracking';panel.className='settings-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','settings-tab-tracking');host.append(panel);
       const tab=document.createElement('button');tab.type='button';tab.id='settings-tab-tracking';tab.textContent='Custos';tab.dataset.section='tracking';tab.setAttribute('role','tab');tab.setAttribute('aria-controls',panel.id);tab.addEventListener('click',()=>selectSettingsTab('tracking'));

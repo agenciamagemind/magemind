@@ -1,0 +1,19 @@
+# Acompanhamento administrativo de tracking — 14/10/2026
+
+CEO e gerente acompanham operações dos clientes e demais perfis, em vez de operar contas próprias. O piloto continua habilitado exclusivamente para ogabrielmrossi@gmail.com e testetrack@gmail.com: a conta master recebe a visão administrativa; a conta de teste continua como cliente. Outros gerentes permanecem ocultos até liberação explícita.
+
+Campanhas começa com cartões por operação: cliente, faturamento aprovado, investimento, lucro estimado, ROI e ROAS. Ordenação por investimento ou faturamento, filtro por responsável, moeda e período. Abrir um cartão reutiliza a visualização de campanhas, conjuntos/grupos e anúncios do cliente, exibindo estados como indicadores sem switches. O botão de voltar retorna à comparação de operações.
+
+Pedidos consolida as operações, com paginação no banco, busca, status, checkout, origem, pagamento e responsável. Ordenação por data, valor ou nome do cliente. A listagem não transmite e-mail/telefone dos compradores; contatos aparecem apenas nos detalhes centralizados e consultados pelo par operação/pedido.
+
+Integrações apresenta as contas únicas por plataforma, quantidade de conexões e clientes, operações conectadas e conexões com atenção. Plataformas e filtros permitem consultar as conexões; não existem ações de conectar, desconectar, sincronizar, obter credenciais ou configurar tokens. Custos, notificações próprias de tracking e geradores são omitidos para observadores.
+
+O Menu oferece um resumo dos resultados das operações, separado dos indicadores originais da agência. Operações reais e demonstrações nunca são somadas; o filtro seleciona uma categoria. Operações antigas pertencentes a CEO/gerente são preservadas, mas omitidas desta visão, e a navegação não cria outra operação administrativa.
+
+Todos os valores respeitam a moeda e o período escolhidos. Os resultados financeiros reutilizam tracking_report para manter as mesmas regras de ledger, custos históricos, reembolsos, taxas e dados desconhecidos do cliente. ROI = lucro estimado / custo total, sendo custo total = faturamento menos devoluções menos lucro estimado. ROAS = receita atribuída / mídia; o consolidado considera apenas operações com gasto disponível e informa essa cobertura para não inflar o resultado com mídia desconhecida. Sem informações ou denominador válido, o indicador mostra —. Datas de pedidos usam os limites de meia-noite no fuso da operação, com intervalos compatíveis com os índices existentes.
+
+A autorização vem do perfil verificado no banco, sessão existente e elegibilidade atual no piloto. Helpers privados e RLS concedem somente read/pii nas operações de perfis não administrativos; write/owner ficam negados inclusive quando existe uma antiga membership de owner. Um trigger impede criação de operações por observadores. Preferências, push e onboarding têm proteção adicional; callbacks OAuth anteriores também rejeitam perfis administrativos. tracking_admin_report é SECURITY INVOKER, anônimo não recebe EXECUTE e o backend Edge rejeita qualquer ação de observadores antes de ler credenciais ou chamar provedores. Os privilégios originais do APP e os dados financeiros não são alterados.
+
+Verificação: 60 testes Node/PostgreSQL passaram, incluindo escopo por cargo/cliente, limites de data, ordenação, moedas separadas, privacidade, negação de alterações e preservação do piloto de duas contas. 52 verificações de interface passaram com PostgreSQL local e fixtures de dois clientes, CEO e gerente, em 1440/390 px. Também foram consultados os relatórios no banco online usando claims temporárias de uma sessão master já existente, com SET LOCAL ROLE authenticated, sem gravar Auth ou modificar registros. Advisors permaneceram com os mesmos avisos preexistentes, sem novo alerta. Nenhuma credencial ou dado real de vendas foi introduzido pelos testes.
+
+Reprodução: node tests/tracking/run.mjs e node scripts/tracking-admin-qa.mjs.
