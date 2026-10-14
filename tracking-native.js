@@ -245,7 +245,7 @@
   }
   if(name==='products'){
    const integrations=(await api('/integrations')).filter(i=>['custom',...checkoutProviders].includes(i.provider));
-   return modal('Produtos acompanhados','<form data-form="products">'+select('products-integration','Checkout',integrations.map(i=>[i.id,i.provider+' / '+i.account_id]))+'<label>IDs de produtos (vírgula; vazio = todos)<input name="ids" maxlength="2000" placeholder="course-test"></label><button class="primary">Salvar escopo de produtos</button><p class="small">O total canônico de um pedido com produto selecionado inclui seus itens e bumps. Não rateamos receita de forma inventada. Eventos fora do escopo ficam no diagnóstico e podem ser reprocessados com auditoria.</p></form>');
+   return modal('Produtos acompanhados','<form data-form="products">'+select('products-integration','Checkout',integrations.map(i=>[i.id,i.provider+' / '+i.account_id]))+'<label>IDs de produtos (vírgula; vazio = todos)<input name="ids" maxlength="2000" placeholder="ID recebido no pedido"></label><button class="primary">Salvar escopo de produtos</button><p class="small">Deixe vazio para acompanhar todos os produtos. O filtro considera o total do pedido que inclui os produtos selecionados, inclusive itens adicionais.</p></form>');
   }
   if(['oauth','accounts','select-account','checkout-credentials'].includes(name)&&!window.MagemindTrackingBackend)throw new Error('Conexões reais precisam do Supabase local configurado.');
   if(name==='oauth'){const r=await window.MagemindTrackingBackend.edge({action:'oauth_start',workspace:state.workspace,provider:el.dataset.provider});location.assign(r.url);return;}

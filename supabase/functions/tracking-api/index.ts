@@ -52,7 +52,7 @@ Deno.serve(async(req)=>{
    const setup=validateWebhookSetup(input.provider,input),recipientSource=String(input.recipientSource||'PRODUCER');
    if(!['PRODUCER','AFFILIATE','COPRODUCER'].includes(recipientSource))throw new Error('Selecione seu papel na venda');
    if(input.provider==='cartpanda'&&(input.manual_fees!==true||recipientSource!=='PRODUCER'))throw new Error('Confirme a configuração de taxas e custos da loja');
-   const secrets={...setup.secrets,ingressToken:crypto.randomUUID()+crypto.randomUUID(),webhook_only:true,recipientSource,manual_fees:input.provider==='cartpanda',timezone:'America/Sao_Paulo'};
+   const secrets={...setup.secrets,ingressToken:crypto.randomUUID()+crypto.randomUUID(),webhook_only:true,recipientSource,manual_fees:input.provider==='cartpanda',timezone:input.provider==='kiwify'?'UTC':'America/Sao_Paulo'};
    const id=await rpc(db,'tracking_install_webhook',{w,u:user.id,s:sid,p:input.provider,n:setup.name,c:await encrypt(secrets)});return json(req,{integration:id,webhook:webhookEndpoint(env('TRACKING_CALLBACK_ORIGIN'),input.provider,id,secrets.ingressToken)});
   }
   const {data:integration,error}=await client.from('tracking_integrations').select('*').eq('workspace_id',w).eq('id',input.integration).single();if(error||!integration)throw new Error('Integration inaccessible');

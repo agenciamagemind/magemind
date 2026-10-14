@@ -39,7 +39,9 @@ export function normalizeKiwifyWebhook(p,c){
  const settlementCurrency=commission.settlement_amount_currency||cur,nativeNet=asMinor(commission.settlement_amount??commission.my_commission),net=settlementCurrency===cur?netWithin(nativeNet,gross):null;
  const feeCurrency=commission.kiwify_fee_currency||cur,fee=feeCurrency===cur?netWithin(asMinor(commission.kiwify_fee),gross):null;
  const refund=['refunded','chargeback'].includes(status)?asMinor(p.refunded_amount)??gross:0;if(p.refund_type==='partial'&&asMinor(p.refunded_amount)==null)throw new Error('Partial refund amount required');
- const times=chronology(p,c,p.created_at,p.approved_date||p.approved_at,p.updated_at,status);
+ // The Kiwify delivery observed at the provider uses UTC without an offset.
+ // Convert at the boundary; the operation displays it in its own timezone.
+ const times=chronology(p,{...c,timezone:'UTC'},p.created_at,p.approved_date||p.approved_at,p.updated_at,status);
  return validateOrder({...base(c,p.order_id||p.id,status,cur,gross),...times,gateway_fee_minor:fee,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund===gross?net:null,
   customer:customer(p.Customer?.id||p.order_id,p.Customer?.full_name,p.Customer?.email,p.Customer?.mobile,Boolean(p.Customer?.id)),
   items:[{external_product_id:String(p.Product?.product_id||''),name:String(p.Product?.product_name||'Produto'),quantity:1,amount_minor:gross}],tracking:p.TrackingParameters||{},payment_method:p.payment_method?.toUpperCase(),renewal:Number(p.Subscription?.recurrence_number||p.subscription?.recurrence_number||1)>1,

@@ -33,6 +33,14 @@ Deno.serve(async(req)=>{
    const {row,secrets}=await credential(db,id);if(row.integration.provider!==provider)return json(req,{error:'Provider mismatch'},403);
    if(secrets.webhook_only===true){
     if(!await verifyWebhook(provider,req,payload,secrets))return json(req,{error:'Invalid webhook credential'},401);
+    // Private delivery verification never creates a receipt, buyer or order.
+    if(url.searchParams.get('verification')==='1'){
+     let validation='valid';try{const sample=provider==='kiwify'?{...payload,is_test:false,test:false}:payload;const event=await normalizeWebhook(provider,sample,{...secrets,receivedAt:new Date().toISOString()});if(!event)validation='non_financial';}catch(error){validation=String(error?.message||'invalid').slice(0,100);}
+     const keys=(o:any)=>o&&typeof o==='object'?Object.keys(o):[];
+     const dates=Object.fromEntries(['created_at','updated_at','approved_date','refunded_at'].map(k=>[k,/^[0-9TZ: .+\-]+$/.test(String(payload[k]))?String(payload[k]).slice(0,40):null]));
+     const report={received:true,at:new Date().toISOString(),financial_event_recorded:false,validation,dates,fields:keys(payload),commissions:keys(payload.Commissions),product:keys(payload.Product),tracking:keys(payload.TrackingParameters),provider_headers:Array.from(req.headers.keys()).filter(k=>/kiwify/i.test(k))};
+     await db.from('tracking_integrations').update({sync_cursor:{webhook_verification:report}}).eq('id',id);return json(req,report,200);
+    }
     const hash=await sha256(canonicalJSON(payload)),clock=await db.rpc('tracking_webhook_clock',{i:id,h:hash});if(clock.error)throw clock.error;
     try{event=await normalizeWebhook(provider,payload,{...secrets,receivedAt:clock.data});}catch(error){if(error?.message==='Synthetic events are unavailable')return json(req,{accepted:true,processing:'ignored_test'},200);await db.from('tracking_integrations').update({error_code:'payload_incomplete'}).eq('id',id);throw error;}
     if(!event)return json(req,{accepted:true,processing:'ignored'},200);
