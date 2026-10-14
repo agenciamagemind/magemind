@@ -693,28 +693,6 @@ create function public.tracking_select_products(w uuid,i uuid,ids text[]) return
 end $$;
 revoke execute on function public.tracking_select_products(uuid,uuid,text[]) from public,anon;
 grant execute on function public.tracking_select_products(uuid,uuid,text[]) to authenticated;
--- A free public signup is a prospect: no client, sale, contract or staff privilege.
-create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path='' as $$
-declare source text:=new.raw_app_meta_data->>'source'; role text:=new.raw_app_meta_data->>'role'; client uuid;
-begin
- if source='internal' and role in ('manager','partner','gestor','editor','affiliate') then
-  insert into public.profiles(id,name,email,phone,role,active,client_id) values(new.id,coalesce(nullif(new.raw_user_meta_data->>'name',''),split_part(new.email,'@',1)),new.email,nullif(new.raw_user_meta_data->>'phone',''),role,true,null);
-  return new;
- end if;
- if source='managed_client' and role='client' then
-  client:=nullif(new.raw_app_meta_data->>'client_id','')::uuid;
-  if not exists(select 1 from public.clients where id=client) then raise exception 'Managed client missing'; end if;
- end if;
- insert into public.profiles(id,name,email,phone,role,active,client_id) values(new.id,coalesce(nullif(new.raw_user_meta_data->>'name',''),split_part(new.email,'@',1)),new.email,nullif(new.raw_user_meta_data->>'phone',''),'client',true,client);
- return new; end $$;
-alter table public.profiles add column if not exists tracking_access boolean not null default true;
-create or replace function public.current_user_role() returns text language sql stable security definer set search_path='' as $$
- select p.role from public.profiles p where p.id=(select auth.uid()) and p.active and p.archived_at is null and
- (p.role<>'client' or (p.client_id is null and p.tracking_access) or exists(select 1 from public.clients c where c.id=p.client_id and c.status<>'Inativo' and c.archived_at is null));
-$$;
-create or replace function public.is_active_user() returns boolean language sql stable security definer set search_path='' as $$ select public.current_user_role() is not null $$;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
 alter table public.plans add column if not exists action_type text not null default 'service' check(action_type in ('service','tool'));
 alter table public.plans add column if not exists tool_route text;
 insert into public.plans(name,type,qty,price,price_orig,tagline,includes,solution_category,action_type,tool_route)

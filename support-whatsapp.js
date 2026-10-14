@@ -17,7 +17,7 @@
   const me=typeof DB!=='undefined'?DB.me:null,phone=typeof getAgencyPhone==='function'?getAgencyPhone():'';
   const active=Boolean(me&&phone&&document.getElementById('app')?.style.display!=='none');widget.hidden=!active;
   if(!active){hide();clearTimeout(timer);account=null;return false;}
-  link.href='https://wa.me/'+phone+'?text='+encodeURIComponent('Olá, equipe Magemind! Preciso de ajuda com o aplicativo.');
+  link.href='https://wa.me/'+phone+'?text='+encodeURIComponent('Olá, equipe Magemind! Consegue me ajudar?');
   if(account!==me.id){account=me.id;shown=0;lastMessage=-1;hide();schedule(12000);}
   return true;
  }
