@@ -15,7 +15,7 @@
  }
  function sync(){
   const me=typeof DB!=='undefined'?DB.me:null,phone=typeof getAgencyPhone==='function'?getAgencyPhone():'';
-  const active=Boolean(me&&phone&&document.getElementById('app')?.style.display!=='none');widget.hidden=!active;
+  const active=Boolean(me&&!['ceo','manager'].includes(me.role)&&phone&&document.getElementById('app')?.style.display!=='none');widget.hidden=!active;
   if(!active){hide();clearTimeout(timer);account=null;return false;}
   link.href='https://wa.me/'+phone+'?text='+encodeURIComponent('Olá, equipe Magemind! Consegue me ajudar?');
   if(account!==me.id){account=me.id;shown=0;lastMessage=-1;hide();schedule(12000);}

@@ -21,7 +21,7 @@
  const dt=value=>value?new Date(value).toLocaleString('pt-BR',{timeZone:workspace()?.timezone||'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'Ainda não recebida';
  const dateLabel=value=>String(value||'').slice(0,10).split('-').reverse().join('/');
  function toast(message){window.toast(message);}
- function persist(){if(user){const {search,...safe}=state;localStorage.setItem('mm_tracking_test_state_'+user.user_id,JSON.stringify(safe));}}
+ function persist(){if(user){const {search,...safe}=state;localStorage.setItem('mm_tracking_state_'+user.user_id,JSON.stringify(safe));}}
  function clear(){requestVersion++;closePeriod();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
  async function api(route,data,params={}){
   if(window.MagemindTrackingBackend)return window.MagemindTrackingBackend.call(route,data,params,state);
@@ -72,16 +72,15 @@
   if(observer()){workspaces=(await api('/admin/catalog')).rows;state.workspace=null;$('tracking-workspace-label').style.display='none';window.MagemindTrackingBackend?.subscribe('observer',()=>{if(user&&!$('tracking-dialog').open)render();});return;}
   workspaces=await api('/workspaces');if(!workspaces.some(w=>w.id===state.workspace))state.workspace=workspaces[0]?.id||null;
   if(!state.workspace){const created=await api('/workspaces',{name:'Minha operação',currency:'BRL',timezone:'America/Sao_Paulo'});state.workspace=created.id;workspaces=await api('/workspaces');}
-  $('tracking-workspace').innerHTML=workspaces.map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+'</option>').join('');$('tracking-workspace').value=state.workspace;
-  $('tracking-workspace-label').style.display=workspaces.length>1?'flex':'none';
+  $('tracking-workspace-label').style.display='none';
   window.MagemindTrackingBackend?.subscribe(state.workspace,()=>{if(user&&!$('tracking-dialog').open)render();});
  }
  let sessionReady=null;
  async function ready(){
   if(!DB.me||!window.trackingEnabled())return false;if(user?.user_id===DB.me.id&&(state.workspace||observer()))return true;
   if(sessionReady)return sessionReady;const uid=DB.me.id;
-  sessionReady=(async()=>{sessionStarted=Date.now();onboardingExpanded=false;user={user_id:uid,email:DB.me.email};let saved={};try{saved=JSON.parse(localStorage.getItem('mm_tracking_test_state_'+uid)||'{}');for(const k of ['workspace','from','to','currency'])if(saved[k])state[k]=saved[k];}catch{}
-   await loadWorkspaces();if(observer())Object.assign(state,{admin_client:'',admin_mode:'real',admin_sort:'newest',admin_workspace:null});if(DB.me?.id!==uid){clear();return false;}state.simulation_only=workspace()?.simulation_only===true;state.preset=periods.presets.some(p=>p.id===saved.preset)?saved.preset:periods.validRange(saved.from,saved.to)?periods.infer(saved.from,saved.to,Date.now(),workspace()?.timezone):'week';syncInputs();return true;
+  sessionReady=(async()=>{sessionStarted=Date.now();onboardingExpanded=false;user={user_id:uid,email:DB.me.email};let saved={};try{saved=JSON.parse(localStorage.getItem('mm_tracking_state_'+uid)||'{}');for(const k of ['workspace','from','to','currency'])if(saved[k])state[k]=saved[k];}catch{}
+   await loadWorkspaces();if(observer())Object.assign(state,{admin_client:'',admin_sort:'newest',admin_workspace:null});if(DB.me?.id!==uid){clear();return false;}state.simulation_only=workspace()?.simulation_only===true;state.preset=periods.presets.some(p=>p.id===saved.preset)?saved.preset:periods.validRange(saved.from,saved.to)?periods.infer(saved.from,saved.to,Date.now(),workspace()?.timezone):'week';syncInputs();return true;
   })().finally(()=>sessionReady=null);return sessionReady;
  }
  function syncInputs(){if(state.preset!=='custom')Object.assign(state,periods.range(state.preset,Date.now(),workspace()?.timezone||'America/Sao_Paulo'));for(const k of ['from','to','currency'])$('tracking-'+k).value=state[k];$('tracking-period-label').textContent=periods.presets.find(p=>p.id===state.preset)?.label||'Período personalizado';$('tracking-period-dates').textContent=state.from===state.to?dateLabel(state.from):dateLabel(state.from)+' — '+dateLabel(state.to);}
@@ -97,13 +96,13 @@
   $('tracking-toolbar').querySelector('.period-label').textContent=state.tab==='overview'?'Visão geral da sua operação':'Período e filtros da operação';
   const el=$('tracking-content');el.innerHTML='<div class="stats-grid">'+[1,2,3,4].map(()=>'<div class="skeleton" aria-label="Carregando"></div>').join('')+'</div>';
   try{const uid=DB.me.id;if(observer()){
-   $('tracking-test-tools').hidden=true;$('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
-   const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,detail,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.level='campaign';state.provider='';state.account_id='';state.entity_id='';state.page=1;}});
+   $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
+   const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.level='campaign';state.provider='';state.account_id='';state.entity_id='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid)el.innerHTML=html;return;
   }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid)return;el.innerHTML=html;const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)el.innerHTML='<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>';}
  }
- function route(page){closePeriod();if(!window.trackingEnabled()||observer()&&page==='settings'){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';state.account_id='';state.entity_id='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
+ function route(page){closePeriod();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';state.account_id='';state.entity_id='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
  async function overview(){
   const [s,f]=await Promise.all([api('/summary'),api('/funnel')]);
   const count=f.orders.reduce((n,x)=>n+(['paid','refunded','chargeback'].includes(x.status)?Number(x.orders):0),0);
@@ -162,8 +161,7 @@
    if(p==='tiktok'||pilot&&!['meta','kiwify'].includes(p)&&!rows.length)return '<article class="integration-card mt-integration-'+p+'"><div class="mt-integration-brand">'+brand.logo(p)+'<h3>'+name+'</h3></div><p>Conector em preparação para uma próxima etapa.</p><div class="list-row"><span class="small">Conexão em preparação</span>'+pill('Em breve')+'</div></article>';
    return '<article class="integration-card mt-integration-'+p+'"><div class="mt-integration-brand">'+brand.logo(p)+'<h3>'+name+'</h3></div><p>'+(['meta','google'].includes(p)?'Contas, campanhas e desempenho dos anúncios.':'Pedidos, pagamentos e informações dos compradores.')+'</p>'+rows.map(i=>'<div class="list-row"><span>'+esc(i.account_id)+'<small class="small"><br>'+dt(i.last_received_at||i.last_sync_at)+'</small></span>'+pill(i.error_code?'Requer atenção':i.connected?'Conectado':'Desconectado')+'</div><div class="actions">'+(i.connected?button('Sincronizar','sync','data-id="'+esc(i.id)+'"')+(pilot&&p==='kiwify'&&i.mode!=='simulated'?button('Ver webhook','webhook-details','data-id="'+esc(i.id)+'"'):'')+(p==='custom'?button('Credencial da API','token','data-id="'+esc(i.id)+'"'):'')+(real&&['meta','google'].includes(p)&&i.mode!=='simulated'?button('Selecionar conta','accounts','data-id="'+esc(i.id)+'"'):'')+(real&&['kiwify','hotmart'].includes(p)?button('Configurar credenciais','checkout-credentials','data-id="'+esc(i.id)+'" data-provider="'+p+'"'):'')+button('Desconectar','disconnect','data-id="'+esc(i.id)+'"'):button('Reconectar','connect','data-provider="'+p+'"'))+'</div>').join('')+(!rows.length?'<div class="list-row"><span class="small">Nenhuma conta conectada</span></div><div class="actions">'+button('Conectar','connect','data-provider="'+p+'"',true)+(real&&['meta','google'].includes(p)?button('Autorizar conta','oauth','data-provider="'+p+'"'):'')+'</div>':'')+'</article>';
   };
-  const section=(id,title,subtitle,providers,classes='')=>'<section id="'+id+'" class="mt-integration-section '+classes+'"><div class="mt-integration-section-head"><h2 tabindex="-1">'+title+'</h2><p>'+subtitle+'</p></div><div class="cards-grid">'+providers.map(card).join('')+'</div></section>';
-  return section('integration-ad-managers','Gerenciadores de anúncios','Conecte as contas que veiculam suas campanhas.',['meta','google','tiktok'],'mt-ad-managers')+section('integration-checkouts','Checkouts','Receba pedidos, aprovações e informações dos compradores.',['kiwify','hotmart'])+'<section id="integration-gateways" class="mt-integration-section"><div class="mt-integration-section-head"><h2>Gateways de pagamento</h2><p>Conexões diretas com processadores de pagamentos.</p></div><div class="mt-category-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18m-14 5h4"/></svg><div><strong>Nenhum gateway direto disponível</strong><p>Os pagamentos dos checkouts conectados já são acompanhados em Pedidos.</p></div></div></section>'+section('integration-other','Outras integrações','Envie pedidos por API e configure a origem das suas vendas.',['custom'])+panel('Origem das vendas','<p>Configure o script do site, os parâmetros dos anúncios e os produtos que deseja acompanhar.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+(real?button('Conversões do Google','purchase-actions'):'')+'</div>');
+  return brand.integrationSections(card)+panel('Origem das vendas','<p>Configure o script do site, os parâmetros dos anúncios e os produtos que deseja acompanhar.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+(real?button('Conversões do Google','purchase-actions'):'')+'</div>');
  }
  async function costs(){
   costRules=await api('/costs');const rows=costRules.filter(r=>costHistory||!r.archived_at);
@@ -187,16 +185,9 @@
  async function customerDetail(id){
   const d=await api('/customer',null,{id});modal(d.customer.name||'Comprador','<p>'+esc(d.customer.email||'E-mail não informado')+' · '+esc(d.customer.phone||'Telefone não informado')+'</p>'+table(['Pedido','Status','Moeda','Total',''],d.orders.map(o=>'<tr><td>'+esc(o.external_id)+'</td><td>'+pill(o.status)+'</td><td>'+esc(o.currency)+'</td><td>'+esc(Number(o.gross_minor)/10**o.amount_scale)+'</td><td>'+button('Abrir','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+'<p class="small">Até 25 compras recentes. Identidade canônica '+esc(d.customer.provider)+' / '+esc(d.customer.external_id)+'.</p>');
  }
- function operationForm(){modal('Criar operação de teste','<form data-form="workspace"><label>Nome da operação<input name="name" required maxlength="120" placeholder="Minha operação de teste"></label>'+select('op-currency','Moeda',[['BRL','BRL'],['USD','USD'],['EUR','EUR']],state.currency)+'<label>Fuso<input name="timezone" value="America/Sao_Paulo" required></label><button class="primary">Criar operação gratuita</button><p class="small">Não cria cobrança, contrato, cliente comercial ou privilégio de equipe.</p></form>');}
- async function simulator(){
-  const integrations=(await api('/integrations')).filter(x=>['custom','kiwify','hotmart'].includes(x.provider)&&x.connected);
-  if(!integrations.length){toast('Conecte primeiro um checkout simulado em Integrações.');state.tab='integrations';return render();}
-  const now=new Date().toISOString(),id='manual-'+crypto.randomUUID();const event={schema_version:'1',event_id:id+':pending',order_id:id,status:'pending',occurred_at:now,created_at:now,approved_at:null,currency:state.currency,amount_scale:scale[state.currency],gross_amount_minor:129*10**scale[state.currency],gateway_fee_minor:13*10**scale[state.currency],recipient_revenue_minor:116*10**scale[state.currency],refunded_amount_minor:0,customer:{external_id:'synthetic-'+crypto.randomUUID(),name:'Comprador de teste',email:'teste@example.test',phone:null},items:[{external_product_id:'course-test',name:'Produto de teste',quantity:1,amount_minor:129*10**scale[state.currency]}],tracking:{utm_source:'meta',ad_id:'ad-test-0'},payment_method:'PIX',is_test:true};
-  modal('Webhook simulado autenticado','<div class="notice">Persistência e worker reais no banco local. Use o mesmo order_id para atualizar a pendência. Replay do mesmo event_id não duplica efeito.</div><form data-form="simulate">'+select('sim-integration','Checkout',integrations.map(i=>[i.id,i.provider+' / '+i.account_id]))+select('sim-status','Preparar evento',[['pending','Pendente'],['paid','Aprovado'],['refunded','Devolução parcial'],['chargeback','Chargeback']], 'pending')+'<label>Evento normalizado JSON<textarea id="sim-json" name="event" spellcheck="false">'+esc(JSON.stringify(event,null,2))+'</textarea></label><div class="actions"><button class="primary">Enviar evento à fila</button>'+button('Preparar próxima atualização','sim-update')+'</div><div id="sim-receipt" class="small"></div></form>');
- }
  async function sitesForm(){
   const sites=await api('/sites');
-  modal('Script próprio e UTMs','<form data-form="site" class="form-grid"><label>Domínio de teste<input name="domain" value="'+esc(location.hostname)+'" required></label><label>Domínios dos checkouts (vírgula)<input name="checkout_domains" value="pay.kiwify.com.br,pay.hotmart.com"></label><button class="primary wide">Cadastrar domínio</button></form>'+sites.map(s=>'<h3>'+esc(s.domain)+'</h3><pre class="code">'+esc('<script src="'+location.origin+'/magemind-collect-v1.js" data-endpoint="'+location.origin+cfg.apiBase+'/collect" data-site="'+s.public_key+'" data-checkouts="'+s.checkout_domains.join(',')+'" data-consent="denied"></script>')+'</pre><p class="small">Conceda consentimento pela API MagemindCollect.consent(true). Sem consentimento, nenhuma persistência ou envio ocorre. Para testar sem armazenamento, use consent("ephemeral").</p>').join('')+'<h3>Meta Ads</h3><pre class="code">utm_source=meta&amp;utm_medium=paid_social&amp;utm_campaign={{campaign.id}}&amp;utm_term={{adset.id}}&amp;utm_content={{ad.id}}</pre><h3>Google Ads</h3><pre class="code">utm_source=google&amp;utm_medium=cpc&amp;utm_campaign={campaignid}&amp;utm_term={adgroupid}&amp;utm_content={creative}</pre><p class="small">A ponte de click_id usa sck apenas se vazio e preserva valores legados. Confirme a devolução desse campo pelo checkout. Macros indisponíveis em um formato não são inventadas.</p>');
+  modal('Script próprio e UTMs','<form data-form="site" class="form-grid"><label>Domínio do seu site<input name="domain" value="'+esc(location.hostname)+'" required></label><label>Domínios dos checkouts (vírgula)<input name="checkout_domains" value="pay.kiwify.com.br,pay.hotmart.com"></label><button class="primary wide">Cadastrar domínio</button></form>'+sites.map(s=>'<h3>'+esc(s.domain)+'</h3><pre class="code">'+esc('<script src="'+location.origin+'/magemind-collect-v1.js" data-endpoint="'+location.origin+cfg.apiBase+'/collect" data-site="'+s.public_key+'" data-checkouts="'+s.checkout_domains.join(',')+'" data-consent="denied"></script>')+'</pre><p class="small">Conceda consentimento pela API MagemindCollect.consent(true). Sem consentimento, nenhuma persistência ou envio ocorre.</p>').join('')+'<h3>Meta Ads</h3><pre class="code">utm_source=meta&amp;utm_medium=paid_social&amp;utm_campaign={{campaign.id}}&amp;utm_term={{adset.id}}&amp;utm_content={{ad.id}}</pre><h3>Google Ads</h3><pre class="code">utm_source=google&amp;utm_medium=cpc&amp;utm_campaign={campaignid}&amp;utm_term={adgroupid}&amp;utm_content={creative}</pre><p class="small">A ponte de click_id usa sck apenas se vazio e preserva valores legados. Confirme a devolução desse campo pelo checkout. Macros indisponíveis em um formato não são inventadas.</p>');
  }
  async function costForm(row=null){
   costProducts=await api('/cost-products');const category=row?.category||'product';
@@ -225,11 +216,9 @@
  function minorInput(value,s){if(!value)return null;const parts=value.replace(',','.').split('.');if(parts.length>2||!/^\d+$/.test(parts[0])||!/^[0-9]*$/.test(parts[1]||'')||(parts[1]||'').length>s)throw new Error('Precisão do valor inválida');const n=Number(BigInt(parts[0])*10n**BigInt(s)+BigInt((parts[1]||'').padEnd(s,'0')||'0'));if(!Number.isSafeInteger(n))throw new Error('Valor acima do limite permitido');return n;}
  async function action(name,el){
   if(observer()){if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
-  if(pilot&&['fixtures','test-integrations','quick-sale','simulator'].includes(name)&&!workspace()?.simulation_only){const demo=await api('/demo-workspace',{});state.workspace=demo.id;await loadWorkspaces();state.simulation_only=true;toast('Exemplos na operação Demonstração. Sua operação real foi preservada.');}
   if(name==='webhook-details'){const r=await window.MagemindTrackingBackend.edge({action:'webhook_details',workspace:state.workspace,integration:el.dataset.id});return modal('Webhook Kiwify','<p>Na Kiwify, adicione este endereço aos eventos de pedidos, aprovação e devolução.</p><textarea readonly aria-label="Endereço do webhook">'+esc(r.webhook)+'</textarea>');}
   if(name==='connect'&&pilot){
-   const provider=el.dataset.provider;if(!['meta','kiwify'].includes(provider))throw new Error('Conector em preparação para o próximo piloto.');
-   if(workspace()?.simulation_only)throw new Error('Selecione sua operação real no filtro Operação.');
+   const provider=el.dataset.provider;if(!['meta','kiwify'].includes(provider))throw new Error('Conector indisponível.');
    return modal('Conectar '+brand.name(provider),'<form data-form="connect-real" class="form-grid"><input name="provider" type="hidden" value="'+provider+'"><label class="wide">'+(provider==='meta'?'ID da conta de anúncios':'Account ID da Kiwify')+'<input name="account_id" required maxlength="200" placeholder="'+(provider==='meta'?'act_123456789':'Copie em Apps → API')+'"></label>'+(provider==='meta'?'<label class="wide">Token de acesso da Meta<input name="access_token" type="password" required autocomplete="off"></label><p class="small wide">Use uma credencial da sua conta com ads_read. Para ativar ou pausar anúncios, ela também precisa de ads_management.</p>':'<label>Client ID<input name="client_id" required autocomplete="off"></label><label>Client Secret<input name="client_secret" type="password" required autocomplete="off"></label><p class="small wide">Na Kiwify, abra Apps → API e crie uma chave com permissão de leitura de vendas. O token será renovado automaticamente.</p>')+'<button class="primary wide">Verificar e conectar conta</button><p class="small wide">Credenciais verificadas no provedor e guardadas cifradas no backend. Elas não ficam no navegador.</p></form>');
   }
   if(name==='welcome-close')return $('tracking-dialog').close();
@@ -244,7 +233,7 @@
   if(name==='cost-archive-confirm'){await api('/costs/archive',{id:el.dataset.id});$('tracking-dialog').close();toast('Custo removido. Histórico preservado.');return render();}
   if(name==='purchase-actions'){
    const rows=(await api('/integrations')).filter(i=>i.provider==='google'&&i.connected&&/^\d+$/.test(i.account_id));
-   if(!rows.length)throw new Error('Selecione primeiro uma conta Google de teste autorizada.');
+   if(!rows.length)throw new Error('Selecione primeiro uma conta Google autorizada.');
    return modal('Conversões reportadas pelo Google',select('purchase-account','Conta',rows.map(i=>[i.id,i.name+' / '+i.account_id]))+button('Listar ações de compra','purchase-actions-list','',true));
   }
   if(name==='purchase-actions-list'){
@@ -255,17 +244,15 @@
    const integrations=(await api('/integrations')).filter(i=>['custom','kiwify','hotmart'].includes(i.provider));
    return modal('Produtos acompanhados','<form data-form="products">'+select('products-integration','Checkout',integrations.map(i=>[i.id,i.provider+' / '+i.account_id]))+'<label>IDs de produtos (vírgula; vazio = todos)<input name="ids" maxlength="2000" placeholder="course-test"></label><button class="primary">Salvar escopo de produtos</button><p class="small">O total canônico de um pedido com produto selecionado inclui seus itens e bumps. Não rateamos receita de forma inventada. Eventos fora do escopo ficam no diagnóstico e podem ser reprocessados com auditoria.</p></form>');
   }
-  if(['oauth','accounts','select-account','checkout-credentials','test-capi'].includes(name)&&!window.MagemindTrackingBackend)throw new Error('Conexões reais precisam do Supabase local configurado.');
+  if(['oauth','accounts','select-account','checkout-credentials'].includes(name)&&!window.MagemindTrackingBackend)throw new Error('Conexões reais precisam do Supabase local configurado.');
   if(name==='oauth'){const r=await window.MagemindTrackingBackend.edge({action:'oauth_start',workspace:state.workspace,provider:el.dataset.provider});location.assign(r.url);return;}
   if(name==='accounts'){
    const r=await window.MagemindTrackingBackend.edge({action:'accounts',workspace:state.workspace,integration:el.dataset.id});
    return modal('Selecionar conta autorizada',table(['Conta','Moeda','Fuso',''],r.accounts.map(a=>'<tr><td>'+esc(a.name||a.account_id)+'<small>'+esc(a.account_id)+'</small></td><td>'+esc(a.currency||'Indisponível')+'</td><td>'+esc(a.timezone||'Indisponível')+'</td><td>'+(a.manager?'MCC — selecione cliente':button('Selecionar','select-account','data-id="'+esc(el.dataset.id)+'" data-account="'+esc(a.account_id)+'"'))+'</td></tr>')));
   }
-  if(name==='select-account'){await window.MagemindTrackingBackend.edge({action:'select_account',workspace:state.workspace,integration:el.dataset.id,account_id:el.dataset.account});$('tracking-dialog').close();toast('Conta de leitura selecionada; homologação pendente.');return render();}
-  if(name==='checkout-credentials')return modal('Credenciais de checkout de teste','<form data-form="checkout-credentials"><input type="hidden" name="integration" value="'+esc(el.dataset.id)+'"><input type="hidden" name="provider" value="'+esc(el.dataset.provider)+'"><label>Hottok Hotmart (quando aplicável)<input name="hottok" type="password" autocomplete="off"></label><label>Token OAuth de leitura (Kiwify ou conciliação Hotmart)<input name="access_token" type="password" autocomplete="off"></label><label>ID da conta Kiwify (quando aplicável)<input name="account_id"></label>'+select('recipient-source','Seu papel na receita',[['PRODUCER','Produtor'],['AFFILIATE','Afiliado'],['COPRODUCER','Coprodutor']])+'<button class="primary">Guardar credenciais no backend de teste</button><p class="small">Campos privados são enviados à Edge Function autenticada, criptografados e removidos da tela ao fechar. Não altere webhooks do checkout de produção.</p></form>');
-  if(name==='test-capi')return modal('Meta CAPI — somente pixel de teste','<form data-form="test-capi"><input type="hidden" name="integration" value="'+esc(el.dataset.id)+'"><label>ID do pixel/dataset de teste autorizado<input name="pixel_id" required></label><label>Test event code<input name="test_event_code" required></label><label>Token privado do destino de teste<input name="access_token" type="password" required autocomplete="off"></label><label class="checkbox"><input name="coordinated_emitter" type="checkbox" required>Purchase tem emissor único ou event_id coordenado</label><label class="checkbox"><input name="consent" type="checkbox" required>Tenho autorização para esse destino e os dados de teste</label><label class="checkbox"><input name="enabled" type="checkbox">Ativar emissões para esse pixel de teste</label><button class="primary">Salvar configuração de teste</button><p class="small">O backend exige que o ID esteja na allowlist TRACKING_AUTHORIZED_TEST_PIXELS. CAPI permanece desativada até essa configuração explícita. Aceite da API não comprova atribuição.</p></form>');
+  if(name==='select-account'){await window.MagemindTrackingBackend.edge({action:'select_account',workspace:state.workspace,integration:el.dataset.id,account_id:el.dataset.account});$('tracking-dialog').close();toast('Conta selecionada. Sincronização iniciada.');return render();}
+  if(name==='checkout-credentials')return modal('Credenciais de checkout','<form data-form="checkout-credentials"><input type="hidden" name="integration" value="'+esc(el.dataset.id)+'"><input type="hidden" name="provider" value="'+esc(el.dataset.provider)+'"><label>Hottok Hotmart (quando aplicável)<input name="hottok" type="password" autocomplete="off"></label><label>Token OAuth de leitura (Kiwify ou conciliação Hotmart)<input name="access_token" type="password" autocomplete="off"></label><label>ID da conta Kiwify (quando aplicável)<input name="account_id"></label>'+select('recipient-source','Seu papel na receita',[['PRODUCER','Produtor'],['AFFILIATE','Afiliado'],['COPRODUCER','Coprodutor']])+'<button class="primary">Guardar credenciais no backend</button><p class="small">Campos privados são enviados à Edge Function autenticada, criptografados e removidos da tela ao fechar.</p></form>');
   if(name.startsWith('tab-')){const tab=name.slice(4);if(!routes[tab])return;goTo(routes[tab]);if(tab==='settings')selectSettingsTab('tracking');return;}
-  if(name==='new-workspace')return operationForm();
   if(name==='refresh')return render();
   if(name==='native-demands')return goTo('demands');
   if(name==='ad-integrations'){goTo('integrations');await render();const heading=$('integration-ad-managers')?.querySelector('h2');heading?.scrollIntoView({block:'start',behavior:'smooth'});heading?.focus({preventScroll:true});return;}
@@ -273,48 +260,29 @@
   if(name==='filter'){for(const k of ['status','provider','channel','payment','account_id','entity_id'])if($('filter-'+k))state[k]=$('filter-'+k).value;state.search=$('tracking-search')?.value||'';state.page=1;return render();}
   if(name==='order')return detail(el.dataset.id);
   if(name==='customer')return customerDetail(el.dataset.id);
-  if(name==='fixtures'){await api('/fixtures',{});if(cfg.mode==='local-simulator')await api('/native/demands',{});await reloadNative();toast('Exemplos adicionados ao painel.');return render();}
-  if(name==='quick-sale')return quickSale();
-  if(name==='test-integrations'){for(const [provider,account_id] of [['custom','synthetic-checkout'],['kiwify','synthetic-kiwify'],['hotmart','synthetic-hotmart'],['meta','act_test'],['google','0000000000']])await api('/integration',{provider,account_id});toast('Integrações teste criadas.');return render();}
-  if(name==='test-demands'){await api('/native/demands',{});await reloadNative();toast('Demandas teste criadas.');return render();}
   if(name==='ad-level'){state.level=el.dataset.level;return render();}
   if(name==='ad-status'){await api('/ad-status',{provider:el.dataset.provider,account_id:el.dataset.account,entity_id:el.dataset.entity,status:el.dataset.status,revision:Number(el.dataset.revision)});toast(el.dataset.status==='ACTIVE'?'Veiculação ativada.':'Veiculação pausada.');return render();}
-  if(name==='simulator')return simulator();
   if(name==='sites')return sitesForm();
   if(name==='cost-form')return costForm();
-  if(name==='connect'&&cfg.mode==='local-simulator')return modal('Conectar integração','<p>Para esta revisão, use Ferramentas → Gerar integração teste. A autorização do provedor será configurada quando conectarmos uma conta autorizada.</p>');
-  if(name==='connect')return modal('Conectar '+el.dataset.provider+' • simulado','<form data-form="integration"><input type="hidden" name="provider" value="'+esc(el.dataset.provider)+'"><label>ID canônico da conta de teste<input name="account_id" required maxlength="200" placeholder="conta-sintetica-01"></label><button class="primary">Conectar simulação</button><p class="small">Reconectar a mesma conta preserva a identidade e não duplica histórico.</p></form>');
-  if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada de teste','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado de teste">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
+  if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada da API','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado da API">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
   if(name==='sync'||name==='revoke'){await api('/integration/sync',{id:el.dataset.id,fail:name==='revoke'});toast('Integração atualizada.');return render();}
   if(name==='disconnect'){await api('/integration/disconnect',{id:el.dataset.id});toast('Credencial revogada; histórico preservado.');return render();}
   if(name==='retry'){await api('/retry',{id:el.dataset.id});toast('Reenvio auditado colocado na fila.');return render();}
-  if(name==='sim-update'){
-   const e=JSON.parse($('sim-json').value),status=$('sim-status').value;e.status=status;e.event_id=e.order_id+':'+status;e.occurred_at=new Date().toISOString();if(status==='paid')e.approved_at=e.occurred_at;
-   if(status==='refunded'||status==='chargeback'){e.refunded_amount_minor=status==='chargeback'?e.gross_amount_minor:Math.floor(e.gross_amount_minor/2);e.recipient_refunded_minor=status==='chargeback'?e.recipient_revenue_minor:Math.floor(e.recipient_revenue_minor/2);}
-   $('sim-json').value=JSON.stringify(e,null,2);return;
-  }
   if(name==='export'){
    if(window.MagemindTrackingBackend){
     const data=await api('/export',null,{search:state.search,status:state.status,provider:state.provider,channel:state.channel,payment:state.payment});
     const cell=v=>'"'+String(/^[\s]*[=+@-]/.test(String(v??''))?"'"+v:v??'').replaceAll('"','""')+'"';
     const csv=[['pedido','status','comprador','email','moeda','valor_unidades_menores','origem'],...data.rows.map(x=>[x.external_id,x.status,x.buyer_name,x.buyer_email,x.currency,x.gross_minor,x.channel])].map(row=>row.map(cell).join(',')).join('\r\n');
-    const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='tracking-test-page-'+state.page+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+    const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='pedidos-pagina-'+state.page+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
    }
    const u=new URL(cfg.apiBase+'/export',location.origin);for(const [k,v] of Object.entries(state))if(v!==null&&k!=='tab')u.searchParams.set(k,v);location.assign(u);return;
   }
-  if(name==='push'){
-   if(!('Notification'in window)||!('serviceWorker'in navigator))throw new Error('Notificação indisponível neste navegador');
-   const permission=await Notification.requestPermission();if(permission!=='granted')return toast('Permissão não concedida. No iPhone, teste pelo PWA instalado.');
-   const registration=await navigator.serviceWorker.ready;await registration.showNotification('Magemind TESTE',{body:'Aviso local simulado. Nenhuma venda real.',tag:'magemind-tracking-local-test',icon:'./magemind-logo-192.png'});return toast('Aviso local apresentado; Web Push externo permanece pendente.');
-  }
-  if(name==='member-form')return modal('Permissão de membro','<form data-form="member"><label>ID da conta<input name="user_id" required pattern="[a-fA-F0-9-]{36}"></label>'+select('member-role','Papel',[['viewer','Leitura'],['admin','Admin']])+'<label class="checkbox"><input type="checkbox" name="can_view_buyers">Permitir leitura de compradores</label><button class="primary">Conceder acesso auditado</button></form>');
-  if(name==='delete-workspace')return modal('Excluir operação de teste','<p>Esta ação remove pedidos, compradores, integrações e eventos desta operação local.</p><form data-form="delete"><label>Digite EXCLUIR<input name="confirmation" required pattern="EXCLUIR"></label><button class="primary">Excluir dados desta operação</button></form>');
  }
  document.addEventListener('click',async e=>{
-  if(!e.target.closest('.mt-root,#tracking-test-menu'))return;
+  if(!e.target.closest('.mt-root'))return;
   const tab=e.target.closest('[data-tab]');if(tab){state.tab=tab.dataset.tab;state.page=1;return render();}
   const target=e.target.closest('[data-action]');if(!target)return;
-  $('tracking-test-menu').hidden=true;if(!await ready())return;
+  if(!await ready())return;
   target.disabled=true;try{await action(target.dataset.action,target);}catch(err){toast(err.message);}finally{if(target.isConnected)target.disabled=false;}
  });
  document.addEventListener('submit',async e=>{
@@ -325,14 +293,6 @@
     const r=await window.MagemindTrackingBackend.edge({action:'connect_real',workspace:state.workspace,...data});form.reset();$('tracking-dialog').close();await render();
     if(r.webhook)modal('Kiwify conectada','<p>O histórico será sincronizado automaticamente. Para receber novos pedidos assim que ocorrerem, cadastre este endereço em Apps → Webhooks da Kiwify, nos eventos de pedido, aprovação, cancelamento e devolução.</p><textarea readonly aria-label="Endereço do webhook">'+esc(r.webhook)+'</textarea><p class="small">Este endereço é privado e pertence apenas à sua operação.</p>');else toast('Conta verificada. Sincronização automática iniciada.');return;
    }
-   if(type==='quick-sale'){
-    const amount=minorInput(data.amount,scale[state.currency]);if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('Informe um valor válido');
-    const id='MM-'+crypto.randomUUID().slice(0,8).toUpperCase(),now=new Date().toISOString();
-    await api('/simulate',{integration:$('quick-integration').value,event:{schema_version:'1',event_id:id+':paid',order_id:id,status:'paid',occurred_at:now,created_at:now,approved_at:now,currency:state.currency,amount_scale:scale[state.currency],gross_amount_minor:amount,gateway_fee_minor:0,recipient_revenue_minor:amount,refunded_amount_minor:0,customer:{external_id:'buyer-'+crypto.randomUUID(),name:data.name,email:data.email},items:[{external_product_id:'course-test',name:'Curso digital',quantity:1,amount_minor:amount}],tracking:{utm_source:'meta',ad_id:'ad-test-0'},payment_method:'PIX',is_test:true}});
-    $('tracking-dialog').close();toast('Venda teste enviada. O painel será atualizado.');setTimeout(()=>{if(DB.me){render();pollNotifications().catch(()=>{});}},1500);return;
-   }
-   if(type==='workspace'){const w=await api('/workspaces',{...data,currency:$('op-currency').value});state.workspace=w.id;state.currency=$('op-currency').value;await loadWorkspaces();syncInputs();}
-   if(type==='integration')await api('/integration',data);
    if(type==='products')await api('/integration/products',{id:$('products-integration').value,ids:data.ids.split(',').map(x=>x.trim()).filter(Boolean)});
    if(type==='purchase-actions')await window.MagemindTrackingBackend.edge({workspace:state.workspace,integration:data.integration,action:'select_purchase_actions',ids:new FormData(form).getAll('ids')});
    if(type==='site'){await api('/sites',data);await sitesForm();return;}
@@ -344,25 +304,15 @@
    }
    if(type==='settings'){await api('/settings',{...data,attribution_days:Number(data.attribution_days),retention_days:Number(data.retention_days)});await loadWorkspaces();}
    if(type==='preferences'){const prefs={};for(const k of ['sales','renewals','refunds','failures','hide_amount'])prefs[k]=form.elements[k].checked;await api('/preferences',prefs);}
-   if(type==='member')await api('/members',{...data,role:$('member-role').value,can_view_buyers:form.elements.can_view_buyers.checked});
    if(type==='checkout-credentials'){
     const secrets={hottok:data.hottok||undefined,access_token:data.access_token||undefined,account_id:data.account_id||undefined,recipientSource:$('recipient-source').value};
     const r=await window.MagemindTrackingBackend.edge({workspace:state.workspace,integration:data.integration,action:'checkout_credentials',secrets});
-    modal('Webhook de teste', '<p>Cadastre este endereço somente na integração de teste autorizada. Na Kiwify a chave de ingresso identifica o endpoint; a aprovação continua dependendo da API de vendas.</p><textarea readonly>'+esc(r.webhook)+'</textarea><p class="small">A URL Kiwify é privada; não a compartilhe nem a inclua no script público. Não configure o webhook de produção.</p>');return;
+    modal('Webhook do checkout', '<p>Cadastre este endereço na sua integração. Na Kiwify a chave de ingresso identifica o endpoint; a aprovação continua dependendo da API de vendas.</p><textarea readonly>'+esc(r.webhook)+'</textarea><p class="small">A URL Kiwify é privada; não a compartilhe nem a inclua no script público.</p>');return;
    }
-   if(type==='test-capi')await window.MagemindTrackingBackend.edge({workspace:state.workspace,integration:data.integration,action:'configure_test_capi',pixel_id:data.pixel_id,test_event_code:data.test_event_code,access_token:data.access_token,enabled:form.elements.enabled.checked,consent:form.elements.consent.checked,coordinated_emitter:form.elements.coordinated_emitter.checked});
-   if(type==='delete'){if(data.confirmation!=='EXCLUIR')throw new Error('Confirmação inválida');await api('/delete-workspace',{});state.workspace=null;await loadWorkspaces();}
-   if(type==='simulate'){const r=await api('/simulate',{integration:$('sim-integration').value,event:JSON.parse(data.event)});$('sim-receipt').textContent='Persistido: '+r.receipt_id+' · worker processará independentemente desta tela.';toast('Evento persistido na fila. Confira o pedido após Atualizar.');return;}
    $('tracking-dialog').close();toast('Alteração salva.');await render();
   }catch(err){toast(err.message);}finally{if(btn.isConnected)btn.disabled=false;}
  });
 
- async function reloadNative(){if(cfg.mode==='local-simulator'){const {data}=await supa.from('profiles').select('client_id').eq('id',DB.me.id).maybeSingle();if(data)DB.me.clientId=data.client_id||null;}await loadAllData();await loadAvatarDirectory();buildNav();if(document.querySelector('.page.active')?.id==='pg-dashboard')loadDash();}
- async function quickSale(){
-  let integrations=(await api('/integrations')).filter(i=>['custom','kiwify','hotmart'].includes(i.provider)&&i.connected);
-  if(!integrations.length){await api('/integration',{provider:'custom',account_id:'synthetic-checkout'});integrations=await api('/integrations');}
-  modal('Gerar venda teste','<form data-form="quick-sale" class="form-grid">'+select('quick-integration','Checkout',integrations.filter(i=>['custom','kiwify','hotmart'].includes(i.provider)).map(i=>[i.id,i.provider]))+'<label>Valor ('+state.currency+')<input name="amount" value="129,00" inputmode="decimal" required></label><label>Comprador<input name="name" value="Ana Oliveira" required maxlength="120"></label><label>E-mail<input name="email" type="email" value="ana@example.test" required></label><button class="primary wide">Gerar venda aprovada</button></form>');
- }
  async function pollNotifications(){
   if(observer())return;
   if(!await ready())return;const uid=user.user_id,items=await api('/notifications');if(DB.me?.id!==uid)return;
@@ -379,11 +329,7 @@
  window.clickNotif=async(id,demandId)=>{const n=DB.notifications.find(x=>x.id===id);if(!n?.trackingWorkspaceId)return previousClickNotif(id,demandId);const key='mm_tracking_read_'+DB.me.id,read=new Set(JSON.parse(localStorage.getItem(key)||'[]'));read.add(id);localStorage.setItem(key,JSON.stringify([...read]));n.read=true;updateNotifBadge();closeNotifPanel();state.workspace=n.trackingWorkspaceId;goTo(n.trackingOrderId?'orders':'integrations');await render();if(n.trackingOrderId)await detail(n.trackingOrderId,n.trackingWorkspaceId);};
  const oldMarkAll=window.markAllRead;
  window.markAllRead=async()=>{if(!window.trackingEnabled())return oldMarkAll();const read=new Set(JSON.parse(localStorage.getItem('mm_tracking_read_'+DB.me.id)||'[]'));DB.notifications.filter(n=>n.trackingWorkspaceId).forEach(n=>{read.add(n.id);n.read=true;});localStorage.setItem('mm_tracking_read_'+DB.me.id,JSON.stringify([...read]));await oldMarkAll();updateNotifBadge();renderNotifPanel();};
- $('tracking-test-toggle').addEventListener('click',()=>{const menu=$('tracking-test-menu');menu.hidden=!menu.hidden;$('tracking-test-toggle').setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button').focus();});
- document.addEventListener('click',e=>{if(!$('tracking-test-tools').contains(e.target)){$('tracking-test-menu').hidden=true;$('tracking-test-toggle').setAttribute('aria-expanded','false');}});
- $('tracking-test-menu').addEventListener('keydown',e=>{const buttons=[...e.currentTarget.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);if(e.key==='Escape'){$('tracking-test-menu').hidden=true;$('tracking-test-toggle').focus();}if(['ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();buttons[(i+(e.key==='ArrowDown'?1:buttons.length-1))%buttons.length].focus();}});
  $('tracking-refresh').addEventListener('click',render);
- $('tracking-workspace').addEventListener('change',()=>{state.workspace=$('tracking-workspace').value;state.simulation_only=workspace()?.simulation_only===true;state.page=1;state.search='';notificationIds.clear();$('tracking-dialog').close();render();pollNotifications();});
  $('tracking-currency').addEventListener('change',()=>{state.currency=$('tracking-currency').value;state.page=1;render();});
  function closePeriod(){const p=$('tracking-period-popover');if(p?.matches(':popover-open'))p.hidePopover();}
  function positionPeriod(){

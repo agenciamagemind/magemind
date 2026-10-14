@@ -40,20 +40,6 @@ Deno.serve(async(req)=>{
    const updated=await db.from('tracking_integrations').update({mode:'approved_test',error_code:'sync_requested',last_sync_at:null,sync_cursor:{},retry_after_at:null,error_count:0}).eq('id',connected.data);if(updated.error)throw updated.error;
    return json(req,{integration:connected.data,connected:true,...(provider==='kiwify'?{webhook:env('TRACKING_CALLBACK_ORIGIN')+'/functions/v1/tracking-webhook?provider=kiwify&integration='+connected.data+'&ingress_key='+encodeURIComponent(secrets.ingressToken)}:{})});
   }
-  if(input.action==='fixtures'){
-   const member=await requireMember(client,w,user.id,true);if(member.role!=='owner')throw new Error('Owner required');
-   const existing=await client.from('tracking_integrations').select('mode').eq('workspace_id',w);if(existing.data?.some(i=>i.mode!=='simulated'))throw new Error('Use a separate operation for fixtures');
-   const {data:i,error:seedError}=await db.from('tracking_integrations').upsert({workspace_id:w,provider:'custom',account_id:'synthetic-checkout',name:'Checkout sintético',mode:'simulated',connected:true},{onConflict:'workspace_id,provider,account_id'}).select('id').single();if(seedError)throw seedError;
-   const rules=await client.from('tracking_cost_rules').select('id').eq('workspace_id',w).limit(1);
-   if(!rules.data?.length)await db.from('tracking_cost_rules').insert({workspace_id:w,name:'Custo sintético',product_id:'course-test',category:'product',amount_minor:1200,currency:'BRL',valid_from:'2026-01-01'});
-   for(let n=1;n<=40;n++){
-    const prior=await db.from('tracking_orders').select('id').eq('workspace_id',w).eq('provider','custom').eq('account_id','synthetic-checkout').eq('external_id','SUPA-TEST-'+n).maybeSingle();if(prior.data)continue;
-    const time=new Date(Date.now()-n*3600000).toISOString(),gross=12900;
-    const e=validateOrder({schema_version:'1',event_id:'supa-fixture-'+n,order_id:'SUPA-TEST-'+n,status:n%5===0?'pending':'paid',occurred_at:time,created_at:time,approved_at:n%5===0?null:time,currency:'BRL',amount_scale:2,gross_amount_minor:gross,gateway_fee_minor:1300,recipient_revenue_minor:11600,refunded_amount_minor:0,customer:n%4?{external_id:'buyer-'+n,name:'Comprador sintético '+n,email:'teste'+n+'@example.test',phone:null}:null,items:[{external_product_id:'course-test',name:'Produto sintético',quantity:1,amount_minor:gross}],tracking:n%7?{utm_source:n%2?'meta':'google'}:{},renewal:n%6===0,is_test:true});
-    const r=await db.rpc('tracking_ingest',{i:i.id,e,h:await sha256(JSON.stringify(e)),p_historical:true});if(r.error)throw r.error;
-   }
-   return json(req,{orders:40,simulated:true,processing:'queued'});
-  }
   if(input.action==='oauth_start'){
    allowReads();const provider=input.provider;if(!['meta','google'].includes(provider))throw new Error('Provider unsupported');
    const state=crypto.randomUUID()+crypto.randomUUID();
@@ -73,11 +59,6 @@ Deno.serve(async(req)=>{
    const {secrets}=await credential(db,integration.id);await setMetaStatus({...secrets,version:env('TRACKING_META_VERSION')},input.entity_id,input.status);
    const saved=await db.from('tracking_ad_entities').update({status:input.status,revision:input.revision+1,status_updated_at:new Date().toISOString()}).eq('workspace_id',w).eq('provider','meta').eq('account_id',integration.account_id).eq('entity_id',input.entity_id).eq('revision',input.revision);if(saved.error)throw saved.error;
    await db.from('tracking_audit').insert({workspace_id:w,actor_id:user.id,action:'ad.status',entity_id:input.entity_id,details:{provider:'meta',status:input.status}});return json(req,{status:input.status});
-  }
-  if(input.action==='simulate'){
-   if(integration.mode!=='simulated'||!['custom','kiwify','hotmart'].includes(integration.provider))throw new Error('Use a simulated checkout operation');
-   const e=validateOrder(input.event);const r=await db.rpc('tracking_ingest',{i:integration.id,e,h:await sha256(JSON.stringify(e)),p_historical:false});if(r.error)throw r.error;
-   return json(req,{receipt_id:r.data,processing:'queued',simulated:true},202);
   }
   if(input.action==='api_token'){
    if(integration.provider!=='custom')throw new Error('Only custom order API uses bearer credential');
@@ -119,12 +100,6 @@ Deno.serve(async(req)=>{
    const saved=await db.rpc('tracking_internal_save_credential',{i:connected.data,p_cipher:await encrypt({...secrets,login_customer_id:account.login_customer_id||null}),p_hash:null});if(saved.error)throw saved.error;
    const selected=await db.rpc('tracking_internal_account',{i:connected.data,p:account});if(selected.error)throw selected.error;
    return json(req,{integration:connected.data,status:'real_test_pending'});
-  }
-  if(input.action==='configure_test_capi'){
-   const authorized=env('TRACKING_AUTHORIZED_TEST_PIXELS').split(',').filter(Boolean);
-   if(!authorized.includes(input.pixel_id)||!input.test_event_code||input.coordinated_emitter!==true||input.consent!==true)throw new Error('Authorized test pixel, event code, coordinated emitter and consent required');
-   const r=await db.rpc('tracking_internal_capi',{w,p:{pixel_id:input.pixel_id,test_event_code:input.test_event_code,enabled:input.enabled===true,coordinated_emitter:true,consent:true},p_cipher:await encrypt({access_token:input.access_token})});if(r.error)throw r.error;
-   return json(req,{status:input.enabled?'enabled_test_only':'disabled'});
   }
   if(input.action==='queue_sync'){
    allowReads();await db.from('tracking_integrations').update({error_code:'sync_requested'}).eq('id',integration.id);

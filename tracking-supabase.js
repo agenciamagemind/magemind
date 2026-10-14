@@ -29,14 +29,12 @@
    if(['/summary','/list/orders','/order','/list/customers','/customer','/list/ads','/ad-options','/funnel','/diagnostics','/settings','/notifications','/export'].includes(route))return rpc('tracking_report',{w,p});
    if(route==='/ad-management')return rpc('tracking_ad_management',{w,f:state.from,t:state.to,cur:state.currency});
    if(route==='/ad-status'){if(cfg.mode==='supabase-pilot'&&!state.simulation_only){const rows=checked(await client.from('tracking_integrations').select('id').eq('workspace_id',w).eq('provider',data.provider).eq('account_id',data.account_id).eq('connected',true).single());return edge({action:'ad_status',workspace:w,integration:rows.id,entity_id:data.entity_id,status:data.status,revision:data.revision});}return rpc('tracking_set_ad_status',{w,provider_name:data.provider,account:data.account_id,entity:data.entity_id,target_status:data.status,expected_revision:data.revision});}
-   if(route==='/demo-workspace')return {id:await rpc('tracking_demo_workspace',{})};
    if(route==='/onboarding')return rpc('tracking_onboarding_status',{w});
    if(route==='/onboarding/celebrate')return {claimed:await rpc('tracking_onboarding_celebrate',{w})};
    if(route==='/cost-products')return rpc('tracking_cost_products',{w});
    if(route==='/costs/edit')return {id:await rpc('tracking_update_cost',{w,c:data.id,p:data})};
    if(route==='/costs/archive')return rpc('tracking_archive_cost',{w,c:data.id});
    if(['/integrations','/sites','/costs'].includes(route)&&!data)return checked(await client.from({integrations:'tracking_integrations',sites:'tracking_sites',costs:'tracking_cost_rules'}[route.slice(1)]).select('*').eq('workspace_id',w).order(route==='/sites'?'id':'created_at'));
-   if(route==='/integration')return {id:await rpc('tracking_connect',{w,p_provider:data.provider,p_account:data.account_id,p_name:data.provider+' • simulado',p_mode:'simulated'})};
    if(route==='/integration/token')return edge({workspace:w,integration:data.id,action:'api_token'});
    if(route==='/integration/disconnect')return rpc('tracking_disconnect',{w,i:data.id});
    if(route==='/integration/products')return rpc('tracking_select_products',{w,i:data.id,ids:data.ids});
@@ -44,17 +42,12 @@
    if(route==='/sites')return {id:await rpc('tracking_save_site',{w,p_domain:data.domain,p_checkout_domains:data.checkout_domains.split(',').map(x=>x.trim()).filter(Boolean)})};
    if(route==='/costs')return {id:await rpc('tracking_save_cost',{w,p:data})};
    if(route==='/settings')return rpc('tracking_update_workspace',{w,p_name:data.name,p_days:data.attribution_days,p_retention:data.retention_days});
-   if(route==='/members')return rpc('tracking_set_member',{w,u:data.user_id,p_role:data.role,p_pii:data.can_view_buyers});
-   if(route==='/members/remove')return rpc('tracking_remove_member',{w,u:data.user_id});
    if(route==='/customers/anonymize')return rpc('tracking_anonymize_customer',{w,c:data.id});
    if(route==='/preferences'){
     const uid=(await client.auth.getUser()).data.user?.id;
     return checked(await client.from('tracking_notification_preferences').upsert({...data,workspace_id:w,user_id:uid},{onConflict:'workspace_id,user_id'}));
    }
    if(route==='/retry')return rpc('tracking_retry',{w,e:data.id});
-   if(route==='/delete-workspace')return rpc('tracking_delete_workspace',{w});
-   if(route==='/simulate')return edge({workspace:w,integration:data.integration,action:'simulate',event:data.event});
-   if(route==='/fixtures')return edge({workspace:w,action:'fixtures'});
    throw new Error('Ação indisponível neste ambiente');
   }
  };
