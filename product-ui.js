@@ -20,7 +20,7 @@ function setupSettingsTabs() {
     tabs.className = 'settings-tabs';
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Setores das configurações');
-    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['tracking','Custos'], ['company','Empresa']];
+    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['company','Empresa']];
     sections.forEach(([id, label]) => {
       const panel = id === 'profile' ? mount : document.createElement('div');
       if (id !== 'profile') { panel.id = `settings-panel-${id}`; host.appendChild(panel); }
@@ -42,9 +42,6 @@ function setupSettingsTabs() {
     document.getElementById('settings-panel-notifications').append(
       document.getElementById('push-settings-card'), document.getElementById('mobile-install-settings')
     );
-    const salesNotifications=document.createElement('div');
-    salesNotifications.id='tracking-notifications-mount';salesNotifications.className='mt-root';
-    document.getElementById('settings-panel-notifications').prepend(salesNotifications);
     document.getElementById('settings-panel-company').append(document.getElementById('agency-settings-card').parentElement);
     tabs.addEventListener('keydown', event => {
       if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
@@ -57,8 +54,18 @@ function setupSettingsTabs() {
     });
   }
   document.getElementById('settings-tab-company').hidden = !isAdmin();
-  document.getElementById('settings-tab-tracking').hidden=!window.trackingEnabled();
-  document.getElementById('tracking-notifications-mount').hidden=!window.trackingEnabled();
+  if(window.trackingEnabled()){
+    if(!document.getElementById('settings-tab-tracking')){
+      const panel=document.createElement('div');panel.id='settings-panel-tracking';panel.className='settings-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','settings-tab-tracking');host.append(panel);
+      const tab=document.createElement('button');tab.type='button';tab.id='settings-tab-tracking';tab.textContent='Custos';tab.dataset.section='tracking';tab.setAttribute('role','tab');tab.setAttribute('aria-controls',panel.id);tab.addEventListener('click',()=>selectSettingsTab('tracking'));
+      document.getElementById('settings-tab-company').before(tab);
+      const notifications=document.createElement('div');notifications.id='tracking-notifications-mount';notifications.className='mt-root';document.getElementById('settings-panel-notifications').prepend(notifications);
+    }
+  }else{
+    const panel=document.getElementById('settings-panel-tracking'),module=document.getElementById('tracking-module');
+    if(panel?.contains(module)){module.hidden=true;document.body.append(module);}
+    document.getElementById('settings-tab-tracking')?.remove();panel?.remove();document.getElementById('tracking-notifications-mount')?.remove();
+  }
   const selected = host.querySelector('[role="tab"][aria-selected="true"]');
   selectSettingsTab(selected && !selected.hidden ? selected.dataset.section : 'profile');
 }

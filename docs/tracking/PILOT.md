@@ -1,10 +1,12 @@
-# Piloto restrito no app oficial — 13/10/2026
+# Piloto restrito no app oficial — revisão 14/10/2026
 
-O usuário autorizou explicitamente o piloto em app.magemind.com.br, somente para testetrack@gmail.com e admins, e escolheu Meta Ads + Kiwify como primeiras fontes reais. Essa autorização substitui o bloqueio anterior de publicação apenas para este piloto. A liberação para todos continua proibida.
+O usuário autorizou explicitamente o piloto em app.magemind.com.br e escolheu Meta Ads + Kiwify. Em 14/10 especificou que somente ogabrielmrossi@gmail.com e testetrack@gmail.com devem acessá-lo, inclusive excluindo demais administradores/gerentes. A liberação geral continua proibida.
 
-Conta identificada por Auth, confirmada e ativa. A allowlist guarda o UUID obtido do e-mail no momento da migração, sem depender de user_metadata ou de comparação de e-mail no navegador. CEO/Gerente ativos também são autorizados; os demais perfis não. Tracking usa novas tabelas e funções prefixadas, sem alterar registros comerciais ou os grants das funções existentes do APP. RLS e RPCs verificam conta ativa, sessão existente, piloto autorizado e membership da operação.
+Contas identificadas por Auth, confirmadas e ativas. A allowlist guarda os UUIDs obtidos dos dois e-mails; a checagem privada também confirma as identidades no Auth. Nenhum cargo, membership ou user_metadata concede liberação. O banco confirmou exatamente as duas contas e zero demais usuários habilitados. Tracking usa novas tabelas e funções prefixadas, sem alterar registros comerciais ou grants originais. RLS e RPCs verificam conta ativa, sessão existente, piloto autorizado e membership da operação.
 
 Novas ferramentas ficam ocultas no Menu, rotas, Soluções, Custos, Notificações e geradores para usuários sem liberação. A verificação do backend retorna zero clientes comuns habilitados. O cliente aprovado vê os campos privados de conexão real. O UI para Google/Hotmart/TikTok fica em preparação nesta etapa.
+
+A revisão de 14/10 também restaura textos originais do Menu e Configurações, os cartões/colunas de demandas dos clientes, o rótulo Em andamento dos gestores e destinos originais do suporte. Custos e notificações de tracking são construídos apenas para os dois usuários; demais perfis conservam as abas anteriores. Gerentes, gestores, editores, parceiros, afiliados, clientes e outros CEOs são comparados com a versão 6c66df0 em desktop e celular, com fixtures locais e sem modificar contas reais. Reprodução: node scripts/tracking-legacy-qa.mjs; --live compara os mesmos perfis no frontend servido pelo domínio.
 
 Meta: conta act_ e token de acesso; leitura verificada no provedor antes de conectar, contas/entidades/hierarquia/estados e gastos importados. Ativação/pausa passa por Edge autenticada, com checagem de conta/entidade/revisão e permissão ads_management do token. Não há alteração automática de orçamento. OAuth de login único Meta depende de app próprio e credenciais, ainda não configurados; o piloto usa conexão por token.
 
