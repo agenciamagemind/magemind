@@ -1,4 +1,4 @@
-const CACHE_NAME='magemind-shell-launch-20261014-9';
+const CACHE_NAME='magemind-shell-launch-20261014-10';
 const SHELL=['./support-whatsapp.js','./tracking-admin.js','./','./index.html','./partner-workspace.js','./partners.js','./partners.css','./product-ui.css','./product-ui.js','./mobile.css','./auth.css','./goals.css','./goals.js','./tasks.js','./firewall-sessions.js','./security-rich-text.css','./security-rich-text.js','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
 
 self.addEventListener('install',event=>{
@@ -50,7 +50,7 @@ self.addEventListener('push',event=>{
   const options={
     body,icon:'./magemind-logo-192.png',badge:'./magemind-logo-192.png',
     tag:payload.notificationId?`magemind-${payload.notificationId}`:'magemind-general',
-    renotify:false,data:{url:payload.url||'./',demandId:payload.demandId||null},
+    renotify:false,data:{url:payload.url||'./',demandId:payload.demandId||null,workspaceId:payload.workspaceId||null,orderId:payload.orderId||null,integrationId:payload.integrationId||null},
   };
   event.waitUntil(self.registration.showNotification(title,options));
 });
@@ -62,7 +62,8 @@ self.addEventListener('notificationclick',event=>{
     for(const client of clients){
       if('focus' in client){
         await client.focus();
-        if(data.demandId) client.postMessage({type:'OPEN_DEMAND',demandId:data.demandId});
+        if(data.workspaceId) client.postMessage({type:'OPEN_TRACKING_ORDER',workspaceId:data.workspaceId,orderId:data.orderId,integrationId:data.integrationId});
+        else if(data.demandId) client.postMessage({type:'OPEN_DEMAND',demandId:data.demandId});
         return;
       }
     }

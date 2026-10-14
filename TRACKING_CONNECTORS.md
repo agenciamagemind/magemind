@@ -36,7 +36,7 @@ O lucro total usa pedidos, custos e gasto dos anúncios. UTMs devolvidas pelo ch
 
 ## Validação
 
-- 68 testes de contratos, finanças, banco e segurança passaram, incluindo aprovação Kiwify com data inconsistente, atualização de pendente para pago e reenvio sem duplicação da receita.
+- 70 testes de contratos, finanças, banco e segurança passaram, incluindo aprovação Kiwify com data inconsistente, atualização de pendente para pago e reenvio sem duplicação da receita. A suíte do piloto cobre notificações por status, preferências, privacidade entre contas, inscrições de push já existentes, histórico silencioso e reenvios.
 - 32 verificações de interface do cliente e 60 administrativas passaram sobre os arquivos publicados, com dados de QA isolados.
 - Login Meta real, autorização, troca do token e listagem das contas foram verificados no navegador.
 - A conta Meta escolhida pelo usuário, Magemind #1, importou 789 registros diários e 366 entidades. O período de 08/10/2026 a 14/10/2026 apresentou R$ 1.757,01 de investimento, conferido entre painel e banco.
@@ -46,3 +46,9 @@ O lucro total usa pedidos, custos e gasto dos anúncios. UTMs devolvidas pelo ch
 - Os quatro parsers de webhook foram testados com exemplos dos contratos. Receber uma compra real de cada checkout continua sendo uma validação externa separada.
 
 Descritores dos conectores: `tracking/connectors.mjs`. Parsers: `tracking/webhooks.mjs`. Catálogo do navegador: `scripts/tracking-connector-catalog.mjs --write`. Nova plataforma só deve ser habilitada após implementar sua autenticação, contrato de valores/status e testes.
+
+## Notificações de pedidos
+
+Pedidos pendentes, aprovados, recusados, cancelados, renovações, reembolsos, chargebacks e disputas têm categorias próprias. As preferências começam ativas; o cliente pode desativá-las individualmente em Configurações → Notificações. A central consulta os avisos do próprio usuário a cada cinco segundos e apresenta um aviso breve para novas entradas. Reenvios e eventos sem mudança de status não geram notificações repetidas; conciliação histórica permanece silenciosa.
+
+Os avisos no aparelho usam as inscrições `public.push_subscriptions`, as preferências gerais de notificações do aplicativo e as chaves VAPID existentes. Não exigem uma segunda inscrição separada de tracking. O processador entrega os avisos antes de sincronizar anúncios, com retentativa em caso de falha. O recebimento por Apple/Google/Mozilla confirma aceitação pelo serviço; a exibição final depende do aparelho, permissão de notificações e configurações do sistema operacional. A central permanece disponível mesmo quando o push falha. O clique em um aviso abre o pedido correspondente após validar o acesso à operação.

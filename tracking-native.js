@@ -14,7 +14,9 @@
 
  const statusLabel={pending:'Pendente',paid:'Aprovado',refunded:'Devolvido',chargeback:'Chargeback',refused:'Recusado',cancelled:'Cancelado',disputed:'Em disputa'};
  const scale={BRL:2,USD:2,EUR:2,JPY:0,KWD:3};
- let user=null,workspaces=[],authMode='login',requestVersion=0,notificationIds=new Set(),timer;
+ let user=null,workspaces=[],authMode='login',requestVersion=0,notificationIds=new Set(),notificationScope=null,notificationPollRunning=false;
+ const notificationTitles={pending:'Pedido pendente',sale:'Venda aprovada',renewal:'Renovação aprovada',refused:'Pagamento recusado',cancelled:'Pedido cancelado',refund:'Reembolso registrado',chargeback:'Chargeback registrado',disputed:'Pagamento em disputa',failure:'Integração requer atenção'};
+ const notificationPreferences=[['pending','Pedidos pendentes'],['sales','Vendas aprovadas'],['renewals','Renovações'],['refusals','Pagamentos recusados'],['cancellations','Pedidos cancelados'],['refunds','Reembolsos'],['chargebacks','Chargebacks'],['disputes','Pagamentos em disputa'],['failures','Falhas de integração'],['hide_amount','Ocultar valores nos avisos']];
  let setup=null,costRules=[],costProducts=[],costHistory=false,celebrating=false,welcomePending=null,sessionStarted=Date.now(),onboardingExpanded=false;
  const day=timestamp=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'}).format(new Date(timestamp));
  const state={workspace:null,tab:'overview',preset:'week',...periods.range('week'),currency:'BRL',page:1,status:'',provider:'',channel:'',payment:'',search:'',account_id:'',entity_id:'',level:'campaign'};
@@ -26,7 +28,7 @@
  const dateLabel=value=>String(value||'').slice(0,10).split('-').reverse().join('/');
  function toast(message){window.toast(message);}
  function persist(){if(user){const {search,...safe}=state;localStorage.setItem('mm_tracking_state_'+user.user_id,JSON.stringify(safe));}}
- function clear(){requestVersion++;closePeriod();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
+ function clear(){requestVersion++;closePeriod();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();notificationScope=null;$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
  async function api(route,data,params={}){
   if(window.MagemindTrackingBackend)return window.MagemindTrackingBackend.call(route,data,params,state);
   const u=new URL(cfg.apiBase+route,location.origin);
@@ -177,7 +179,7 @@
  async function settings(){
   const uid=user.user_id,s=await api('/settings'),p=s.preferences;
   if(DB.me?.id!==uid)return '';
-  $('tracking-notifications-mount').innerHTML=panel('Notificações de vendas','<p>Escolha quais atualizações deseja receber na central de notificações.</p><form data-form="preferences" class="form-grid">'+[['sales','Vendas aprovadas'],['renewals','Renovações'],['refunds','Devoluções'],['failures','Falhas de integração'],['hide_amount','Ocultar valores nos avisos']].map(([key,label])=>'<label class="checkbox"><input type="checkbox" name="'+key+'" '+(p[key]?'checked':'')+'>'+label+'</label>').join('')+'<button class="primary wide">Salvar preferências</button></form>');
+  $('tracking-notifications-mount').innerHTML=panel('Notificações de pedidos','<p>Escolha as atualizações da central. Os avisos no aparelho usam a ativação de notificações deste dispositivo.</p><form data-form="preferences" class="form-grid">'+notificationPreferences.map(([key,label])=>'<label class="checkbox"><input type="checkbox" name="'+key+'" '+(p[key]?'checked':'')+'>'+label+'</label>').join('')+'<button class="primary wide">Salvar preferências</button></form>');
   return costs();
  }
  async function detail(id,workspaceId=state.workspace){
@@ -307,7 +309,7 @@
     await api(data.id?'/costs/edit':'/costs',data.id?{id:data.id,...payload}:payload);
    }
    if(type==='settings'){await api('/settings',{...data,attribution_days:Number(data.attribution_days),retention_days:Number(data.retention_days)});await loadWorkspaces();}
-   if(type==='preferences'){const prefs={};for(const k of ['sales','renewals','refunds','failures','hide_amount'])prefs[k]=form.elements[k].checked;await api('/preferences',prefs);}
+   if(type==='preferences'){const prefs={};for(const [k] of notificationPreferences)prefs[k]=form.elements[k].checked;await api('/preferences',prefs);}
    if(type==='checkout-credentials'){
     const secrets={hottok:data.hottok||undefined,access_token:data.access_token||undefined,account_id:data.account_id||undefined,recipientSource:$('recipient-source').value};
     const r=await window.MagemindTrackingBackend.edge({workspace:state.workspace,integration:data.integration,action:'checkout_credentials',secrets});
@@ -318,14 +320,20 @@
  });
 
  async function pollNotifications(){
-  if(observer())return;
+  if(observer()||notificationPollRunning)return;
+  notificationPollRunning=true;try{
   if(!await ready())return;const uid=user.user_id,items=await api('/notifications');if(DB.me?.id!==uid)return;
+  const scope=uid+':'+state.workspace,warmed=notificationScope===scope;
+  if(!warmed){notificationScope=scope;notificationIds.clear();}
+  const fresh=items.filter(n=>!notificationIds.has(n.id));for(const n of items)notificationIds.add(n.id);
   const read=new Set(JSON.parse(localStorage.getItem('mm_tracking_read_'+uid)||'[]'));
   DB.notifications=DB.notifications.filter(n=>!n.trackingWorkspaceId);
-  for(const n of items){DB.notifications.push({id:'tracking-'+n.id,to:uid,icon:n.category==='refund'?'↩':'↗',iconBg:'var(--emeraldbg)',title:n.category==='renewal'?'Renovação aprovada':n.category==='refund'?'Devolução registrada':n.category==='failure'?'Integração requer atenção':'Venda aprovada',body:n.category==='failure'?'Confira a conexão em Integrações':n.hide_amount?'Novo pedido na sua operação':money(n.gross_minor,n.currency),date:'',time:n.delivered_at||n.next_attempt_at?dt(n.delivered_at||n.next_attempt_at):'',read:read.has('tracking-'+n.id),trackingOrderId:n.order_id,trackingWorkspaceId:state.workspace});}
+  for(const n of items){DB.notifications.push({id:'tracking-'+n.id,to:uid,icon:n.category==='pending'?'◷':['refund','chargeback'].includes(n.category)?'↩':['refused','cancelled','failure'].includes(n.category)?'!':'↗',iconBg:n.category==='pending'?'var(--amberbg)':['refused','cancelled','chargeback','failure'].includes(n.category)?'var(--rosebg)':'var(--emeraldbg)',title:notificationTitles[n.category]||'Atualização do pedido',body:n.category==='failure'?'Confira a conexão em Integrações':n.hide_amount?'Confira as informações em Pedidos':money(['refund','chargeback'].includes(n.category)?n.refund_minor:n.gross_minor,n.currency,n.amount_scale),date:'',time:n.created_at||n.delivered_at||n.next_attempt_at?dt(n.created_at||n.delivered_at||n.next_attempt_at):'',read:read.has('tracking-'+n.id),trackingOrderId:n.order_id,trackingWorkspaceId:state.workspace});}
   updateNotifBadge();if($('notif-panel')?.style.display==='block')renderNotifPanel();
+  if(warmed&&fresh.length)toast(fresh.length===1?(notificationTitles[fresh[0].category]||'Atualização do pedido'):fresh.length+' novas atualizações de pedidos');
   const status=await api('/onboarding');if(DB.me?.id!==uid)return;const changed=JSON.stringify(status)!==JSON.stringify(setup);setup=status;
   if(changed&&state.tab==='overview'&&!$('tracking-dialog').open&&document.querySelector('.page.active')?.id==='pg-dashboard')await render();else maybeCelebrate();
+  }finally{notificationPollRunning=false;}
  }
  window.MagemindTrackingNative={route,open:()=>goTo('dashboard'),clear,renderDemandStatus(){const rows=[['Não iniciado','Pendentes','var(--text3)'],['Em andamento','Em produção','var(--amber)'],['Concluído','Concluídas','var(--emerald)']];const total=DB.demands.length;$('demand-status-bars').innerHTML=rows.map(([key,label,color])=>{const n=DB.demands.filter(d=>d.status===key).length;return '<div class="list-row" style="margin-bottom:12px;font-size:11px"><span>'+label+'</span><strong style="float:right;color:'+color+'">'+n+'</strong><div style="height:4px;background:var(--bg3);border-radius:4px;margin-top:6px"><div style="width:'+(total?n/total*100:0)+'%;height:4px;border-radius:4px;background:'+color+'"></div></div></div>';}).join('');}};
  window.MagemindTracking={open:()=>goTo('dashboard')};
@@ -372,7 +380,7 @@
  $('tracking-dialog').addEventListener('close',()=>$('dialog-content').replaceChildren());
  document.addEventListener('magemind:session-ready',async()=>{if(!window.trackingEnabled())return;route('dashboard');const callback=new URLSearchParams(location.search),grant=callback.get('tracking_oauth'),failed=callback.has('tracking_oauth_error');if(grant||failed){history.replaceState(null,'',location.pathname);try{await ready();if(grant&&callback.get('tracking_workspace')===state.workspace&&!observer()){goTo('integrations');await render();await connections.accounts(grant);}else toast('A autorização da Meta não foi concluída. Tente conectar novamente.');}catch(e){toast(e.message);}} pollNotifications().catch(()=>{});const qs=new URLSearchParams(location.search);if(qs.get('order')){await ready();if(qs.get('workspace')&&workspaces.some(w=>w.id===qs.get('workspace')))state.workspace=qs.get('workspace');goTo('orders');await render();detail(qs.get('order'),qs.get('workspace')||state.workspace).catch(e=>toast(e.message));}});
  document.addEventListener('magemind:tracking-signed-out',clear);
- navigator.serviceWorker?.addEventListener('message',async e=>{if(e.data?.type!=='OPEN_TRACKING_ORDER'||!await ready())return;await loadWorkspaces();if(!workspaces.some(w=>w.id===e.data.workspaceId))return;state.workspace=e.data.workspaceId;goTo('orders');await render();detail(e.data.orderId,e.data.workspaceId).catch(err=>toast(err.message));});
+ navigator.serviceWorker?.addEventListener('message',async e=>{if(e.data?.type!=='OPEN_TRACKING_ORDER'||!await ready())return;await loadWorkspaces();if(!workspaces.some(w=>w.id===e.data.workspaceId))return;state.workspace=e.data.workspaceId;goTo(e.data.orderId?'orders':'integrations');await render();if(e.data.orderId)detail(e.data.orderId,e.data.workspaceId).catch(err=>toast(err.message));});
  setInterval(()=>{if(DB.me)pollNotifications().catch(()=>{});},5000);
  if(DB.me)route(document.querySelector('.page.active')?.id?.slice(3)||'dashboard');
 })();

@@ -2,6 +2,7 @@ import {service,checkDatabase,guard,json,credential,decrypt,env,allowReads} from
 import {syncMeta,syncGoogle,refreshGoogle,checkoutAdapters,capiPayload,providerFetch,metaEntities} from '../_shared/tracking/adapters.mjs';
 import {normalizeKiwify,normalizeHotmartHistory,reconciliationIdentity,sha256,constantEqual} from '../_shared/tracking/contracts.mjs';
 import webpush from 'npm:web-push@3.6.7';
+import {notificationPush} from '../_shared/tracking/notifications.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data;};
 Deno.serve(async(req)=>{
  try{
@@ -10,6 +11,30 @@ Deno.serve(async(req)=>{
   for(const job of jobs){
    try{await rpc(db,'tracking_process_receipt',{r:job.receipt_id});processed++;}
    catch(error){await rpc(db,'tracking_fail_job',{j:job.id,code:'normalization_or_transition_failed'});}
+  }
+  const outbox=await rpc(db,'tracking_internal_outbox');
+  for(const d of outbox){
+   try{
+    if(d.channel==='in_app'){await rpc(db,'tracking_delivery_result',{i:d.id,p_success:true,p_code:null});continue;}
+    if(d.channel==='push'){
+     const publicKey=env('TRACKING_VAPID_PUBLIC_KEY')||env('VAPID_PUBLIC_KEY'),privateKey=env('TRACKING_VAPID_PRIVATE_KEY')||env('VAPID_PRIVATE_KEY'),subject=env('TRACKING_VAPID_SUBJECT')||env('VAPID_SUBJECT')||'mailto:contato@magemind.com.br';
+     if(!privateKey||!publicKey)throw new Error('vapid_missing');
+     const members=await db.from('tracking_members').select('user_id').eq('workspace_id',d.workspace_id).eq('user_id',d.user_id).maybeSingle();if(!members.data)throw new Error('membership_revoked');
+     webpush.setVapidDetails(subject,publicKey,privateKey);
+     for(const s of d.subscriptions){
+      if(!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(new URL(s.endpoint).hostname))throw new Error('push_host_not_allowlisted');
+      try{await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify(notificationPush(d,env('TRACKING_FRONTEND_ORIGIN'))),{TTL:3600});}
+      catch(error){if([404,410].includes(error.statusCode))await rpc(db,'tracking_internal_expire_push',{i:s.id});else throw error;}
+     }
+    }
+    if(d.channel==='capi'){
+     const dest=d.destination;const allowlist=env('TRACKING_AUTHORIZED_TEST_PIXELS').split(',').filter(Boolean);
+     if(!dest||!allowlist.includes(dest.pixel_id))throw new Error('test_pixel_not_authorized');
+     const secrets=await decrypt(dest.cipher),payload=await capiPayload(d.order,d.customer,{...dest,authorized_test_pixel:true});
+     await providerFetch('https://graph.facebook.com/'+env('TRACKING_META_VERSION')+'/'+dest.pixel_id+'/events',{method:'POST',headers:{Authorization:'Bearer '+secrets.access_token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }
+    await rpc(db,'tracking_delivery_result',{i:d.id,p_success:true,p_code:null});
+   }catch(error){await rpc(db,'tracking_delivery_result',{i:d.id,p_success:false,p_code:['vapid_missing','membership_revoked','test_pixel_not_authorized'].includes(error.message)?error.message:'external_delivery_failed'});}
   }
   const date=new Date(),to=date.toISOString().slice(0,10),from=new Date(+date-7*86400000).toISOString().slice(0,10);
   if(env('TRACKING_ALLOW_EXTERNAL_READS')==='true'){
@@ -65,31 +90,6 @@ Deno.serve(async(req)=>{
      await db.from('tracking_integrations').update({error_count:(i.error_count||0)+1,retry_after_at:new Date(Date.now()+delay*1000).toISOString()}).eq('id',i.id);
     }
    }
-  }
-  const outbox=await rpc(db,'tracking_internal_outbox');
-  for(const d of outbox){
-   try{
-    if(d.channel==='in_app'){await rpc(db,'tracking_delivery_result',{i:d.id,p_success:true,p_code:null});continue;}
-    if(d.channel==='push'){
-     if(!env('TRACKING_VAPID_PRIVATE_KEY')||!env('TRACKING_VAPID_PUBLIC_KEY')||!env('TRACKING_VAPID_SUBJECT'))throw new Error('vapid_missing');
-     const members=await db.from('tracking_members').select('user_id').eq('workspace_id',d.workspace_id).eq('user_id',d.user_id).maybeSingle();if(!members.data)throw new Error('membership_revoked');
-     webpush.setVapidDetails(env('TRACKING_VAPID_SUBJECT'),env('TRACKING_VAPID_PUBLIC_KEY'),env('TRACKING_VAPID_PRIVATE_KEY'));
-     for(const s of d.subscriptions){
-      if(!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(new URL(s.endpoint).hostname))throw new Error('push_host_not_allowlisted');
-      const hidden=d.preference?.hide_amount!==false,labels={sale:'Venda aprovada',renewal:'Renovação aprovada',refund:'Devolução registrada',failure:'Uma integração precisa de atenção'};
-      const title=labels[d.category]||'Atualização da sua operação',amount=d.order?new Intl.NumberFormat('pt-BR',{style:'currency',currency:d.order.currency}).format(Number(d.category==='refund'?d.order.refund_minor:d.order.gross_minor)/10**d.order.amount_scale):null;
-      try{await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify({environment:'test',workspaceId:d.workspace_id,orderId:d.order_id,integrationId:d.integration_id,hideAmount:hidden,body:title+(hidden||amount==null?'':' · '+amount),url:env('TRACKING_FRONTEND_ORIGIN')+'/tracking.html?workspace='+d.workspace_id+(d.order_id?'&order='+d.order_id:'&tab=integrations')}),{TTL:3600});}
-      catch(error){if([404,410].includes(error.statusCode))await rpc(db,'tracking_internal_expire_push',{i:s.id});else throw error;}
-     }
-    }
-    if(d.channel==='capi'){
-     const dest=d.destination;const allowlist=env('TRACKING_AUTHORIZED_TEST_PIXELS').split(',').filter(Boolean);
-     if(!dest||!allowlist.includes(dest.pixel_id))throw new Error('test_pixel_not_authorized');
-     const secrets=await decrypt(dest.cipher),payload=await capiPayload(d.order,d.customer,{...dest,authorized_test_pixel:true});
-     await providerFetch('https://graph.facebook.com/'+env('TRACKING_META_VERSION')+'/'+dest.pixel_id+'/events',{method:'POST',headers:{Authorization:'Bearer '+secrets.access_token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    }
-    await rpc(db,'tracking_delivery_result',{i:d.id,p_success:true,p_code:null});
-   }catch(error){await rpc(db,'tracking_delivery_result',{i:d.id,p_success:false,p_code:['vapid_missing','membership_revoked','test_pixel_not_authorized'].includes(error.message)?error.message:'external_delivery_failed'});}
   }
   await rpc(db,'tracking_prune');
   return json(req,{processed,outbox:outbox.length,environment:env('TRACKING_ENVIRONMENT')});
