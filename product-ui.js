@@ -93,12 +93,3 @@ function openClientPreview(id) {
   openModal('modal-client-preview');
 }
 
-function setupFloatingNotifications() {
-  const main = document.querySelector('#app .main');
-  if (!main) return;
-  const sync = () => main.classList.toggle('content-scrolled', main.scrollTop > 64);
-  main.addEventListener('scroll', sync, { passive: true });
-  sync();
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupFloatingNotifications);
-else setupFloatingNotifications();
