@@ -31,6 +31,22 @@ function chronology(p,c,created,approved,updated,status){
  return {created_at:createdAt,approved_at:approvedAt||(['paid','refunded','chargeback','disputed'].includes(status)?source:null),occurred_at:source,money_components:{timestamp_source:updated||status==='paid'&&approvedAt?'provider':'received_at'}};
 }
 function base(c,order,status,cur,gross){return {schema_version:'1',event_id:c.eventId,order_id:String(order),status,currency:cur,amount_scale:SCALES[cur],gross_amount_minor:gross,gateway_fee_minor:null,recipient_revenue_minor:null,refunded_amount_minor:0,recipient_refunded_minor:null,is_test:false};}
+function kiwifyChronology(p,c,status){
+ const times=chronology(p,{...c,timezone:'UTC'},p.created_at,p.approved_date||p.approved_at,p.updated_at,status);
+ if(!['paid','refunded','chargeback','disputed'].includes(status)||!times.approved_at)return times;
+ const received=providerTime(c.receivedAt,'UTC'),approval=Date.parse(times.approved_at);
+ if(received&&p.updated_at&&Date.parse(times.occurred_at)>Date.parse(received)+300000)throw new Error('Invalid chronology');
+ // Kiwify's test sender supplies tomorrow's approval with today's update.
+ // An authenticated financial status remains useful when its approval date is
+ // inconsistent. Use the durable first-received clock, retaining provenance;
+ // never move revenue into the future or relax the canonical money/date guards.
+ if(received&&(approval>Date.parse(received)+300000||approval<Date.parse(times.created_at))){
+  return {...times,approved_at:received,occurred_at:received,money_components:{timestamp_source:'received_at_invalid_approval',provider_approved_at:times.approved_at,provider_updated_at:providerTime(p.updated_at,'UTC')||'',timestamp_reason:'approval_outside_valid_range'}};
+ }
+ // Providers may update this field before writing the approval timestamp.
+ if(approval>Date.parse(times.occurred_at))times.occurred_at=times.approved_at;
+ return times;
+}
 export function normalizeKiwifyWebhook(p,c){
  const states={waiting_payment:'pending',paid:'paid',refused:'refused',refunded:'refunded',chargedback:'chargeback',chargeback:'chargeback',cancelled:'cancelled'};
  const hints={order_approved:'paid',order_refunded:'refunded',order_chargeback:'chargeback',order_rejected:'refused',order_paid:'paid',billet_created:'pending',pix_created:'pending'};
@@ -41,7 +57,7 @@ export function normalizeKiwifyWebhook(p,c){
  const refund=['refunded','chargeback'].includes(status)?asMinor(p.refunded_amount)??gross:0;if(p.refund_type==='partial'&&asMinor(p.refunded_amount)==null)throw new Error('Partial refund amount required');
  // The Kiwify delivery observed at the provider uses UTC without an offset.
  // Convert at the boundary; the operation displays it in its own timezone.
- const times=chronology(p,{...c,timezone:'UTC'},p.created_at,p.approved_date||p.approved_at,p.updated_at,status);
+ const times=kiwifyChronology(p,c,status);
  return validateOrder({...base(c,p.order_id||p.id,status,cur,gross),...times,gateway_fee_minor:fee,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund===gross?net:null,
   customer:customer(p.Customer?.id||p.order_id,p.Customer?.full_name,p.Customer?.email,p.Customer?.mobile,Boolean(p.Customer?.id)),
   items:[{external_product_id:String(p.Product?.product_id||''),name:String(p.Product?.product_name||'Produto'),quantity:1,amount_minor:gross}],tracking:p.TrackingParameters||{},payment_method:p.payment_method?.toUpperCase(),renewal:Number(p.Subscription?.recurrence_number||p.subscription?.recurrence_number||1)>1,

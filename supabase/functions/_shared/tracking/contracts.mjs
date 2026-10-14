@@ -45,7 +45,7 @@ export function validateOrder(e) {
  if(customer&&!customer.external_id) throw new Error('Customer requires provider identity; email is not a global ID');
  const safe=Object.fromEntries(['schema_version','event_id','order_id','status','currency','amount_scale','gross_amount_minor','gateway_fee_minor','recipient_revenue_minor','refunded_amount_minor','recipient_refunded_minor','renewal','root_order_id','payment_method','is_test','money_components'].filter(k=>e[k]!==undefined).map(k=>[k,e[k]]));
  safe.items=e.items.map(i=>({external_product_id:i.external_product_id,name:i.name,quantity:i.quantity,amount_minor:i.amount_minor}));
- if(safe.money_components)safe.money_components=Object.fromEntries(['recipient_native_minor','recipient_currency','recipient_scale','fee_native_minor','fee_currency','net_includes_gateway','timestamp_source','item_amounts_allocated','manual_fees'].filter(k=>['string','number','boolean'].includes(typeof safe.money_components[k])).map(k=>[k,safe.money_components[k]]));
+ if(safe.money_components)safe.money_components=Object.fromEntries(['recipient_native_minor','recipient_currency','recipient_scale','fee_native_minor','fee_currency','net_includes_gateway','timestamp_source','provider_approved_at','provider_updated_at','timestamp_reason','item_amounts_allocated','manual_fees'].filter(k=>['string','number','boolean'].includes(typeof safe.money_components[k])).map(k=>[k,safe.money_components[k]]));
  return {...safe,customer,tracking:bridgeClick(e.tracking),created_at:timestamp(e.created_at),occurred_at:timestamp(e.occurred_at),approved_at:timestamp(e.approved_at)};
 }
 export async function sha256(value) {
