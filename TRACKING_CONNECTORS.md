@@ -37,7 +37,7 @@ O lucro total usa pedidos, custos e gasto dos anúncios. UTMs devolvidas pelo ch
 ## Validação
 
 - 70 testes de contratos, finanças, banco e segurança passaram, incluindo aprovação Kiwify com data inconsistente, atualização de pendente para pago e reenvio sem duplicação da receita. A suíte do piloto cobre notificações por status, preferências, privacidade entre contas, inscrições de push já existentes, histórico silencioso e reenvios.
-- 32 verificações de interface do cliente e 60 administrativas passaram sobre os arquivos publicados, com dados de QA isolados.
+- 34 verificações de interface do cliente e 60 administrativas passaram, com dados de QA isolados. Incluem a ordenação de avisos recentes acima do histórico anterior.
 - Login Meta real, autorização, troca do token e listagem das contas foram verificados no navegador.
 - A conta Meta escolhida pelo usuário, Magemind #1, importou 789 registros diários e 366 entidades. O período de 08/10/2026 a 14/10/2026 apresentou R$ 1.757,01 de investimento, conferido entre painel e banco.
 - O webhook Magemind foi cadastrado na Kiwify para todos os produtos em que o usuário é produtor, com sete eventos: boleto, Pix, aprovação, recusa, reembolso, chargeback e renovação. A URL definitiva não usa o parâmetro de verificação.
