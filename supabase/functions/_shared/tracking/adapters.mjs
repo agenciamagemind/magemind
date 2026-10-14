@@ -59,7 +59,7 @@ checkoutAdapters.hotmart.fetchCommissions=async(id,status,c,fetcher=fetch)=>prov
 export async function oauthStart(provider,{clientId,redirectUri,state,version='v25.0',configId,allowManagement=false}) {
  const url=new URL(provider==='google'?'https://accounts.google.com/o/oauth2/v2/auth':'https://www.facebook.com/'+version+'/dialog/oauth');
  const args={client_id:clientId,redirect_uri:redirectUri,state,response_type:'code',scope:provider==='google'?'https://www.googleapis.com/auth/adwords':allowManagement?'ads_read,ads_management':'ads_read'};
- if(provider==='meta'&&configId){delete args.scope;args.config_id=configId;}
+ if(provider==='meta'&&configId){delete args.scope;args.config_id=configId;args.override_default_response_type='true';}
  if(provider==='google')Object.assign(args,{access_type:'offline',prompt:'consent'});
  url.search=new URLSearchParams(args);return url.href;
 }

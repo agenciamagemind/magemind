@@ -267,7 +267,7 @@
   if(name==='ad-status'){await api('/ad-status',{provider:el.dataset.provider,account_id:el.dataset.account,entity_id:el.dataset.entity,status:el.dataset.status,revision:Number(el.dataset.revision)});toast(el.dataset.status==='ACTIVE'?'Veiculação ativada.':'Veiculação pausada.');return render();}
   if(name==='sites')return sitesForm();
   if(name==='cost-form')return costForm();
-  if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada da API','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado da API">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
+  if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada da API','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado da API">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(pilot?cfg.supabaseUrl+'/functions/v1/tracking-webhook?provider=custom':location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
   if(name==='sync'||name==='revoke'){await api('/integration/sync',{id:el.dataset.id,fail:name==='revoke'});toast('Integração atualizada.');return render();}
   if(name==='disconnect'){await api('/integration/disconnect',{id:el.dataset.id});toast('Credencial revogada; histórico preservado.');return render();}
   if(name==='retry'){await api('/retry',{id:el.dataset.id});toast('Reenvio auditado colocado na fila.');return render();}
