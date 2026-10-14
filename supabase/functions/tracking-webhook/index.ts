@@ -34,7 +34,7 @@ Deno.serve(async(req)=>{
    if(secrets.webhook_only===true){
     if(!await verifyWebhook(provider,req,payload,secrets))return json(req,{error:'Invalid webhook credential'},401);
     const hash=await sha256(canonicalJSON(payload)),clock=await db.rpc('tracking_webhook_clock',{i:id,h:hash});if(clock.error)throw clock.error;
-    try{event=await normalizeWebhook(provider,payload,{...secrets,receivedAt:clock.data});}catch(error){await db.from('tracking_integrations').update({error_code:'payload_incomplete'}).eq('id',id);throw error;}
+    try{event=await normalizeWebhook(provider,payload,{...secrets,receivedAt:clock.data});}catch(error){if(error?.message==='Synthetic events are unavailable')return json(req,{accepted:true,processing:'ignored_test'},200);await db.from('tracking_integrations').update({error_code:'payload_incomplete'}).eq('id',id);throw error;}
     if(!event)return json(req,{accepted:true,processing:'ignored'},200);
    }else if(provider==='hotmart'){
     if(!await checkoutAdapters.hotmart.verifyRequest(req,secrets))return json(req,{error:'Invalid Hottok'},401);
