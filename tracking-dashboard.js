@@ -114,7 +114,7 @@
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
  function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);let edit=$('dashboard-customize');if(!edit){edit=document.createElement('button');edit.id='dashboard-customize';edit.type='button';edit.className='btn btn-ghost btn-icon';edit.setAttribute('aria-label','Personalizar');edit.title='Personalizar Menu';edit.dataset.dashboardAction='edit';edit.innerHTML=svg('edit');$('notif-wrapper')?.prepend(edit);}edit.hidden=editing||!data||document.querySelector('.page.active')?.id!=='pg-dashboard';const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const width=grid.clientWidth;grid.style.setProperty('--md-row',editing?'132px':device==='mobile'?'96px':width<700?'104px':'94px');});gridObserver.observe(grid);}
- async function readDevice(d,force=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
+ async function readDevice(d,force=false,passive=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey||passive&&editing)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
   if(saving)return;
   if(name==='edit'){draft=clone(layout());drafts={};editing=true;search='';paint('[data-dashboard-action=cancel]');return;}
@@ -155,7 +155,7 @@
  let resizeFrame=0;addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(async()=>{if(!ctx||editing||device===currentDevice())return;device=currentDevice();await readDevice(device);paint();});});
  window.MagemindDashboard={
   configure(options){ctx={...ctx,...options};},
-  async render(options){const key=options.userId+':'+options.workspace;if(key!==sessionKey){this.clear();sessionKey=key;}ctx={...ctx,...options};data=options.data;device=currentDevice();await readDevice(device,true);if(key!==sessionKey)return '';return '<div id="md-dashboard-root">'+html()+'</div>';},
+  async render(options){const key=options.userId+':'+options.workspace;if(key!==sessionKey){this.clear();sessionKey=key;}if(editing)return '';ctx={...ctx,...options};data=options.data;device=currentDevice();await readDevice(device,true,true);if(key!==sessionKey||editing)return '';return '<div id="md-dashboard-root">'+html()+'</div>';},
   mount:observe,isEditing:()=>editing,
   leave(){cancelAnimationFrame(dragFrame);dragFrame=0;$('tracking-toolbar')?.removeAttribute('inert');if($('dashboard-customize'))$('dashboard-customize').hidden=true;editing=false;draft=null;drafts={};drag=null;},
   clear(){cancelAnimationFrame(dragFrame);dragFrame=0;gridObserver?.disconnect();$('tracking-toolbar')?.removeAttribute('inert');if($('dashboard-customize'))$('dashboard-customize').hidden=true;saved={};draft=null;drafts={};editing=false;saving=false;drag=null;data=null;sessionKey=null;device=null;},

@@ -111,7 +111,7 @@
    $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
    const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.level='campaign';state.provider='';state.account_id='';state.entity_id='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid)el.innerHTML=html;return;
-  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid)return;el.innerHTML=html;if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
+  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;el.innerHTML=html;if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)el.innerHTML='<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>';if(options.propagate)throw e;}
  }
  async function syncStatus(version){
@@ -137,7 +137,7 @@
  function route(page){closePeriod();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';state.account_id='';state.entity_id='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
  async function overview(){
   const uid=user.user_id,w=state.workspace,data=await api('/dashboard');
-  if(user?.user_id!==uid||state.workspace!==w)return '';
+  if(user?.user_id!==uid||state.workspace!==w||window.MagemindDashboard.isEditing())return '';
   return tutorialHTML()+sourceGuide()+await window.MagemindDashboard.render({data,demands:DB.demands,setup,userId:uid,workspace:w});
  }
  function chartHTML(rows){
