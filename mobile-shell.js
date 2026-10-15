@@ -6,7 +6,10 @@
   viewportFrame=0;
   const visual=window.visualViewport;
   if(visual&&Math.abs(visual.scale-1)>.05)return;
-  document.documentElement.style.setProperty('--app-viewport-height',Math.round(visual?.height||innerHeight)+'px');
+  // A standalone iOS app can report a smaller visual viewport without a keyboard.
+  // Only shrink the shell for an open keyboard; keep navigation at the CSS viewport edge.
+  const height=document.body.classList.contains('mobile-keyboard-open')?visual?.height||innerHeight:innerHeight;
+  document.documentElement.style.setProperty('--app-viewport-height',Math.round(height)+'px');
  }
  function scheduleViewport(){if(!viewportFrame)viewportFrame=requestAnimationFrame(viewport);}
  function menuLinks(){
@@ -81,6 +84,7 @@
  }
  addEventListener('resize',()=>{scheduleViewport();menuState();if(!refreshing)resetPull();},{passive:true});
  window.visualViewport?.addEventListener('resize',scheduleViewport,{passive:true});
+ document.addEventListener('focusin',scheduleViewport);document.addEventListener('focusout',scheduleViewport);
  addEventListener('orientationchange',()=>{scheduleViewport();setTimeout(scheduleViewport,250);},{passive:true});
  document.addEventListener('magemind:tracking-signed-out',()=>{if(!refreshing)resetPull();});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
