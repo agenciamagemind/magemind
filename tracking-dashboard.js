@@ -115,14 +115,14 @@
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
  function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const width=grid.clientWidth;grid.style.setProperty('--md-row',editing?'132px':device==='mobile'?'96px':width<700?'104px':'94px');});gridObserver.observe(grid);}
- async function readDevice(d){if(saved[d])return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
+ async function readDevice(d,force=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
   if(saving)return;
   if(name==='edit'){draft=clone(layout());drafts={};editing=true;search='';paint('[data-dashboard-action=cancel]');return;}
-  if(name==='cancel'){editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device);paint('[data-dashboard-action=edit]');return;}
+  if(name==='cancel'){editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device,true);paint('[data-dashboard-action=edit]');return;}
   if(name==='save'){
    saving=true;paint();const key=sessionKey;
-   try{drafts[device]=clone(draft);for(const [d,items] of Object.entries(drafts)){const r=await ctx.api('/dashboard-layout',{device:d,layout:items,revision:saved[d]?.revision||0});if(key!==sessionKey)return;saved[d]={layout:clone(items),revision:r.revision};}editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device);ctx.toast('Menu personalizado salvo.');}
+   try{drafts[device]=clone(draft);const layouts=Object.fromEntries(Object.entries(drafts).map(([d,items])=>[d,{layout:items,revision:saved[d]?.revision||0}]));const result=await ctx.api('/dashboard-layout',{layouts});if(key!==sessionKey)return;for(const [d,r] of Object.entries(result))saved[d]={layout:clone(r.layout),revision:r.revision};editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device);ctx.toast('Menu personalizado salvo.');}
    catch(e){ctx.toast(e.message);}finally{saving=false;paint();}if(!editing)await ctx.refresh?.();return;
   }
   if(name==='device'){drafts[device]=clone(draft);device=el.dataset.device;await readDevice(device);draft=clone(drafts[device]||saved[device].layout||defaults());paint();return;}
@@ -156,7 +156,7 @@
  let resizeFrame=0;addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(async()=>{if(!ctx||editing||device===currentDevice())return;device=currentDevice();await readDevice(device);paint();});});
  window.MagemindDashboard={
   configure(options){ctx={...ctx,...options};},
-  async render(options){const key=options.userId+':'+options.workspace;if(key!==sessionKey){this.clear();sessionKey=key;}ctx={...ctx,...options};data=options.data;device=currentDevice();await readDevice(device);if(key!==sessionKey)return '';return '<div id="md-dashboard-root">'+html()+'</div>';},
+  async render(options){const key=options.userId+':'+options.workspace;if(key!==sessionKey){this.clear();sessionKey=key;}ctx={...ctx,...options};data=options.data;device=currentDevice();await readDevice(device,true);if(key!==sessionKey)return '';return '<div id="md-dashboard-root">'+html()+'</div>';},
   mount:observe,isEditing:()=>editing,
   leave(){cancelAnimationFrame(dragFrame);dragFrame=0;$('tracking-toolbar')?.removeAttribute('inert');editing=false;draft=null;drafts={};drag=null;},
   clear(){cancelAnimationFrame(dragFrame);dragFrame=0;gridObserver?.disconnect();$('tracking-toolbar')?.removeAttribute('inert');saved={};draft=null;drafts={};editing=false;saving=false;drag=null;data=null;sessionKey=null;device=null;},
