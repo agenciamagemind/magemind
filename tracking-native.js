@@ -86,8 +86,8 @@
  }
  let sessionReady=null;
  async function ready(){
-  if(!DB.me||!window.trackingEnabled())return false;if(user?.user_id===DB.me.id&&(state.workspace||observer()))return true;
-  if(sessionReady)return sessionReady;const uid=DB.me.id;
+  if(!DB.me||!window.trackingEnabled())return false;if(sessionReady)return sessionReady;
+  if(user?.user_id===DB.me.id&&(state.workspace||observer()))return true;const uid=DB.me.id;
   sessionReady=(async()=>{sessionStarted=Date.now();onboardingExpanded=false;user={user_id:uid,email:DB.me.email};let saved={};try{saved=JSON.parse(localStorage.getItem('mm_tracking_state_'+uid)||'{}');for(const k of ['workspace','from','to','currency'])if(saved[k])state[k]=saved[k];}catch{}
    await loadWorkspaces();if(observer())Object.assign(state,{admin_client:'',admin_sort:'newest',admin_workspace:null});if(DB.me?.id!==uid){clear();return false;}state.simulation_only=workspace()?.simulation_only===true;state.preset=periods.presets.some(p=>p.id===saved.preset)?saved.preset:periods.validRange(saved.from,saved.to)?periods.infer(saved.from,saved.to,Date.now(),workspace()?.timezone):'week';syncInputs();return true;
   })().finally(()=>sessionReady=null);return sessionReady;
