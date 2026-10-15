@@ -6,9 +6,11 @@
   viewportFrame=0;
   const visual=window.visualViewport;
   if(visual&&Math.abs(visual.scale-1)>.05)return;
-  // A standalone iOS app can report a smaller visual viewport without a keyboard.
-  // Only shrink the shell for an open keyboard; keep navigation at the CSS viewport edge.
-  const height=document.body.classList.contains('mobile-keyboard-open')?visual?.height||innerHeight:innerHeight;
+  const installed=navigator.standalone===true||matchMedia('(display-mode:standalone), (display-mode:fullscreen)').matches;
+  document.documentElement.classList.toggle('mobile-installed',installed);
+  // Measure the explicit CSS shell, not iOS's inset-excluding fixed viewport.
+  // Only use the smaller visual viewport while an editor has the keyboard open.
+  const height=document.body.classList.contains('mobile-keyboard-open')?visual?.height||innerHeight:document.body.getBoundingClientRect().height||innerHeight;
   document.documentElement.style.setProperty('--app-viewport-height',Math.round(height)+'px');
  }
  function scheduleViewport(){if(!viewportFrame)viewportFrame=requestAnimationFrame(viewport);}
@@ -84,6 +86,7 @@
  }
  addEventListener('resize',()=>{scheduleViewport();menuState();if(!refreshing)resetPull();},{passive:true});
  window.visualViewport?.addEventListener('resize',scheduleViewport,{passive:true});
+ addEventListener('pageshow',scheduleViewport);document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleViewport();});
  document.addEventListener('focusin',scheduleViewport);document.addEventListener('focusout',scheduleViewport);
  addEventListener('orientationchange',()=>{scheduleViewport();setTimeout(scheduleViewport,250);},{passive:true});
  document.addEventListener('magemind:tracking-signed-out',()=>{if(!refreshing)resetPull();});
