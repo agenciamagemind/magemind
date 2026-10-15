@@ -102,7 +102,7 @@
       const mobile=matchMedia('(max-width:900px)').matches;const open=sidebar.classList.contains('mobile-open');
       sidebar.toggleAttribute('inert',mobile&&!open);sidebar.setAttribute('aria-hidden',String(mobile&&!open));
       document.getElementById('mobile-more-tab')?.setAttribute('aria-expanded',String(mobile&&open));
-      if(mobile&&open&&!menuWasOpen&&!stack.length)sidebar.querySelector('button,a')?.focus();
+      if(mobile&&open&&!menuWasOpen&&!stack.length)([...sidebar.querySelectorAll(focusable)].find(visible)||sidebar).focus({preventScroll:true});
       if(menuWasOpen&&!open&&!stack.length)document.getElementById('mobile-more-tab')?.focus();
       menuWasOpen=mobile&&open;
     };
