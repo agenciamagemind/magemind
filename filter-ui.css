@@ -1,0 +1,74 @@
+/* Shared filter controls: same rhythm, with room for each screen's fields. */
+:root{--filter-h:40px;--filter-radius:10px}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
+#tracking-toolbar{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin:12px 0 18px;padding:0}
+#tracking-toolbar .period-label{display:none}
+#tracking-toolbar .mt-period-control{flex:0 1 auto;min-width:0;max-width:100%}
+#tracking-toolbar #tracking-period-toggle{min-height:var(--filter-h);height:var(--filter-h);padding:5px 11px;border-radius:var(--filter-radius);gap:8px;min-width:164px;width:auto}
+#tracking-period-toggle strong{font-size:11px;line-height:1.25}#tracking-period-toggle small{font-size:9px;line-height:1.2;margin-top:2px}
+#tracking-toolbar>label:not(#tracking-workspace-label){flex:0 0 76px;max-width:76px;min-width:0}
+#tracking-toolbar select{height:var(--filter-h);padding:7px 9px;border:1px solid var(--border2);border-radius:var(--filter-radius);font-size:11px}
+#tracking-refresh{width:var(--filter-h);height:var(--filter-h);min-height:var(--filter-h);padding:0;border-radius:var(--filter-radius);flex:none}
+#tracking-refresh svg{width:17px;height:17px}#tracking-refresh[aria-busy=true] svg{animation:filter-spin 1s linear infinite}
+.filter-sync{margin-left:auto;max-width:320px;color:var(--text3);font-size:10px;line-height:1.5}.filter-sync.is-stale{color:var(--amber)}
+.mt-root .filters,.mt-root .mt-admin-filters{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:0;margin:0 0 16px;border:0;background:transparent;border-radius:0}
+.mt-root .filters>label,.mt-root .mt-admin-filters>label{flex:1 1 145px;min-width:130px;max-width:220px;font-size:10px;gap:5px}
+.mt-root .filters>label.search{flex:1 1 230px;min-width:200px;max-width:340px}
+.mt-root .filters input,.mt-root .filters select,.mt-root .mt-admin-filters select{height:var(--filter-h);min-height:var(--filter-h);border:1px solid var(--border2);border-radius:var(--filter-radius);padding:8px 10px;font-size:11px;line-height:1.3}
+.mt-root .filters>button,.mt-root .mt-admin-filters>button{height:var(--filter-h);min-height:var(--filter-h);border-radius:var(--filter-radius)}
+.mt-root .mt-level-tabs{gap:4px;margin-bottom:14px;display:inline-flex;padding:3px;border:1px solid var(--border);background:var(--bg2);border-radius:11px}
+.mt-root .mt-level-tabs button{min-height:33px;border:0;background:transparent;border-radius:8px;font-size:11px;padding:6px 12px}
+.mt-root .mt-level-tabs button[aria-pressed=true]{background:var(--bg4);color:var(--violet3)}
+.mt-root .app-filter-toggle{display:none}
+#app .search-row{align-items:center;gap:10px;flex-wrap:wrap}
+#app .search-row>.search-input{height:var(--filter-h);min-width:200px;max-width:340px;flex:1 1 260px;border-radius:var(--filter-radius)}
+#app .search-row>select.fi{height:var(--filter-h);min-height:var(--filter-h);width:190px!important;min-width:160px!important;border-radius:var(--filter-radius)}
+#app .filter-row{gap:6px;align-items:center;flex-wrap:wrap;overflow:visible}
+#app .filter-row .chip{min-height:32px;display:inline-flex;align-items:center;padding:5px 12px;font-size:11px;white-space:nowrap}
+#app .firewall-toolbar{gap:10px;align-items:center;margin-top:14px}
+#app .firewall-toolbar :is(input,select){height:var(--filter-h);min-height:var(--filter-h);border-radius:var(--filter-radius);font-size:12px;padding:8px 11px}
+#app .firewall-toolbar>input{flex:1 1 240px;min-width:180px;max-width:360px}#app .firewall-toolbar>select{flex:0 1 210px;min-width:160px}
+#app .goals-toolbar{gap:12px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+#app .goals-toolbar>.fi{height:var(--filter-h);min-width:180px;flex:1;border-radius:var(--filter-radius);font-size:12px}
+#app :is(.goals-filters,.partner-tabs){gap:6px}#app :is(.goals-filters,.partner-tabs) button{min-height:34px;border-radius:9px;font-size:11px}
+#app .partner-toolbar{gap:10px;flex-wrap:wrap;align-items:center}#app .partner-toolbar .fg{margin:0}
+#app .partner-toolbar select{width:auto;min-width:160px;max-width:260px;height:var(--filter-h);border-radius:var(--filter-radius);font-size:12px}
+#app .partner-toolbar .partner-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#app .demand-view-controls,#app .demand-client-actions{align-items:center;gap:8px;flex-wrap:wrap}
+#app .demand-client-actions select{height:var(--filter-h);max-width:240px;border-radius:var(--filter-radius)}
+#sales-period-filter.sales-period-bar{display:flex!important;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px!important}
+#sales-period-filter>button{display:none!important}#sales-period-filter .app-sales-period{display:block;margin:0}
+.app-sales-period select{height:var(--filter-h);min-width:210px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--filter-radius);color:var(--text);padding:8px 12px;font:12px inherit}
+#sales-period-caption{flex-basis:auto;padding:0;font-size:11px}
+#notif-wrapper{display:flex;align-items:center;gap:8px}#dashboard-customize{width:38px;height:38px;border-radius:12px;background:var(--bg2);box-shadow:0 8px 24px #0004}#dashboard-customize svg{width:17px;height:17px}
+.app-metric-tooltip{position:fixed;z-index:900;width:max-content;max-width:min(300px,calc(100vw - 24px));padding:12px 14px;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px #0006;font-size:12px;line-height:1.65;pointer-events:none}
+@media(min-width:901px){.mt-root .md-customize-mobile{display:none}.mt-root .md-info{cursor:help}}
+@media(max-width:900px){
+ #dashboard-customize{display:none!important}#tracking-toolbar{gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+ #tracking-toolbar .mt-period-control{flex:1 1 150px;min-width:0}
+ #tracking-toolbar #tracking-period-toggle{width:100%;min-width:0;max-width:none}
+ #tracking-toolbar #tracking-period-toggle .mt-period-chevron{margin-left:auto!important}
+ #tracking-toolbar>label:not(#tracking-workspace-label){flex:0 0 66px;max-width:66px;min-width:0}
+ .filter-sync{flex:1 0 100%;max-width:none;font-size:9px;margin:0;min-height:0}
+ .mt-root .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .mt-root .filters>label,.mt-root .filters>label.search,.mt-root .mt-admin-filters>label{max-width:none;min-width:0;width:100%;font-size:10px}
+ .mt-root .filters>label.search{grid-column:1/-1}
+ .mt-root .filters>.app-filter-toggle{display:flex;grid-column:1/-1;order:-1;justify-content:flex-start;gap:8px;width:100%;font-size:11px}
+ .mt-root .app-filter-toggle>span:last-child{margin-left:auto;transition:transform .15s}.mt-root .app-filter-toggle[aria-expanded=true]>span:last-child{transform:rotate(180deg)}
+ .mt-root .filters:has(.search)>.app-filter-toggle{order:0}
+ .mt-root .filters.app-filter-collapsed>label:not(.search),.mt-root .filters.app-filter-collapsed>button:not(.app-filter-toggle){display:none}
+ .mt-root .mt-admin-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ .mt-root .mt-level-tabs{display:flex;width:100%;margin-bottom:12px}.mt-root .mt-level-tabs button{flex:1;padding:6px 5px;font-size:10px;white-space:nowrap}
+ #app .search-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ #app .search-row>.search-input{grid-column:1/-1;max-width:none;min-width:0;width:100%;margin:0}
+ #app .search-row>select.fi{width:100%!important;min-width:0!important;max-width:none}
+ #app #client-filters{grid-column:1/-1;width:100%;display:flex;flex-wrap:wrap;overflow:visible!important}
+ #app .filter-row{flex-wrap:wrap;overflow:visible}.filter-row .chip{flex:none}
+ #app .firewall-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ #app .firewall-toolbar>input{grid-column:1/-1;max-width:none;width:100%;min-width:0}#app .firewall-toolbar>select{width:100%;min-width:0}
+ #app .goals-toolbar>.fi{max-width:none;width:100%;min-width:0}.goals-filters{width:100%}
+ #app .partner-toolbar select{min-width:0;max-width:100%;width:100%}#app .partner-toolbar .partner-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+ #sales-period-filter.sales-period-bar{padding:12px!important;gap:7px}#sales-period-filter .app-sales-period{width:100%}.app-sales-period select{width:100%;min-width:0}#sales-period-caption{font-size:10px}
+}
+@keyframes filter-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#tracking-refresh svg{animation:none}.mt-root .app-filter-toggle>span:last-child{transition:none}}

@@ -99,7 +99,7 @@
   const [title,,kind,info]=catalog[item.id];
   return '<article class="md-tile md-type-'+kind+'" data-widget="'+item.id+'" style="grid-column:'+(item.x+1)+' / span '+item.w+';grid-row:'+(item.y+1)+' / span '+item.h+'" aria-label="'+title+'">'+
    (editing?'<div class="md-tile-tools"><button type="button" class="md-drag" data-dashboard-drag="'+item.id+'" title="Arraste para mover" aria-label="Mover '+title+'">'+svg('move')+'</button><div class="md-size-controls">'+b('−','shrink','data-id="'+item.id+'" aria-label="Diminuir largura de '+title+'"')+b('+','grow','data-id="'+item.id+'" aria-label="Aumentar largura de '+title+'"')+b('↕','height','data-id="'+item.id+'" aria-label="Alterar altura de '+title+'"')+'</div>'+b('×','remove','data-id="'+item.id+'" aria-label="Remover '+title+'"')+'</div>':'')+
-   '<div class="md-tile-heading"><h3>'+title+'</h3><button class="md-info" type="button" data-dashboard-action="info" data-id="'+item.id+'" aria-label="Sobre '+title+'" title="'+esc(info)+'">ⓘ</button></div><div class="md-tile-body">'+body(item.id)+'</div>'+
+   '<div class="md-tile-heading"><h3>'+title+'</h3>'+(matchMedia('(min-width:901px) and (hover:hover)').matches?'<span class="md-info" tabindex="0" role="img" aria-label="Sobre '+title+'" data-tooltip="'+esc(info)+'">ⓘ</span>':'<button class="md-info" type="button" data-dashboard-action="info" data-id="'+item.id+'" aria-label="Sobre '+title+'">ⓘ</button>')+'</div><div class="md-tile-body">'+body(item.id)+'</div>'+
    (editing?'<button type="button" class="md-resize" data-dashboard-resize="'+item.id+'" title="Arraste para redimensionar" aria-label="Redimensionar '+title+'">'+svg('resize')+'</button>':'')+'</article>';
  }
  function library(){
@@ -109,12 +109,11 @@
  function html(){
   if(!data)return '';
   return '<div class="md-dashboard '+(editing?'md-editing':'')+' '+(device==='mobile'?'md-mobile-layout':'')+'"'+(editing?' data-no-pull':'')+'>'+
-   '<div class="md-toolbar">'+(editing?'<div><strong>Personalizar Menu</strong><p>Arraste os blocos e os cantos para ajustar. As mudanças só entram ao salvar.</p></div><div class="md-device" role="group" aria-label="Layout do dispositivo">'+['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device','data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('')+'</div><div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''))+'</div>':'<div><strong>Resultados da operação</strong><p>Dados do período selecionado</p></div>'+b(svg('edit')+' Personalizar','edit','class="md-customize"'))+'</div>'+
-   (data.estimated_orders&&!editing?'<div class="md-estimate-note"><span>Lucro com custos históricos estimados em '+number(data.estimated_orders)+' '+(data.estimated_orders===1?'venda':'vendas')+'.</span>'+b('Entender cálculo','explain-profit')+'</div>':'')+
+   '<div class="md-toolbar">'+(editing?'<div><strong>Personalizar Menu</strong><p>Arraste os blocos e os cantos para ajustar. As mudanças só entram ao salvar.</p></div><div class="md-device" role="group" aria-label="Layout do dispositivo">'+['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device','data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('')+'</div><div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''))+'</div>':'<div><strong>Resultados da operação</strong><p>Dados do período selecionado</p></div>'+b(svg('edit')+' Personalizar','edit','class="md-customize md-customize-mobile"'))+'</div>'+
    '<div class="md-workspace">'+(editing?library():'')+'<div class="md-grid" id="md-grid" style="--md-cols:'+cols()+';--md-rows:'+Math.max(1,...layout().map(r=>r.y+r.h))+'">'+layout().map(tile).join('')+'</div></div></div>';
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
- function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const width=grid.clientWidth;grid.style.setProperty('--md-row',editing?'132px':device==='mobile'?'96px':width<700?'104px':'94px');});gridObserver.observe(grid);}
+ function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);let edit=$('dashboard-customize');if(!edit){edit=document.createElement('button');edit.id='dashboard-customize';edit.type='button';edit.className='btn btn-ghost btn-icon';edit.setAttribute('aria-label','Personalizar');edit.title='Personalizar Menu';edit.dataset.dashboardAction='edit';edit.innerHTML=svg('edit');$('notif-wrapper')?.prepend(edit);}edit.hidden=editing||!data||document.querySelector('.page.active')?.id!=='pg-dashboard';const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const width=grid.clientWidth;grid.style.setProperty('--md-row',editing?'132px':device==='mobile'?'96px':width<700?'104px':'94px');});gridObserver.observe(grid);}
  async function readDevice(d,force=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
   if(saving)return;
@@ -131,7 +130,7 @@
   if(name==='remove'){if(draft.length===1){ctx.toast('Mantenha pelo menos um bloco no Menu.');return;}draft=draft.filter(r=>r.id!==el.dataset.id);paint();return;}
   if(['grow','shrink','height'].includes(name)){const r=draft.find(r=>r.id===el.dataset.id);move(r.id,name==='height'?{h:r.h%4+1}:{w:r.w+(name==='grow'?1:-1)});paint();return;}
   if(name==='demands'){ctx.demandsOpen();return;}
-  if(name==='info'){const c=catalog[el.dataset.id];ctx.modal(c[0],'<p>'+esc(c[3])+'</p>'+b('Fechar','close-info'));return;}
+  if(name==='info'){if(matchMedia('(min-width:901px) and (hover:hover)').matches)return;const c=catalog[el.dataset.id];ctx.modal(c[0],'<p>'+esc(c[3])+'</p>');return;}
   if(name==='close-info'){$('tracking-dialog').close();return;}
   if(name==='explain-profit'){ctx.modal('Como o lucro é calculado','<p>Receita líquida − anúncios − custos de produto − impostos − taxas adicionais − despesas.</p><p>Taxas que o checkout já descontou da receita líquida são mostradas para consulta e não são cobradas novamente.</p><p>Quando uma venda antiga não tinha custos registrados, usamos a primeira configuração disponível após sua aprovação. A estimativa aparece identificada e não altera os pedidos nem os lançamentos originais.</p><div class="md-profit-formula"><strong>Receita líquida</strong><span>'+esc(ctx.money(data.net_minor))+'</span><strong>Anúncios</strong><span>− '+esc(ctx.money(data.spend_minor))+'</span><strong>Custos e despesas adicionais</strong><span>− '+esc(ctx.money(data.costs_minor==null?null:Number(data.costs_minor)+Number(data.expense_minor||0)))+'</span><strong>Lucro estimado</strong><span>'+esc(ctx.money(data.profit_minor))+'</span></div>'+b('Fechar','close-info'));}
  }
@@ -158,8 +157,8 @@
   configure(options){ctx={...ctx,...options};},
   async render(options){const key=options.userId+':'+options.workspace;if(key!==sessionKey){this.clear();sessionKey=key;}ctx={...ctx,...options};data=options.data;device=currentDevice();await readDevice(device,true);if(key!==sessionKey)return '';return '<div id="md-dashboard-root">'+html()+'</div>';},
   mount:observe,isEditing:()=>editing,
-  leave(){cancelAnimationFrame(dragFrame);dragFrame=0;$('tracking-toolbar')?.removeAttribute('inert');editing=false;draft=null;drafts={};drag=null;},
-  clear(){cancelAnimationFrame(dragFrame);dragFrame=0;gridObserver?.disconnect();$('tracking-toolbar')?.removeAttribute('inert');saved={};draft=null;drafts={};editing=false;saving=false;drag=null;data=null;sessionKey=null;device=null;},
+  leave(){cancelAnimationFrame(dragFrame);dragFrame=0;$('tracking-toolbar')?.removeAttribute('inert');if($('dashboard-customize'))$('dashboard-customize').hidden=true;editing=false;draft=null;drafts={};drag=null;},
+  clear(){cancelAnimationFrame(dragFrame);dragFrame=0;gridObserver?.disconnect();$('tracking-toolbar')?.removeAttribute('inert');if($('dashboard-customize'))$('dashboard-customize').hidden=true;saved={};draft=null;drafts={};editing=false;saving=false;drag=null;data=null;sessionKey=null;device=null;},
   catalog:Object.keys(catalog)
  };
 })();

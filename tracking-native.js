@@ -74,7 +74,7 @@
  function table(headers,rows){return '<div class="table-scroll"><table><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
  const select=(id,label,options,value='')=>'<label>'+label+'<select id="'+id+'">'+options.map(([k,v])=>'<option value="'+esc(k)+'" '+(value===k?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
  function ordersFilters(){
-  return '<div class="filters"><label class="search">Buscar pedido, produto ou comprador<input id="tracking-search" value="'+esc(state.search)+'" placeholder="Nome, e-mail, telefone ou pedido"></label>'+
+  return '<div class="filters"><label class="search">Buscar pedidos<input id="tracking-search" value="'+esc(state.search)+'" placeholder="Pedido, produto ou comprador"></label>'+
    select('filter-status','Status',[['','Todos'],...Object.entries(statusLabel)],state.status)+select('filter-provider','Checkout',[['','Todos'],['custom','API própria'],...checkoutProviders.map(p=>[p,brand.name(p)])],state.provider)+select('filter-channel','Origem',[['','Todas'],['meta','Meta'],['google','Google'],['unattributed','Não atribuído']],state.channel)+select('filter-payment','Pagamento',[['','Todos'],['PIX','Pix'],['CREDIT_CARD','Cartão']],state.payment)+button('Filtrar','filter', '',true)+'</div>';
  }
  async function loadWorkspaces(){
@@ -95,6 +95,7 @@
  function syncInputs(){if(state.preset!=='custom')Object.assign(state,periods.range(state.preset,Date.now(),workspace()?.timezone||'America/Sao_Paulo'));for(const k of ['from','to','currency'])$('tracking-'+k).value=state[k];$('tracking-period-label').textContent=periods.presets.find(p=>p.id===state.preset)?.label||'Período personalizado';$('tracking-period-dates').textContent=state.from===state.to?dateLabel(state.from):dateLabel(state.from)+' — '+dateLabel(state.to);}
  async function render(options={}){
   if(state.tab==='overview'&&window.MagemindDashboard.isEditing())return;
+  if(options.quiet&&(document.hidden||document.querySelector('#tracking-dialog[open],#tracking-period-popover:popover-open')||document.activeElement?.matches('input,select,textarea,[contenteditable=true]')))return;
   const version=++requestVersion;if(!await ready()||version!==requestVersion)return;syncInputs();persist();
   const nativePage=routes[state.tab],activePage=document.querySelector('.page.active')?.id;
   const subtitles=observer()?{campaigns:'Resultados e campanhas das operações dos clientes',orders:'Pedidos de todos os clientes e responsáveis',integrations:'Cobertura e situação das conexões dos clientes'}:{campaigns:'Desempenho e otimização dos seus anúncios',orders:'Vendas, pagamentos e informações dos compradores',integrations:'Contas de anúncios, checkouts e origem das vendas'};
@@ -104,13 +105,34 @@
   if(!mount)return;mount.appendChild($('tracking-module'));$('tracking-module').hidden=false;
   $('tracking-toolbar').hidden=state.tab==='settings'||state.tab==='integrations';
   $('tracking-toolbar').querySelector('.period-label').textContent=state.tab==='overview'?'Visão geral da sua operação':'Período e filtros da operação';
-  const el=$('tracking-content');el.innerHTML='<div class="stats-grid">'+[1,2,3,4].map(()=>'<div class="skeleton" aria-label="Carregando"></div>').join('')+'</div>';
+  const el=$('tracking-content');if(!options.quiet)el.innerHTML='<div class="stats-grid">'+[1,2,3,4].map(()=>'<div class="skeleton" aria-label="Carregando"></div>').join('')+'</div>';
+  syncStatus(version).catch(()=>{});
   try{const uid=DB.me.id;if(observer()){
    $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
    const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.level='campaign';state.provider='';state.account_id='';state.entity_id='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid)el.innerHTML=html;return;
   }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid)return;el.innerHTML=html;if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)el.innerHTML='<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>';if(options.propagate)throw e;}
+ }
+ async function syncStatus(version){
+  const label=$('tracking-sync-status');if(!label)return;
+  if(observer()||!['overview','ads','orders'].includes(state.tab)){label.textContent='';return;}
+  const rows=(await api('/integrations')).filter(i=>i.connected&&['meta','google','tiktok'].includes(i.provider)&&!i.account_id.startsWith('oauth:'));
+  if(version!==requestVersion)return;
+  if(!rows.length){label.textContent='';label.classList.remove('is-stale');return;}
+  const blocked=rows.some(i=>i.error_code==='meta_confirmation_required'||/^provider_http_400_200/.test(i.error_code||'')),failed=rows.some(i=>i.error_code&&!['sync_requested'].includes(i.error_code)),queued=rows.some(i=>i.error_code==='sync_requested');
+  const oldest=Math.min(...rows.map(i=>i.last_sync_at?new Date(i.last_sync_at).getTime():0)),stale=!oldest||Date.now()-oldest>180000;
+  label.classList.toggle('is-stale',blocked||failed||stale);
+  const updated=oldest?'Atualizado às '+new Date(oldest).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:workspace()?.timezone||'America/Sao_Paulo'}):'Aguardando sincronização';
+  label.textContent=blocked?'Meta Ads: confirmação de acesso necessária':failed?'Anúncios: conexão requer atenção':queued?'Atualização dos anúncios solicitada':stale?'Anúncios desatualizados · '+updated.toLowerCase():updated;
+  label.title=blocked?'A Meta bloqueou o acesso à API. Conclua a confirmação da conta de desenvolvedor na Meta.':updated;
+ }
+ let refreshingAds=false;
+ async function refreshData(options={}){
+  if(refreshingAds||window.MagemindDashboard.isEditing())return;
+  refreshingAds=true;$('tracking-refresh').setAttribute('aria-busy','true');$('tracking-refresh').disabled=true;
+  try{if(await ready()&&!observer()&&state.workspace&&window.MagemindTrackingBackend?.edge)await window.MagemindTrackingBackend.edge({action:'queue_ads_sync',workspace:state.workspace});await render();}
+  catch(e){if(options.propagate)throw e;toast(e.message);}finally{refreshingAds=false;$('tracking-refresh').removeAttribute('aria-busy');$('tracking-refresh').disabled=false;}
  }
  function route(page){closePeriod();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';state.account_id='';state.entity_id='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
  async function overview(){
@@ -324,14 +346,15 @@
  }
  window.MagemindTrackingNative={route,open:()=>goTo('dashboard'),clear,renderDemandStatus(){const rows=[['Não iniciado','Pendentes','var(--text3)'],['Em andamento','Em produção','var(--amber)'],['Concluído','Concluídas','var(--emerald)']];const total=DB.demands.length;$('demand-status-bars').innerHTML=rows.map(([key,label,color])=>{const n=DB.demands.filter(d=>d.status===key).length;return '<div class="list-row" style="margin-bottom:12px;font-size:11px"><span>'+label+'</span><strong style="float:right;color:'+color+'">'+n+'</strong><div style="height:4px;background:var(--bg3);border-radius:4px;margin-top:6px"><div style="width:'+(total?n/total*100:0)+'%;height:4px;border-radius:4px;background:'+color+'"></div></div></div>';}).join('');}};
  window.MagemindTracking={open:()=>goTo('dashboard')};
- window.MagemindTrackingNative.refresh=async()=>{await pollNotifications();if(state.tab!=='settings')await render({propagate:true});};
+ window.MagemindTrackingNative.refresh=async()=>{await pollNotifications();if(state.tab!=='settings')await refreshData({propagate:true});};
  const previousMyNotifs=window.myNotifs;
  window.myNotifs=()=>{const rows=previousMyNotifs();return window.trackingEnabled()?rows.slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)):rows;};
  const previousClickNotif=window.clickNotif;
  window.clickNotif=async(id,demandId)=>{const n=DB.notifications.find(x=>x.id===id);if(!n?.trackingWorkspaceId)return previousClickNotif(id,demandId);const key='mm_tracking_read_'+DB.me.id,read=new Set(JSON.parse(localStorage.getItem(key)||'[]'));read.add(id);localStorage.setItem(key,JSON.stringify([...read]));n.read=true;updateNotifBadge();closeNotifPanel();state.workspace=n.trackingWorkspaceId;goTo(n.trackingOrderId?'orders':'integrations');await render();if(n.trackingOrderId)await detail(n.trackingOrderId,n.trackingWorkspaceId);};
  const oldMarkAll=window.markAllRead;
  window.markAllRead=async()=>{if(!window.trackingEnabled())return oldMarkAll();const read=new Set(JSON.parse(localStorage.getItem('mm_tracking_read_'+DB.me.id)||'[]'));DB.notifications.filter(n=>n.trackingWorkspaceId).forEach(n=>{read.add(n.id);n.read=true;});localStorage.setItem('mm_tracking_read_'+DB.me.id,JSON.stringify([...read]));await oldMarkAll();updateNotifBadge();renderNotifPanel();};
- $('tracking-refresh').addEventListener('click',render);
+ $('tracking-refresh').addEventListener('click',refreshData);
+ document.addEventListener('keydown',e=>{if(e.target.id==='tracking-search'&&e.key==='Enter'){e.preventDefault();action('filter',e.target).catch(err=>toast(err.message));}});
  $('tracking-currency').addEventListener('change',()=>{state.currency=$('tracking-currency').value;state.page=1;render();});
  function closePeriod(){const p=$('tracking-period-popover');if(p?.matches(':popover-open'))p.hidePopover();}
  function positionPeriod(){
@@ -372,5 +395,7 @@
  document.addEventListener('magemind:tracking-signed-out',clear);
  navigator.serviceWorker?.addEventListener('message',async e=>{if(e.data?.type!=='OPEN_TRACKING_ORDER'||!await ready())return;await loadWorkspaces();if(!workspaces.some(w=>w.id===e.data.workspaceId))return;state.workspace=e.data.workspaceId;goTo(e.data.orderId?'orders':'integrations');await render();if(e.data.orderId)detail(e.data.orderId,e.data.workspaceId).catch(err=>toast(err.message));});
  setInterval(()=>{if(DB.me)pollNotifications().catch(()=>{});},5000);
+ setInterval(()=>{if(DB.me&&window.trackingEnabled()&&['overview','ads','orders'].includes(state.tab)&&document.querySelector('.page.active')?.id==='pg-'+routes[state.tab])render({quiet:true}).catch(()=>{});},30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&DB.me&&window.trackingEnabled()&&['overview','ads','orders'].includes(state.tab))render({quiet:true}).catch(()=>{});});
  if(DB.me)route(document.querySelector('.page.active')?.id?.slice(3)||'dashboard');
 })();
