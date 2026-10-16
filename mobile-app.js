@@ -71,6 +71,7 @@
   function enhanceResponsiveTables(){
     responsiveTableFrame=0;
     document.querySelectorAll('table').forEach(table=>{
+      if(table.dataset.mobileTable==='scroll')return;
       table.classList.add('mobile-card-table');
       const headerRows=table.tHead?Array.from(table.tHead.rows):[];
       const headers=headerRows.length?Array.from(headerRows[headerRows.length-1].cells).map(cell=>cell.textContent.trim()):[];

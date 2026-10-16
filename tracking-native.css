@@ -77,3 +77,47 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-webhook-heading{display:flex;align-items:center;gap:14px;margin:4px 0 22px}.mt-webhook-heading p{margin:4px 0;color:var(--text-muted,#a1a1b5)}.mt-webhook-events{margin:22px 0 8px;padding:16px;border:1px solid var(--border,#272638);border-radius:12px}.mt-account-options{display:grid;gap:10px;max-height:45vh;overflow:auto;margin-bottom:20px}.mt-account-option{display:flex!important;align-items:center;gap:12px;padding:16px;border:1px solid var(--border,#272638);border-radius:12px;cursor:pointer}.mt-account-option input{width:18px!important;height:18px;flex:none;accent-color:#8b5cf6}.mt-account-option small{display:block;margin-top:5px;color:var(--text-muted,#a1a1b5)}.mt-platform-settings{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;margin:24px 0;border:1px solid var(--border,#272638);border-radius:12px}.mt-platform-settings p{margin:6px 0 0}.mt-brand-cartpanda,.mt-brand-perfectpay{background:#fff}.mt-brand-cartpanda img,.mt-brand-perfectpay img{object-fit:contain}@media(max-width:600px){.mt-platform-settings{align-items:stretch;flex-direction:column}.mt-account-option{padding:12px}}
 /* Site tracking adds optional stages; it never hides checkout or ad totals. */
 .mt-root .mt-funnel-group h3{font-size:12px;margin:0 0 14px}.mt-root .mt-funnel-group .list-row{padding:10px 0;font-size:11px;border-bottom:1px solid var(--border)}.mt-root .mt-funnel-group>button{margin-top:12px}.mt-root .mt-funnel-sources{gap:24px;margin-bottom:0}.mt-root .mt-funnel-site{margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}.mt-root .mt-funnel-site h3{display:flex;align-items:center;gap:9px;margin-bottom:8px}.mt-root .mt-funnel-site h3>span{font-size:9px;font-weight:500;color:var(--text3);padding:4px 8px;border-radius:20px;background:var(--bg3)}.mt-root .mt-funnel-connect{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;font-size:11px;border-bottom:1px solid var(--border)}.mt-root .mt-funnel-connect button{padding:5px 10px;font-size:10px;min-height:32px}
+
+/* Compact manager: stable rows, restrained platform accents and readable numeric columns. */
+.mt-root .mt-manager-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin:4px 0 16px;overflow-x:auto}
+.mt-root .mt-manager-tabs button{border:0;border-radius:8px 8px 0 0;padding:12px 22px;background:transparent;white-space:nowrap;border-bottom:2px solid transparent}
+.mt-root .mt-manager-tabs button[aria-pressed=true]{background:rgba(151,112,245,.09);border-bottom-color:var(--accent,#a78bfa);color:#c9b5ff}
+.mt-root .mt-ad-manager{--platform-accent:#65a5ff;overflow:hidden;margin:0 0 18px;border:1px solid var(--border);border-radius:12px;background:var(--bg2)}
+.mt-root .mt-ad-manager.mt-platform-google{--platform-accent:#81c995}
+.mt-root .mt-ad-manager.mt-platform-tiktok{--platform-accent:#ff7295}
+.mt-root .mt-ad-manager .mt-platform-heading{background:transparent;border-bottom:1px solid var(--border);border-left:3px solid var(--platform-accent);padding:12px 16px;gap:10px;color:var(--text)}
+.mt-root .mt-ad-manager .mt-platform-heading h2{font-size:13px;font-weight:600}
+.mt-root .mt-ad-manager .mt-platform-heading>.mt-brand-mark{width:28px;height:28px}
+.mt-root .mt-ad-manager .mt-platform-heading>span{color:var(--text3);font-size:11px}
+.mt-root .mt-ad-table-scroll{overflow:auto;max-height:65vh;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#454254 transparent}
+.mt-root .mt-ad-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0;font-size:12px;font-variant-numeric:tabular-nums}
+.mt-root .mt-ad-table th,.mt-root .mt-ad-table td{padding:13px 16px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;vertical-align:middle}
+.mt-root .mt-ad-table thead th{position:sticky;top:0;z-index:2;background:var(--bg2);font-size:11px;font-weight:500;color:var(--text3)}
+.mt-root .mt-ad-table thead button{display:inline-flex;align-items:center;justify-content:inherit;gap:8px;border:0;background:none;color:inherit;padding:0;font:inherit;white-space:nowrap;min-height:24px}
+.mt-root .mt-ad-table thead th[aria-sort]:not([aria-sort=none]){color:var(--text)}
+.mt-root .mt-ad-table thead button span{opacity:.6}
+.mt-root .mt-ad-table th:first-child,.mt-root .mt-ad-table td:first-child{width:124px;text-align:left}
+.mt-root .mt-ad-table th:nth-child(2),.mt-root .mt-ad-table td:nth-child(2){text-align:left;min-width:250px;max-width:360px;white-space:normal}
+.mt-root .mt-ad-table td{background:var(--bg2)}
+.mt-root .mt-ad-table tbody tr:hover td{background:var(--bg3)}
+.mt-root .mt-ad-table .mt-ad-name button{color:var(--platform-accent);font-weight:500;background:transparent;border:0;padding:0;text-align:left;line-height:1.5;overflow-wrap:anywhere}
+.mt-root .mt-ad-table .mt-ad-name strong{font-weight:500;overflow-wrap:anywhere}
+.mt-root .mt-ad-table small{display:block;color:var(--text3);font-size:10px;margin-top:5px;max-width:300px;overflow-wrap:anywhere;white-space:normal}
+.mt-root .mt-ad-table .status-switch{font-size:11px;white-space:nowrap}
+.mt-root .mt-ad-table tfoot td,.mt-root .mt-ad-table tfoot th{background:var(--bg3);font-weight:600;border-bottom:0;position:sticky;bottom:0;z-index:1}
+.mt-root .mt-ad-breadcrumb{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:12px;color:var(--text2)}
+.mt-root .mt-ad-breadcrumb>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt-root .mt-ad-breadcrumb button{flex-shrink:0;font-size:11px}
+.mt-root .mt-ad-filters .search{flex:1.5;min-width:180px}
+@media(max-width:900px){
+ .mt-root .mt-manager-tabs button{flex:1;padding:12px 10px;font-size:11px}
+ .mt-root .mt-ad-table-scroll{max-height:62vh}
+ .mt-root .mt-ad-table{min-width:1030px}
+ .mt-root .mt-ad-table th,.mt-root .mt-ad-table td{padding:12px}
+ .mt-root .mt-ad-table th:nth-child(2),.mt-root .mt-ad-table td:nth-child(2){min-width:200px;max-width:240px}
+ .mt-root .mt-ad-table td:first-child,.mt-root .mt-ad-table th:first-child{min-width:90px}
+ .mt-root .mt-ad-manager .mt-platform-heading{padding:10px 12px}
+}
+
+.mt-root .mt-ad-scroll-hint{display:none}
+@media(max-width:900px){.mt-root .mt-ad-scroll-hint{display:flex;justify-content:space-between;align-items:center;margin:0;padding:9px 12px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border)}}
