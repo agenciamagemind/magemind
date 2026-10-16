@@ -123,11 +123,12 @@
  }
  async function syncStatus(version){
   const label=$('tracking-sync-status');if(!label)return;
-  if(observer()||!['overview','ads','orders'].includes(state.tab)){label.textContent='';return;}
+  if(!['overview','ads','orders'].includes(state.tab)){label.textContent='';return;}
+  if(observer()){if(pendingData)markPending();else label.textContent='';return;}
   const rows=(await api('/integrations')).filter(i=>i.connected&&['meta','google','tiktok'].includes(i.provider)&&!i.account_id.startsWith('oauth:'));
   if(version!==requestVersion)return;
   const fingerprint=JSON.stringify(rows.map(i=>[i.id,i.last_sync_at]).sort());if(syncFingerprint&&syncFingerprint!==fingerprint)markPending();syncFingerprint=fingerprint;
-  if(!rows.length){label.textContent='';label.classList.remove('is-stale');return;}
+  if(!rows.length){if(pendingData)markPending();else label.textContent='';label.classList.remove('is-stale');return;}
   const blocked=rows.some(i=>i.error_code==='meta_confirmation_required'||/^provider_http_400_200/.test(i.error_code||'')),failed=rows.some(i=>i.error_code&&!['sync_requested'].includes(i.error_code)),queued=rows.some(i=>i.error_code==='sync_requested');
   const oldest=Math.min(...rows.map(i=>i.last_sync_at?new Date(i.last_sync_at).getTime():0)),stale=!oldest||Date.now()-oldest>180000;
   label.classList.toggle('is-stale',blocked||failed||stale);
@@ -357,7 +358,7 @@
   if(!await ready())return;const uid=user.user_id,items=await api('/notifications');if(DB.me?.id!==uid)return;
   const scope=uid+':'+state.workspace,warmed=notificationScope===scope;
   if(!warmed){notificationScope=scope;notificationIds.clear();}
-  const fresh=items.filter(n=>!notificationIds.has(n.id));for(const n of items)notificationIds.add(n.id);
+  const fresh=items.filter(n=>!notificationIds.has(n.id));if(warmed&&fresh.length)markPending();for(const n of items)notificationIds.add(n.id);
   const read=new Set(JSON.parse(localStorage.getItem('mm_tracking_read_'+uid)||'[]'));
   DB.notifications=DB.notifications.filter(n=>!n.trackingWorkspaceId);
   for(const n of items){DB.notifications.push({id:'tracking-'+n.id,to:uid,icon:n.category==='pending'?'◷':['refund','chargeback'].includes(n.category)?'↩':['refused','cancelled','failure'].includes(n.category)?'!':'↗',iconBg:n.category==='pending'?'var(--amberbg)':['refused','cancelled','chargeback','failure'].includes(n.category)?'var(--rosebg)':'var(--emeraldbg)',title:notificationTitles[n.category]||'Atualização do pedido',body:notificationBody(n),date:'',time:n.created_at||n.delivered_at||n.next_attempt_at?dt(n.created_at||n.delivered_at||n.next_attempt_at):'',read:read.has('tracking-'+n.id),createdAt:n.created_at||n.delivered_at||n.next_attempt_at,trackingOrderId:n.order_id,trackingWorkspaceId:state.workspace});}
