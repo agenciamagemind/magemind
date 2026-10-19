@@ -1,5 +1,5 @@
-const CACHE_NAME='magemind-shell-launch-20261019-3';
-const SHELL=['./tracking-pilot-access.js?v=20261019-3','./app-scrollbars.css?v=20261019-3','./tracking-revenue-chart.js?v=20261019-3','./filter-ui.js?v=20261019-3','./filter-ui.css?v=20261019-3','./desktop-sidebar.js?v=20261019-3','./desktop-sidebar.css?v=20261019-3','./tracking-dashboard.js?v=20261019-3','./tracking-dashboard.css?v=20261019-3','./mobile-shell.js?v=20261019-3','./mobile-shell.css?v=20261019-3','./support-whatsapp.js','./tracking-admin.js','./','./index.html','./partner-workspace.js','./partners.js','./partners.css','./product-ui.css','./product-ui.js','./mobile.css','./auth.css','./goals.css','./goals.js','./tasks.js','./firewall-sessions.js','./security-rich-text.css','./security-rich-text.js','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
+const CACHE_NAME='magemind-shell-launch-20261019-4';
+const SHELL=['./privacy.html','./data-deletion.html','./legal.css?v=20261019-4','./tracking-pilot-access.js?v=20261019-4','./app-scrollbars.css?v=20261019-4','./tracking-revenue-chart.js?v=20261019-4','./filter-ui.js?v=20261019-4','./filter-ui.css?v=20261019-4','./desktop-sidebar.js?v=20261019-4','./desktop-sidebar.css?v=20261019-4','./tracking-dashboard.js?v=20261019-4','./tracking-dashboard.css?v=20261019-4','./mobile-shell.js?v=20261019-4','./mobile-shell.css?v=20261019-4','./support-whatsapp.js','./tracking-admin.js','./','./index.html','./partner-workspace.js','./partners.js','./partners.css','./product-ui.css','./product-ui.js','./mobile.css','./auth.css','./goals.css','./goals.js','./tasks.js','./firewall-sessions.js','./security-rich-text.css','./security-rich-text.js','./mobile-app.js','./app-core.js','./app-accessibility.js','./push-notifications.js','./manifest.webmanifest','./magemind-logo-transparent.png','./magemind-logo-192.png','./magemind-logo-512.png','./magemind-auth-creatives.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
@@ -15,9 +15,11 @@ self.addEventListener('fetch',event=>{
   const url=new URL(request.url);
   if(url.origin!==self.location.origin) return;
   if(request.mode==='navigate'){
-    event.respondWith(fetch(request).then(response=>{
-      const copy=response.clone(); caches.open(CACHE_NAME).then(cache=>cache.put('./index.html',copy)); return response;
-    }).catch(()=>caches.match('./index.html')));
+    const key=url.pathname==='/'||url.pathname==='/index.html'?'./index.html':request;
+    event.respondWith(fetch(request).then(async response=>{
+      if(response.ok){const cache=await caches.open(CACHE_NAME);await cache.put(key,response.clone());}
+      return response;
+    }).catch(async()=>await caches.match(key)||Response.error()));
     return;
   }
   event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{
