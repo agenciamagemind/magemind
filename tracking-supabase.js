@@ -30,6 +30,7 @@
    if(route==='/ad-management')return rpc('tracking_ad_management',{w,f:state.from,t:state.to,cur:state.currency});
    if(route==='/ad-status'){if(cfg.mode==='supabase-pilot'&&!state.simulation_only){const rows=checked(await client.from('tracking_integrations').select('id').eq('workspace_id',w).eq('provider',data.provider).eq('account_id',data.account_id).eq('connected',true).single());return edge({action:'ad_status',workspace:w,integration:rows.id,entity_id:data.entity_id,status:data.status,revision:data.revision});}return rpc('tracking_set_ad_status',{w,provider_name:data.provider,account:data.account_id,entity:data.entity_id,target_status:data.status,expected_revision:data.revision});}
    if(route==='/onboarding')return rpc('tracking_onboarding_status',{w});
+   if(route==='/revenue-series')return rpc('tracking_revenue_series',{w,f:state.from,t:state.to});
    if(route==='/dashboard')return rpc('tracking_dashboard_report',{w,f:state.from,t:state.to,cur:state.currency});
    if(route==='/dashboard-layout')return data?.layouts?rpc('tracking_dashboard_save_layouts',{w,p:data.layouts}):rpc('tracking_dashboard_layout',{w,d:data?.device||params.device,p:data?.layout||null,expected_revision:data?.revision??null});
    if(route==='/onboarding/celebrate')return {claimed:await rpc('tracking_onboarding_celebrate',{w})};

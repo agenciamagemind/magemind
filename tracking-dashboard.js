@@ -21,7 +21,7 @@
   payments:['Vendas por pagamento','Gráficos','payments','Distribuição dos valores brutos aprovados por forma de pagamento.'],
   products:['Vendas por produto','Gráficos','ranking','Produtos dos pedidos aprovados, ordenados pelo valor bruto vendido.'],
   sources:['Vendas por origem','Gráficos','ranking','Origem informada pelos pedidos. Pedidos sem origem continuam contabilizados como não atribuídos.'],
-  revenue:['Evolução do faturamento','Gráficos','chart','Faturamento bruto aprovado por dia.'],
+  revenue:['Evolução do faturamento','Gráficos','chart','Faturamento bruto aprovado, agrupado automaticamente por hora, dia, semana ou mês conforme o período selecionado.'],
   approval:['Taxa de aprovação','Vendas','approval','Aprovações entre os pedidos criados no período, por forma de pagamento.'],
   demands:['Resumo de demandas','Demandas','demands','Situação atual das demandas da sua conta. Não depende do filtro financeiro de datas.'],
   demand_list:['Demandas recentes','Demandas','demand_list','Últimas demandas da sua operação e suas situações atuais.']
@@ -89,7 +89,7 @@
   const kind=catalog[id][2];if(kind==='metric')return metric(id);
   if(kind==='ranking')return ranking(data[id],id);
   if(kind==='payments')return payments();
-  if(kind==='chart')return data.daily?.length?ctx.chart(data.daily):'<div class="md-empty">As vendas aprovadas aparecerão aqui</div>';
+  if(kind==='chart')return window.MagemindRevenueChart.render(data.revenue_series);
   if(kind==='approval')return '<div class="md-approval">'+(data.approval?.length?data.approval.map(r=>'<div><span>'+esc(paymentName(r.label))+'</span><strong>'+pct(ratio(r.approved,r.total))+'</strong><small>'+number(r.approved)+' de '+number(r.total)+'</small></div>').join(''):'<div class="md-empty">Sem pedidos no período</div>')+'</div>';
   const demands=ctx.demands||[],states=[['Concluído','Concluídas','md-positive'],['Em andamento','Em produção','md-progress'],['Não iniciado','Pendentes','']];
   if(kind==='demands')return '<div class="md-demands">'+states.map(([s,label,color])=>'<div><span>'+label+'</span><strong class="'+color+'">'+number(demands.filter(d=>d.status===s).length)+'</strong></div>').join('')+'</div>'+b('Minhas demandas →','demands','class="md-link"');

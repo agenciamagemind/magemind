@@ -1,0 +1,34 @@
+/* Shared, quiet scrollbar treatment for the page and every scrollable panel. */
+:root{--app-scroll-thumb:rgba(165,157,189,.22);--app-scroll-hover:rgba(165,157,189,.42)}
+*{scrollbar-width:thin;scrollbar-color:var(--app-scroll-thumb) transparent}
+*::-webkit-scrollbar{width:5px;height:5px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--app-scroll-thumb);border-radius:20px}
+*::-webkit-scrollbar-thumb:hover{background:var(--app-scroll-hover)}
+*::-webkit-scrollbar-corner{background:transparent}
+#card-dash-activity{display:flex;flex-direction:column;min-height:0;align-self:start}
+#app #dash-activity{max-height:350px;max-height:min(350px,46dvh);overflow:auto;overscroll-behavior:contain}
+.mt-root .md-tile-body,.mt-root .mt-ad-table-scroll,.mt-root .md-library{scrollbar-color:var(--app-scroll-thumb) transparent}
+.mt-root .md-type-chart .md-tile-body{overflow:hidden;display:flex;flex-direction:column}
+.mt-root .md-type-chart .mr-chart{height:100%;min-height:0;display:flex;flex-direction:column}
+.mt-root .mr-chart-caption{display:flex;justify-content:space-between;gap:10px;font-size:9px;color:var(--text3);flex:none;margin-bottom:4px}
+.mt-root .mr-chart-caption strong{font-weight:500;color:var(--text2);white-space:nowrap}
+.mt-root .md-type-chart .mr-chart svg{width:100%;height:100%;min-height:0;flex:1;overflow:hidden}
+.mt-root .mr-chart-grid line{stroke:var(--border2);stroke-dasharray:3 5}
+.mt-root .mr-chart-grid text,.mt-root .mr-axis-label{fill:var(--text3);font-size:11px;font-family:inherit}
+.mt-root .mr-point{cursor:help;outline:none;stroke:transparent;stroke-width:8}
+.mt-root .mr-point:focus,.mt-root .mr-point:hover{stroke:#ad8aff44}
+@media(max-width:900px){#app #dash-activity{max-height:300px}.mt-root .mr-chart-caption{font-size:8px}}
+.mt-root .mt-compact-checkouts .cards-grid{grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}
+.mt-root .mt-compact-checkouts .integration-card{padding:15px;min-height:0;display:flex;flex-direction:column;gap:10px}
+.mt-root .mt-compact-checkouts .mt-integration-brand{gap:9px}
+.mt-root .mt-compact-checkouts .mt-integration-brand h3{font-size:12px;margin:0}
+.mt-root .mt-compact-checkouts .mt-brand-mark{width:30px;height:30px;border-radius:7px}
+.mt-root .mt-compact-checkouts .mt-brand-mark img{width:24px;height:24px}
+.mt-root .mt-compact-checkouts .integration-card>p{font-size:10px;margin:0;color:var(--text3)}
+.mt-root .mt-compact-checkouts .integration-card>.actions{margin-top:auto;padding-top:0}
+.mt-root .mt-compact-checkouts .integration-card button{font-size:10px;padding:7px 12px}
+.mt-root .mt-compact-checkouts .list-row{margin:0}
+.mt-root .mt-compact-checkouts .mt-admin-account-count{font-size:18px}
+@media(min-width:1300px){.mt-root .mt-compact-checkouts .cards-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){.mt-root .mt-compact-checkouts .cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mt-root .mt-compact-checkouts .integration-card{padding:12px;gap:8px}.mt-root .mt-compact-checkouts .integration-card>p{display:none}.mt-root .mt-compact-checkouts .list-row{display:block}.mt-root .mt-compact-checkouts .list-row small{display:block}.mt-root .mt-compact-checkouts .list-row .pill{margin-top:6px}.mt-root .mt-compact-checkouts .mt-brand-mark{width:26px;height:26px}.mt-root .mt-compact-checkouts .mt-integration-brand{gap:7px}.mt-root .mt-compact-checkouts .actions{flex-wrap:wrap}}
