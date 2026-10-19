@@ -15,10 +15,10 @@
 .mt-root .mr-chart-caption strong{font-weight:500;color:var(--text2);white-space:nowrap}
 .mt-root .md-type-chart .mr-chart svg{width:100%;height:100%;min-height:0;flex:1;overflow:hidden}
 .mt-root .mr-chart-grid line{stroke:var(--border2);stroke-dasharray:3 5}
-.mt-root .mr-chart-grid text,.mt-root .mr-axis-label{fill:var(--text3);font-size:11px;font-family:inherit}
+.mt-root .mr-chart-grid text,.mt-root .mr-axis-label{fill:var(--text3);font-size:15px;font-family:inherit}
 .mt-root .mr-point{cursor:help;outline:none;stroke:transparent;stroke-width:8}
 .mt-root .mr-point:focus,.mt-root .mr-point:hover{stroke:#ad8aff44}
-@media(max-width:900px){#app #dash-activity{max-height:300px}.mt-root .mr-chart-caption{font-size:8px}}
+@media(max-width:900px){#app #dash-activity{max-height:300px}.mt-root .mr-chart-caption{font-size:9px}.mt-root .mr-chart-grid text,.mt-root .mr-axis-label{font-size:19px}}
 .mt-root .mt-compact-checkouts .cards-grid{grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}
 .mt-root .mt-compact-checkouts .integration-card{padding:15px;min-height:0;display:flex;flex-direction:column;gap:10px}
 .mt-root .mt-compact-checkouts .mt-integration-brand{gap:9px}
