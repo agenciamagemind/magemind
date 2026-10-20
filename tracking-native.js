@@ -56,12 +56,6 @@
  }
  document.addEventListener('toggle',e=>{if(e.target.matches?.('.mt-compact-onboarding')&&e.target.isConnected)onboardingExpanded=e.target.open;},true);
  function quietLock(html,label,mini=false,action=null){return '<section class="mt-passive-lock'+(mini?' mt-mini-passive':'')+'"><div class="mt-data-preview" inert aria-hidden="true">'+html+'</div><div class="mt-lock-content"><span class="mt-lock-caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'+label+'</span>'+(action?button(action==='setup-costs'?'Configurar custos':action==='setup-journey'?'Configurar rastreamento':'Conectar integração',action):'')+'</div></section>';}
- function sourceGuide(){
-  const missing=[!setup.checkout_ready&&'Checkout',!setup.ads_ready&&'Anúncios',!setup.costs_ready&&'Custos e taxas'].filter(Boolean);if(!missing.length)return '';
-  const action=!setup.checkout_ready?'setup-checkouts':!setup.ads_ready?'setup-ads':'setup-costs';
-  const label=action==='setup-costs'?'Configurar custos':'Conectar integrações';
-  return '<div class="mt-source-guide"><div><strong>Complete sua configuração</strong><p>Para liberar os blocos restantes: '+missing.join(' · ')+'.</p></div>'+button(label+' →',action,'',true)+'</div>';
- }
  async function maybeCelebrate(){
   if(!isClient()||window.MagemindDashboard.isEditing()||celebrating||Date.now()-sessionStarted<1800||$('tracking-dialog').open||document.querySelector('.overlay.open'))return;
   const uid=user?.user_id;if(!uid)return;
@@ -148,7 +142,7 @@
  async function overview(){
   const uid=user.user_id,w=state.workspace,[data,series]=await Promise.all([api('/dashboard'),api('/revenue-series')]);data.revenue_series=series;
   if(user?.user_id!==uid||state.workspace!==w||window.MagemindDashboard.isEditing())return '';
-  return tutorialHTML()+sourceGuide()+await window.MagemindDashboard.render({data,demands:DB.demands,setup,userId:uid,workspace:w});
+  return tutorialHTML()+await window.MagemindDashboard.render({data,demands:DB.demands,setup,userId:uid,workspace:w});
  }
  function chartHTML(rows){
   const width=600,height=180,max=Math.max(1,...rows.map(x=>Number(x.gross_minor)));

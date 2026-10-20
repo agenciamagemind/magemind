@@ -24,7 +24,7 @@
  .mobile-tab-icon{width:25px;height:25px;opacity:.9}
  .mobile-tab-icon svg{width:23px;height:23px}
  .mobile-tab.active .mobile-tab-icon{color:#d3baff}
- .mobile-tab-label{font-size:10px!important;font-weight:500;line-height:1.2;letter-spacing:-.15px}
+ .mobile-tab-label{font-size:clamp(9px,2.7vw,10px)!important;font-weight:500;line-height:1.2;letter-spacing:-.15px}
  .mobile-tab:focus-visible{outline:2px solid var(--violet3);outline-offset:-2px}
  #support-whatsapp{position:absolute;bottom:calc(var(--mobile-nav-h) + var(--mobile-nav-bottom) + 16px)}
  body:has(#pg-solutions.page.active .solution-custom-cta) #support-whatsapp{bottom:calc(var(--mobile-nav-h) + var(--mobile-nav-bottom) + 96px)}

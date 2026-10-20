@@ -113,7 +113,18 @@
    '<div class="md-workspace">'+(editing?library():'')+'<div class="md-grid" id="md-grid" style="--md-cols:'+cols()+';--md-rows:'+Math.max(1,...layout().map(r=>r.y+r.h))+'">'+layout().map(tile).join('')+'</div></div></div>';
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
- function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);let edit=$('dashboard-customize');if(!edit){edit=document.createElement('button');edit.id='dashboard-customize';edit.type='button';edit.className='btn btn-ghost btn-icon';edit.setAttribute('aria-label','Personalizar');edit.title='Personalizar Menu';edit.dataset.dashboardAction='edit';edit.innerHTML=svg('edit');$('notif-wrapper')?.prepend(edit);}edit.hidden=editing||!data||document.querySelector('.page.active')?.id!=='pg-dashboard';const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const width=grid.clientWidth;grid.style.setProperty('--md-row',editing?'132px':device==='mobile'?'96px':width<700?'104px':'94px');});gridObserver.observe(grid);}
+ function metricRowHeight(grid,base){
+  let height=base;
+  for(const tile of grid.querySelectorAll('.md-type-metric')){
+   if(tile.style.gridRowEnd!=='span 1')continue;
+   const heading=tile.querySelector('.md-tile-heading'),body=tile.querySelector('.md-tile-body'),style=getComputedStyle(tile),headStyle=getComputedStyle(heading);
+   const number=value=>parseFloat(value)||0;
+   const content=[...body.children].reduce((sum,child)=>{const s=getComputedStyle(child);return sum+child.getBoundingClientRect().height+number(s.marginTop)+number(s.marginBottom);},0);
+   height=Math.max(height,Math.ceil(content+heading.getBoundingClientRect().height+number(headStyle.marginTop)+number(headStyle.marginBottom)+number(style.paddingTop)+number(style.paddingBottom)+number(style.borderTopWidth)+number(style.borderBottomWidth)+2));
+  }
+  return height;
+ }
+ function observe(){gridObserver?.disconnect();$('tracking-toolbar')?.toggleAttribute('inert',editing);let edit=$('dashboard-customize');if(!edit){edit=document.createElement('button');edit.id='dashboard-customize';edit.type='button';edit.className='btn btn-ghost btn-icon';edit.setAttribute('aria-label','Personalizar');edit.title='Personalizar Menu';edit.dataset.dashboardAction='edit';edit.innerHTML=svg('edit');$('notif-wrapper')?.prepend(edit);}edit.hidden=editing||!data||document.querySelector('.page.active')?.id!=='pg-dashboard';const grid=$('md-grid');if(!grid)return;gridObserver=new ResizeObserver(()=>{const base=device==='mobile'?96:grid.clientWidth<700?104:94;grid.style.setProperty('--md-row',(editing?132:metricRowHeight(grid,base))+'px');});gridObserver.observe(grid);for(const text of grid.querySelectorAll('.md-type-metric .md-tile-heading,.md-type-metric small'))gridObserver.observe(text);}
  async function readDevice(d,force=false,passive=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey||passive&&editing)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
   if(saving)return;
