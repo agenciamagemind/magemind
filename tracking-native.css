@@ -121,3 +121,5 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 
 .mt-root .mt-ad-scroll-hint{display:none}
 @media(max-width:900px){.mt-root .mt-ad-scroll-hint{display:flex;justify-content:space-between;align-items:center;margin:0;padding:9px 12px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border)}}
+
+.mt-root .mt-integration-diagnostic{padding:10px 12px;background:var(--amberbg);border:1px solid var(--amberborder);border-radius:9px;color:var(--text2);font-size:10px;line-height:1.7}.mt-root .mt-integration-diagnostic strong{font-weight:600}.mt-root .mt-integration-diagnostic p{margin:4px 0 0;color:var(--text3)}

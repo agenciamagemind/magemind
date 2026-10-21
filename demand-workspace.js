@@ -27,35 +27,36 @@
   })().finally(()=>{if(owner===uid&&version===epoch)flight=null;});
   return flight;
  }
- function filter(rows){return bucket?rows.filter(d=>matches(d,bucket)):rows;}
+ function filter(rows){return isOperationalStaff()&&bucket?rows.filter(d=>matches(d,bucket)):rows;}
  function summary(){
   const rows=getRoleDemands(),labels={late:'Atrasadas',today:'Para hoje',future:'Próximas'};
   return '<div class="production-counts">'+Object.entries(labels).map(([key,label])=>`<button type="button" data-production-scope="${key}" aria-pressed="${bucket===key}"><strong>${rows.filter(d=>matches(d,key)).length}</strong><span>${label}</span></button>`).join('')+'</div>'+(bucket?'<button type="button" class="production-reset" data-production-action="reset">Limpar filtro de prazo ×</button>':'');
  }
  function render(){
   if(!panel||!DB.me)return;
-  const enabled=isOperationalStaff()||isClient();panel.hidden=!enabled;
-  if(!enabled)return;
+  const enabled=isOperationalStaff();panel.hidden=!enabled;
+  if(!enabled){panel.replaceChildren();return;}
   const rows=getRoleDemands(),selected=$('client-filter-dd').value;
-  const candidates=(context?.clients||[]).filter(c=>!selected||c.id===selected).map(c=>{
-   const demands=rows.filter(d=>d.client===c.id),pending=demands.filter(d=>d.status!=='Concluído'),plans=(c.plans||[]).filter(p=>cadence(p).recurring);
+  const scopeRows=isEditor()?DB.demands.filter(d=>d.assigneeId===DB.me.id):DB.demands;
+  const candidates=(context?.clients||[]).map(c=>{
+   const demands=scopeRows.filter(d=>d.client===c.id),pending=demands.filter(d=>d.status!=='Concluído'),plans=(c.plans||[]).filter(p=>cadence(p).recurring);
    return {c,demands,pending,plans,late:pending.filter(d=>matches(d,'late')).length};
   }).filter(x=>x.pending.length||(x.plans.length&&x.c.status==='Ativo')).sort((a,b)=>b.late-a.late||b.pending.length-a.pending.length||a.c.name.localeCompare(b.c.name));
-  const list=candidates.map(({c,demands,pending,plans,late})=>`<article class="production-client">
+  const list=candidates.map(({c,demands,pending,plans,late})=>`<article class="production-client ${selected===c.id?'is-selected':''}">
    <div class="production-client-heading"><span class="av av-xs">${clientAvatarHTML(c.id,c.name)}</span><div><h4>${esc(c.name)}</h4><small>${c.status==='Pausado'?'Conta pausada':c.status==='Inativo'?'Conta inativa':plans.length?'Plano mensal':'Produção avulsa'}</small></div>${late?`<span class="production-late">${late} em atraso</span>`:''}</div>
    ${plans.map(p=>`<div class="production-plan"><strong>${esc(p.name)}</strong><small>${esc(cadence(p).text)}</small></div>`).join('')}
    <div class="production-client-stats"><span><strong>${pending.length}</strong> pendentes</span><span><strong>${demands.filter(d=>d.status==='Concluído').length}</strong> concluídas</span></div>
-   <div class="production-client-actions"><button type="button" data-production-client="${esc(c.id)}">Ver demandas <span aria-hidden="true">↗</span></button><button type="button" data-production-info="${esc(c.id)}" aria-label="Informações de ${esc(c.name)}">Informações</button></div>
+   <div class="production-client-actions"><button type="button" data-production-client="${esc(c.id)}" aria-pressed="${selected===c.id}">Ver demandas <span aria-hidden="true">↗</span></button><button type="button" data-production-info="${esc(c.id)}" aria-label="Informações de ${esc(c.name)}">Informações</button></div>
   </article>`).join('');
   const details=panel.querySelector('details');if(details)expanded=details.open;
   panel.innerHTML=`<details ${expanded?'open':''}><summary><span><strong>${isEditor()?'Minha produção':isClient()?'Sua produção':'Visão da produção'}</strong><small>${isEditor()?'Demandas atribuídas a você':'Prazos e acompanhamento dos clientes'}</small></span><span aria-hidden="true">⌄</span></summary><div class="production-body">${summary()}<div class="production-list-heading"><h3>${isClient()?'Seu acompanhamento':'Clientes em acompanhamento'}</h3><small>${candidates.length}</small></div>${isEditor()?'<p class="production-caption">Contagem das demandas atribuídas a você.</p>':''}${loadError?'<p class="production-caption" role="status">Não foi possível atualizar o acompanhamento.</p><button type="button" class="production-reset" data-production-action="retry">Tentar novamente</button>':''}<div class="production-client-list">${context?list||'<p class="production-empty">Nenhuma demanda pendente ou plano mensal neste filtro.</p>':loadError?'':'<p class="production-empty">Carregando acompanhamento…</p>'}</div></div></details>`;
  }
  function showInfo(id){
   const c=context?.clients?.find(c=>c.id===id);if(!c)return;
-  const admin=isCEO()||isManager();
+  const admin=isCEO()||isManager(),canWrite=admin||isGestor()||isEditor();
   const plans=(c.plans||[]).map(p=>`<li><strong>${esc(p.name)}</strong><span>${esc(cadence(p).text)}</span></li>`).join('');
-  $('production-dialog-title').textContent=c.name;
-  $('production-dialog-body').innerHTML=`${admin?`<div class="production-contact"><div><small>E-mail</small><span>${esc(c.email||'Não informado')}</span></div><div><small>Telefone</small><span>${esc(c.phone||'Não informado')}</span></div></div>`:''}<section><h3>Planos e entregas</h3><ul class="production-dialog-plans">${plans||'<li>Sem plano vinculado</li>'}</ul></section><section><h3>Briefing de produção</h3>${admin?`<p class="production-caption">Compartilhado com a equipe que trabalha nas demandas. Use somente orientações de produção.</p><textarea id="production-brief" aria-label="Briefing de produção" maxlength="12000" placeholder="Público, linguagem, referências e orientações para os criativos…">${esc(c.production_brief||'')}</textarea><div class="production-save-row"><span id="production-save-status" role="status"></span><button type="button" class="btn btn-primary btn-sm" data-production-save="${esc(c.id)}">Salvar briefing</button></div>`:`<p class="production-brief-text">${esc(c.production_brief||'O briefing de produção ainda não foi informado pela gestão.')}</p>`}</section>${admin?`<section><h3>Observações administrativas</h3><p class="production-brief-text">${esc(c.notes||'Sem observações administrativas.')}</p></section>`:''}`;
+  dialog.dataset.clientId=id;$('production-dialog-title').textContent=c.name;
+  $('production-dialog-body').innerHTML=`${admin?`<div class="production-contact"><div><small>E-mail</small><span>${esc(c.email||'Não informado')}</span></div><div><small>Telefone</small><span>${esc(c.phone||'Não informado')}</span></div></div>`:''}<section><h3>Planos e entregas</h3><ul class="production-dialog-plans">${plans||'<li>Sem plano vinculado</li>'}</ul></section><section><h3>Briefing de produção</h3>${canWrite?`<p class="production-caption">Compartilhado com a equipe que trabalha nas demandas. Use somente orientações de produção.</p><textarea id="production-brief" aria-label="Briefing de produção" maxlength="12000" placeholder="Público, linguagem, referências e orientações para os criativos…">${esc(c.production_brief||'')}</textarea><div class="production-save-row"><span id="production-save-status" role="status"></span><button type="button" class="btn btn-primary btn-sm" data-production-save="${esc(c.id)}">Salvar briefing</button></div>`:`<p class="production-brief-text">${esc(c.production_brief||'O briefing de produção ainda não foi informado pela gestão.')}</p>`}</section>${admin?`<section><h3>Observações administrativas</h3><p class="production-brief-text">${esc(c.notes||'Sem observações administrativas.')}</p></section>`:''}`;
   dialog.showModal();
  }
  function init(){
@@ -71,9 +72,9 @@
    if(el.dataset.productionAction==='retry')return load();
    if(el.hasAttribute('data-production-info'))return showInfo(el.dataset.productionInfo);
    if(el.hasAttribute('data-production-save')){
-    if(!isAdmin())return;el.disabled=true;
-    try{const text=$('production-brief').value;const {error}=await supa.from('clients').update({production_brief:text}).eq('id',el.dataset.productionSave).select('id').single();if(error)throw error;context.clients.find(c=>c.id===el.dataset.productionSave).production_brief=text;$('production-save-status').textContent='Briefing salvo.';}
-    catch(error){$('production-save-status').textContent='Não foi possível salvar. Tente novamente.';console.error(error);}finally{el.disabled=false;}return;
+    if(!(isAdmin()||isGestor()||isEditor()))return;el.disabled=true;const savingUser=DB.me.id,savingEpoch=epoch;
+    try{const id=el.dataset.productionSave,text=$('production-brief').value,client=context.clients.find(c=>c.id===id);const {error}=await supa.rpc('save_production_brief',{p_client_id:id,p_brief:text,p_expected_brief:client.production_brief||''});if(error)throw error;if(DB.me?.id!==savingUser||epoch!==savingEpoch)return;client.production_brief=text;if(dialog.dataset.clientId===id)$('production-save-status').textContent='Briefing salvo.';}
+    catch(error){if(DB.me?.id!==savingUser||epoch!==savingEpoch)return;const status=$('production-save-status');if(status)status.textContent=error.message?.includes('outra pessoa')?'Este briefing mudou. Feche e reabra para revisar antes de salvar.':'Não foi possível salvar. Tente novamente.';if(error.message?.includes('outra pessoa'))await load();console.error(error);}finally{el.disabled=false;}return;
    }
    if(el.hasAttribute('data-production-client')){bucket='';$('mine-filter-chk').checked=false;const select=$('client-filter-dd');select.value=el.dataset.productionClient;select.dispatchEvent(new Event('change',{bubbles:true}));window.MagemindDemandFilters?.sync();}
    else if(el.hasAttribute('data-production-scope'))bucket=bucket===el.dataset.productionScope?'':el.dataset.productionScope;
