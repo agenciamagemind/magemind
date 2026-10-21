@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Supabase SDK -->
   <script src="tracking-env.js"></script>
-  <script src="tracking-pilot-access.js?v=20261021-1"></script>
+  <script src="tracking-pilot-access.js?v=20261021-2"></script>
   <script>if(window.MAGEMIND_TRACKING_ENV.mode!=='local-simulator')document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></'+'script>');</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -499,7 +499,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261014-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261021-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261021-1"><link rel="stylesheet" href="mobile-shell.css?v=20261021-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261021-1"><link rel="stylesheet" href="filter-ui.css?v=20261021-1"><link rel="stylesheet" href="app-scrollbars.css?v=20261021-1"><link rel="stylesheet" href="legal.css?v=20261021-1"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261021-2"><link rel="stylesheet" href="tracking-dashboard.css?v=20261021-2"><link rel="stylesheet" href="mobile-shell.css?v=20261021-2"><link rel="stylesheet" href="desktop-sidebar.css?v=20261021-2"><link rel="stylesheet" href="filter-ui.css?v=20261021-2"><link rel="stylesheet" href="demand-workspace.css?v=20261021-2"><link rel="stylesheet" href="app-scrollbars.css?v=20261021-2"><link rel="stylesheet" href="legal.css?v=20261021-2"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -1461,9 +1461,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260925-2"></script>
 <script src="tasks.js?v=20260925-2"></script>
-<script src="mobile-app.js?v=20261021-1"></script>
-<script src="mobile-shell.js?v=20261021-1"></script>
-<script src="desktop-sidebar.js?v=20261021-1"></script>
+<script src="mobile-app.js?v=20261021-2"></script>
+<script src="mobile-shell.js?v=20261021-2"></script>
+<script src="desktop-sidebar.js?v=20261021-2"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = window.MAGEMIND_TRACKING_ENV.supabaseUrl || location.origin;
@@ -1871,14 +1871,19 @@ function safeImageUrl(value){
   if(/^https:\/\//i.test(url) || /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) return escapeHTML(url);
   return '';
 }
+function personName(id,fallback=''){
+  const candidates=[DB.demandPeople?.[id]?.name,DB.users.find(p=>p.id===id)?.name,id===DB.me?.id?DB.me.name:'',fallback];
+  return candidates.find(value=>typeof value==='string'&&value.trim()&&!['?','undefined','null'].includes(value.trim()))||'';
+}
 function avatarHTML(person,name,alt=''){
   const photo=safeImageUrl(person?.photo);
+  const initials=String(person?.av||'').trim();
   return photo
     ? `<img src="${photo}" alt="${escapeHTML(alt||name||'Foto de perfil')}" loading="lazy" decoding="async">`
-    : escapeHTML(person?.av||avatarInitials(name));
+    : escapeHTML(initials&&!/^(?:\?+|undefined|null)$/i.test(initials)?initials:avatarInitials(name));
 }
 function profileAvatarHTML(profileId,name){
-  return avatarHTML(DB.avatarProfiles?.[profileId]||DB.users.find(user=>user.id===profileId),name,name?`Foto de ${name}`:'Foto de perfil');
+  return avatarHTML(DB.avatarProfiles?.[profileId]||DB.users.find(user=>user.id===profileId),personName(profileId,name),name?`Foto de ${name}`:'Foto de perfil');
 }
 function clientAvatarHTML(clientId,name){
   const client=DB.clients.find(item=>item.id===clientId);
@@ -1963,7 +1968,7 @@ function mapDemand(d){
   return {
     id:d.id, title:d.title, desc:d.description||'', refs:d.refs||'',
     client:d.client_id, clientName:client.name||'',
-    assignee:assignee.name||'', assigneePhoto:assignee.photo||null, assigneeAv:assignee.av||'',
+    assignee:personName(d.assignee_id,assignee.name)||(d.assignee_id?'Pessoa indisponível':'Sem responsável'), assigneePhoto:assignee.photo||null, assigneeAv:assignee.av||'',
     assigneeId:d.assignee_id||null,
     status:d.status||'Não iniciado', priority:d.priority||'Média',
     date:d.due_date||'', sortOrder:Number.isFinite(Number(d.sort_order))?Number(d.sort_order):0,
@@ -2283,7 +2288,8 @@ function clearSessionState(){
   window.MagemindTrackingAccess?.clear();
   DB.docs = []; DB.notifications = []; DB.activity = []; DB.commissions = [];
   DB.securityLogs = []; DB.securityBlockedIps = [];
-  DB.avatarProfiles = {}; DB.avatarClients = {};
+  DB.avatarProfiles = {}; DB.avatarClients = {}; DB.demandPeople={};
+  window.MagemindDemandWorkspace?.clear();
   avatarDirectoryLoadedAt = 0; avatarDirectoryRefreshPromise = null;
   currentDemandId = null; editDemandId = null; editClientId = null;
   editSaleId = null; editPlanId = null; convertTargetClientId = null; convertTargetTeamId = null;
@@ -2355,7 +2361,7 @@ async function afterLogin(authUser){
 
     DB.me = {
       id:prof.id, name:prof.name, email:authUser.email, phone:prof.phone||'',
-      role: prof.role,
+      role: prof.role, createdAt:prof.created_at, notificationSince:prof.notification_since||prof.created_at,
       av:prof.av||prof.name.slice(0,2).toUpperCase(),
       photo:prof.photo||null, clientId:prof.client_id||null,
       avatarPromptCount:Number(prof.avatar_prompt_count||0),
@@ -2606,6 +2612,7 @@ async function loadAllData({silent=false}={}){
     if(isAdmin()||isPartner()) await loadPartnerData();
     await refreshNotifications();
     await loadCompanySettings();
+    await window.MagemindDemandWorkspace?.load();
     renderPaymentAlert();
     if(!isPartner()&&isReferralApproved()) await loadReferralData();
   } catch(e){
@@ -2789,6 +2796,7 @@ async function reloadDemandsForRole(){
   const {data} = await q;
   if(data){
     DB.demands = data.map(mapDemand);
+    await window.MagemindDemandWorkspace?.load();
     renderKanban();
     if(currentView==='list' && typeof renderDemandsList==='function') renderDemandsList();
   }
@@ -4018,7 +4026,7 @@ async function removeReferralParticipant(id){
   toast(`${person.name} foi removido do Indique & Ganhe.`,'ok');
 }
 
-function getMyDemands(){
+function getRoleDemands(){
   if(isAdmin()){
     const cid = document.getElementById('client-filter-dd')?.value;
     return cid ? DB.demands.filter(d=>d.client===cid) : DB.demands;
@@ -4039,6 +4047,7 @@ function getMyDemands(){
   if(isAffiliate()) return []; // afiliado não acessa demandas
   return DB.demands.filter(d=>d.client===DB.me.clientId);
 }
+function getMyDemands(){const demands=getRoleDemands();return window.MagemindDemandWorkspace?.filter(demands)||demands;}
 function setView(v){
   currentView=v;
   document.getElementById('kanban-board').style.display      = v==='kanban'?'flex':'none';
@@ -4049,6 +4058,7 @@ function setView(v){
     b.style.color      = x===v?'var(--text)':'var(--text3)';
   });
   if(v==='list') renderDemandsList();
+  window.MagemindDemandWorkspace?.render();
 }
 
 function renderKanban(){
@@ -4070,6 +4080,7 @@ function renderKanban(){
     </div>`;
   }).join('');
   if(currentView==='list')renderDemandsList();
+  window.MagemindDemandWorkspace?.render();
 }
 
 function renderCard(d){
@@ -4162,7 +4173,7 @@ function assignLocalDemandOrder(cards){
 function insertDemandAtDropPoint(cards,dragged,targetId,insertAfter,automatic=false){
   const ordered=cards.filter(card=>card.id!==dragged.id);
   const targetIndex=targetId?ordered.findIndex(card=>card.id===targetId):-1;
-  const byDate=automatic&&dragged.date?ordered.findIndex(card=>!card.date||card.date<=dragged.date):-1;
+  const byDate=automatic&&dragged.date?ordered.findIndex(card=>!card.date||card.date>dragged.date||(card.date===dragged.date&&String(card.createdAt||'')>String(dragged.createdAt||''))):-1;
   const insertIndex=targetIndex<0?(byDate<0?ordered.length:byDate):targetIndex+(insertAfter?1:0);
   ordered.splice(insertIndex,0,dragged);
   return ordered;
@@ -5192,7 +5203,8 @@ async function openDetail(id){
 
   if(!d.commentsLoaded){
     const {data:cmts} = await supa.from('comments').select('*, profiles(name,photo,av)').eq('demand_id',id).order('created_at');
-    d.comments = (cmts||[]).map(c=>({profileId:c.author_id,author:c.profiles?.name||'?',av:c.profiles?.av||'?',photo:c.profiles?.photo||null,text:c.text,time:fmtTime(c.created_at)}));
+    await window.MagemindDemandWorkspace?.load();
+    d.comments = (cmts||[]).map(c=>({profileId:c.author_id,author:personName(c.author_id,c.profiles?.name)||'Pessoa indisponível',av:c.profiles?.av||'',photo:c.profiles?.photo||null,text:c.text,time:fmtTime(c.created_at)}));
     d.commentsLoaded = true;
   }
   renderComments(d.comments);
@@ -5229,8 +5241,8 @@ function renderComments(comments){
   document.getElementById('det-comments').innerHTML = comments.length
     ? comments.map(c=>`
       <div class="cmt">
-        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${avatarHTML(DB.avatarProfiles?.[c.profileId]||c,c.author,`Foto de ${c.author}`)}</div>
-        <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(c.author)}</div><div class="cmt-text">${linkifyText(c.text||'')}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
+        <div class="av av-xs" style="margin-top:2px;flex-shrink:0">${avatarHTML(DB.avatarProfiles?.[c.profileId]||c,personName(c.profileId,c.author),`Foto de ${personName(c.profileId,c.author)}`)}</div>
+        <div class="cmt-bubble"><div class="cmt-name">${escapeHTML(personName(c.profileId,c.author)||'Pessoa indisponível')}</div><div class="cmt-text">${linkifyText(c.text||'')}</div><div class="cmt-time">${escapeHTML(c.time)}</div></div>
       </div>`).join('')
     : '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0">Nenhum comentário ainda.</div>';
 }
@@ -5721,13 +5733,18 @@ function editorOwnsNotificationDemand(notification){
   return Boolean(notification?.linkDemandId&&DB.demands.some(d=>d.id===notification.linkDemandId&&d.assigneeId===DB.me.id));
 }
 function canReceiveCurrentNotification(notification){
+  if(!notification)return false;
+  const since=DB.me?.notificationSince||DB.me?.createdAt;
+  if(since&&notification.createdAt&&new Date(notification.createdAt)<new Date(since))return false;
+  if(notification.to==='admin'&&isGestor()&&!notification.linkDemandId)return false;
+  if(notification.to==='admin'&&isPartner()&&!editorOwnsNotificationDemand(notification))return false;
   if(!isEditor()) return true;
   return editorOwnsNotificationDemand(notification)&&(notification.to==='admin'||notification.to===DB.me.id);
 }
 function myNotifs(){
   if(isEditor()) return DB.notifications.filter(canReceiveCurrentNotification);
-  if(isStaffRole()) return DB.notifications.filter(n=>n.to==='admin'||n.to===DB.me.id);
-  return DB.notifications.filter(n=>n.to===DB.me.id||n.to===DB.me.clientId);
+  if(isStaffRole()) return DB.notifications.filter(n=>(n.to==='admin'||n.to===DB.me.id)&&canReceiveCurrentNotification(n));
+  return DB.notifications.filter(n=>(n.to===DB.me.id||n.to===DB.me.clientId)&&canReceiveCurrentNotification(n));
 }
 function updateNotifBadge(){
   const unread = myNotifs().filter(n=>!n.read).length;
@@ -5926,7 +5943,7 @@ document.addEventListener('scroll',closeDemandContextMenu,true);
 
 /* ═══ HELPERS ═══ */
 function cn(id){ return DB.clients.find(c=>c.id===id)?.name||'—'; }
-function avatarInitials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?'; }
+function avatarInitials(name){ return String(name||'').trim().split(/\s+/).filter(w=>w&&w!=='?').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'—'; }
 function stBadge(s){ const m={'Não iniciado':'b-muted','Em andamento':'b-amber','Concluído':'b-emerald'}; return `<span class="badge ${m[s]||'b-muted'}">${escapeHTML(s)}</span>`; }
 function prBadge(p){ const m={Alta:'b-rose',Média:'b-amber',Baixa:'b-emerald'}; return `<span class="badge ${m[p]||'b-muted'}">${escapeHTML(p)}</span>`; }
 
@@ -6042,9 +6059,9 @@ async function clearDB(){
   }
 }
 </script>
-<script src="app-accessibility.js?v=20261021-1"></script>
+<script src="app-accessibility.js?v=20261021-2"></script>
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261021-1"></script><script src="tracking-brands.js?v=20261021-1"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261021-1"></script><script src="tracking-connectors.js?v=20261021-1"></script><script src="tracking-connections.js?v=20261021-1"></script><script src="tracking-revenue-chart.js?v=20261021-1"></script><script src="tracking-dashboard.js?v=20261021-1"></script><script src="tracking-native.js?v=20261021-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261021-1"></script></body>
+<script src="tracking-supabase.js?v=20261021-2"></script><script src="tracking-brands.js?v=20261021-2"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261021-2"></script><script src="tracking-connectors.js?v=20261021-2"></script><script src="tracking-connections.js?v=20261021-2"></script><script src="tracking-revenue-chart.js?v=20261021-2"></script><script src="tracking-dashboard.js?v=20261021-2"></script><script src="tracking-native.js?v=20261021-2"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261021-2"></script><script src="demand-workspace.js?v=20261021-2"></script></body>
 </html>
