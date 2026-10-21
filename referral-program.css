@@ -1,6 +1,20 @@
 #pg-affiliates .ph-sub{max-width:680px;line-height:1.6}
-#pg-affiliates .referral-view{padding:0 24px 32px;overflow:auto}
-.rf-root{max-width:1600px;margin:0 auto;color:var(--text);font-size:12px;line-height:1.6}
+#pg-affiliates .referral-view{padding:18px 24px 32px;overflow:auto}
+.rf-root{width:100%;min-width:0;color:var(--text);font-size:12px;line-height:1.6}
+#notif-wrapper{display:flex;align-items:center;gap:8px}
+#referral-rules-help[hidden]{display:none!important}
+#referral-rules-help{width:38px;height:38px;min-width:38px;border-radius:12px}
+#referral-rules-dialog{margin:auto;width:min(740px,calc(100% - 32px));max-height:calc(100dvh - 64px);padding:0;border:1px solid var(--border2);border-radius:18px;color:var(--text);background:rgba(16,15,27,.97);box-shadow:0 24px 100px #0006;overflow:hidden}
+#referral-rules-dialog[open]{display:flex;flex-direction:column}
+#referral-rules-dialog::backdrop{background:rgba(4,4,10,.55);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.rf-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid var(--border);flex:none}
+.rf-dialog-head h2{font-family:'Poppins',sans-serif;font-size:17px;font-weight:600;margin:0}
+.rf-dialog-head p{font-size:11px;color:var(--text3);margin:4px 0 0}
+.rf-dialog-head button{font-size:23px;flex:none;border-radius:10px}
+.rf-dialog-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 2px 8px}
+.rf-dialog-body .rf-rules-full section:first-child{border-top:0}
+.rf-admin-actions{display:flex;justify-content:flex-end}.rf-admin-actions+.rf-stats{margin-top:14px}
+@media(max-width:900px){#pg-affiliates .referral-view{padding-top:16px!important}#app .topbar #referral-rules-help{width:36px;height:40px;min-width:36px;background:transparent;border:0;box-shadow:none}#notif-wrapper{gap:4px}#referral-rules-dialog{width:calc(100% - 24px);max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)));border-radius:16px}.rf-dialog-head{padding:17px 18px}.rf-dialog-head h2{font-size:16px}}
 .rf-root *{box-sizing:border-box}.rf-root button,.rf-root input,.rf-root select{font-family:inherit}
 .rf-root svg{width:18px;height:18px;flex:none;vertical-align:middle}.rf-root h2,.rf-root h3,.rf-root p{margin:0}.rf-root h2{font-family:'Poppins',sans-serif;font-size:21px;font-weight:600;line-height:1.4}.rf-root h3{font-size:13px;font-weight:650}.rf-root p{color:var(--text2)}
 .rf-eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--violet3);display:block;margin-bottom:12px}
