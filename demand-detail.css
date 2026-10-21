@@ -1,0 +1,48 @@
+#modal-detail #det-close{transition:background .15s,color .15s}
+#modal-detail.open #det-close{visibility:visible}
+#modal-detail #det-close:focus-visible{outline:1px solid var(--violet3);outline-offset:3px}
+#modal-detail .detail-comment-composer[hidden]{display:none!important}
+@media(max-width:900px){
+ #modal-detail.overlay.open{padding:12px max(10px,var(--safe-right)) max(12px,var(--safe-bottom)) max(10px,var(--safe-left));align-items:center!important}
+ #modal-detail.overlay.open>.modal.modal-lg{width:100%;max-width:600px!important;height:auto;max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px)!important;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border2)!important;border-radius:20px!important;box-shadow:0 24px 80px #0005;background:var(--bg2)}
+ #modal-detail .m-head{position:relative;flex:none;align-items:flex-start;padding:18px 18px 14px;gap:10px;z-index:2;background:var(--bg2)}
+ #modal-detail .m-title{font-size:17px!important;line-height:1.45;letter-spacing:-.3px;overflow-wrap:anywhere;min-width:0}
+ #modal-detail input.m-title{padding:3px 0!important;min-height:30px;border-radius:5px}
+ #modal-detail textarea.m-title{padding:3px 0!important;min-height:30px;max-height:150px;resize:none;overflow:auto;border-radius:5px;white-space:pre-wrap}
+ #modal-detail .m-close{width:34px;height:34px;border-radius:10px;font-size:17px;color:var(--text2)}
+ #modal-detail #det-badges{flex-wrap:wrap;gap:6px;margin-top:8px!important}
+ #modal-detail .detail-save-state{font-size:9px;min-height:12px;margin-top:6px}
+ #modal-detail .dd-grid{display:block;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;overflow-anchor:none;scroll-padding:16px}
+ #modal-detail .dd-main{display:flex;flex-direction:column;gap:18px;max-height:none;min-height:0;padding:16px 16px 20px;border:0;overflow:visible}
+ #modal-detail .dd-side{display:none}
+ #modal-detail .detail-meta-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;padding:0 0 16px;border-bottom:1px solid var(--border)}
+ #modal-detail .detail-side-group{padding:0;margin:0;border:0;border-radius:0;background:none;min-width:0}
+ #modal-detail .detail-meta-fields.detail-client>.detail-side-group:first-child{grid-column:1/-1}
+ #modal-detail .detail-meta-fields:not(.detail-client)>.detail-side-group:nth-child(-n+2){grid-column:1/-1}
+ #modal-detail .dd-label{font-size:9px;line-height:1.5;letter-spacing:.055em;margin:0 0 5px;color:var(--text3)}
+ #modal-detail .dd-val{font-size:12px;line-height:1.5;min-height:22px;margin:0;overflow-wrap:anywhere}
+ #modal-detail .detail-meta-fields .fi{font-size:16px;min-height:40px;padding:8px 10px;border-radius:9px;background:var(--bg3)}
+ #modal-detail .detail-meta-fields .badge{font-size:10px}
+ #modal-detail .detail-section-card{background:none;border:0;border-radius:0;padding:0}
+ #modal-detail .detail-section-head{margin-bottom:9px;min-height:26px}
+ #modal-detail .detail-section-title{font-size:12px;color:var(--text);gap:7px}
+ #modal-detail .detail-edit-btn{font-size:11px;padding:6px 8px}
+ #modal-detail .detail-rich-text{padding:0!important;border:0!important;min-height:0!important;background:transparent!important;line-height:1.8;font-size:13px}
+ #modal-detail .detail-empty{font-size:12px;font-style:normal;color:var(--text3)}
+ #modal-detail .detail-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ #modal-detail .detail-status-grid .btn{min-height:34px;justify-content:center;padding:7px 3px;font-size:9px;white-space:normal;line-height:1.3;border-radius:8px}
+ #modal-detail #det-status-controls:empty{display:none}
+ #modal-detail #det-comments-section{border-top:1px solid var(--border);padding-top:16px}
+ #modal-detail .detail-comments-head{margin-bottom:12px}
+ #modal-detail .detail-comments-count{font-size:9px;padding:2px 7px}
+ #modal-detail #det-comments>div:only-child:not(.cmt){padding:10px 0!important;font-size:12px!important;color:var(--text3)}
+ #modal-detail .detail-comment-composer{position:static;display:grid;grid-template-columns:26px minmax(0,1fr) 36px;align-items:end;gap:8px;margin:12px 0 0;padding:8px;border:1px solid var(--border2);border-radius:12px;background:var(--bg3);box-shadow:none;backdrop-filter:none}
+ #modal-detail .detail-comment-composer .av{width:26px;height:26px;margin:0 0 6px!important;font-size:9px}
+ #modal-detail .detail-comment-composer textarea{height:40px;min-height:40px!important;max-height:140px;padding:9px 1px!important;border:0!important;border-radius:0!important;background:transparent!important;font-size:16px!important;line-height:1.35!important;resize:none}
+ #modal-detail .detail-comment-composer .detail-comment-send{width:36px;min-width:36px;height:38px;min-height:38px;padding:0;margin:0;grid-column:auto;align-self:end;border-radius:9px}
+ #modal-detail #det-admin-controls:empty{display:none}
+ #modal-detail #det-admin-controls{border-top:1px solid var(--border);padding-top:14px}
+ #modal-detail .detail-danger-zone{margin:0;padding:0;border:0}
+ #modal-detail .detail-editor,#modal-detail .demand-rich-input{font-size:16px;min-height:120px}
+}
+@media(max-width:360px){#modal-detail .m-head{padding:15px}#modal-detail .dd-main{padding:14px;gap:16px}#modal-detail .detail-meta-fields{gap:10px}#modal-detail .detail-meta-fields:not(.detail-client){grid-template-columns:1fr}}

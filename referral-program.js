@@ -14,6 +14,13 @@
  const host=()=>document.getElementById(data?.state==='admin'?'referral-admin-view':'referral-member-view');
  function cache(value,uid){
   if(DB.me?.id!==uid)return;
+  if(value.state==='suspended'){
+   value={...value,rate:null,code:null,finance_access:false,wallet:null,clients:[],sales:[],withdrawals:[]};
+   if(document.getElementById('modal-withdrawal-request')?.classList.contains('open'))closeModal('modal-withdrawal-request');
+   for(const id of ['wd-amount','wd-pix-key']){const field=document.getElementById(id);if(field)field.value='';}
+   DB.withdrawals=[];
+  }
+  DB.me.referralSuspended=value.state==='suspended';
   owner=uid;data=value;error='';
   if(value.state==='admin'){
    for(const p of value.participants||[]){const u=DB.users.find(u=>u.id===p.id);if(u){u.affiliateStatus=p.state==='suspended'?'locked':'approved';u.commissionRate=Number(p.rate);}}
@@ -26,6 +33,7 @@
    DB.referralSales=(value.sales||[]).map(s=>({id:s.sale_id,client:s.client_id,clientName:s.client_name,value:Number(s.commission_value),status:s.sale_status,date:s.sale_date}));
    DB.referralWithdrawals=value.withdrawals||[];
    if(isAffiliate()){DB.clients=DB.referralClients.map(c=>({...c,affiliateId:uid,email:'',phone:'',notes:'',plan:'',planIds:[]}));DB.sales=DB.referralSales.map(s=>({...s,isCommissionValue:true,service:'',desc:'',assignee:''}));DB.withdrawals=DB.referralWithdrawals;}
+   if(value.state==='suspended'){buildNav();if(isAffiliate()&&['pg-dashboard','pg-sales','pg-clients'].includes(document.querySelector('.page.active')?.id))goTo('affiliates');}
   }
  }
  async function load({render:shouldRender=true}={}){
@@ -50,12 +58,18 @@
   const gain=price=>Math.round(Math.round(Number(price||0)*100)*Math.round(rate*100)/10000)/100;
   const monthly=gain(prices.monthly),pack=gain(prices.package);
   const values={default_rate:percent(data.rules?.default_rate??10),rate:percent(rate),monthly_price:money(prices.monthly),monthly_gain:money(monthly),five_monthly_gain:money(monthly*5),ten_monthly_gain:money(monthly*10),package_price:money(prices.package),package_gain:money(pack),service_price:money(prices.service),service_gain:money(gain(prices.service)),combined_gain:money(monthly+pack)};
-  const paragraphs=article?.paragraphs||(data.rules?.sections||[]).flatMap(s=>s.paragraphs||[]);
-  return `<article class="rf-rules rf-rules-article">${paragraphs.map(p=>`<p>${e(String(p).replace(/\bCEO\s*(?:ou|e)\s*gerentes?\b/gi,'equipe interna').replace(/\{\{([a-z_]+)\}\}/g,(_,key)=>values[key]??''))}</p>`).join('')}</article>`;
+  const text=p=>e(String(p??'').replace(/\bCEO\s*(?:ou|e)\s*gerentes?\b/gi,'equipe interna').replace(/\{\{([a-z_]+)\}\}/g,(_,key)=>values[key]??''));
+  const paragraphs=items=>(items||[]).map(p=>`<p>${text(p)}</p>`).join('');
+  const list=items=>items?.length?`<ul>${items.map(p=>`<li>${text(p)}</li>`).join('')}</ul>`:'';
+  const body=s=>`${paragraphs(s.paragraphs)}${list(s.items)}${s.after?`<p>${text(s.after)}</p>`:''}${s.note?`<aside class="rf-doc-note">${text(s.note)}</aside>`:''}`;
+  const doc=article?.document;
+  if(doc)return `<article class="rf-rules rf-rules-article rf-document"><header class="rf-doc-intro"><h1>${text(doc.title)}</h1><p>${text(doc.intro)}</p></header>${doc.sections.map((s,i)=>`<section class="rf-doc-section"><h2>${text(s.title)}</h2>${body(s)}${(s.subsections||[]).map(sub=>`<div class="rf-doc-subsection"><h3>${text(sub.title)}</h3>${body(sub)}</div>`).join('')}</section>`).join('')}</article>`;
+  return `<article class="rf-rules rf-rules-article">${paragraphs(article?.paragraphs||(data.rules?.sections||[]).flatMap(s=>s.paragraphs||[]))}</article>`;
  }
- function welcome(){return `<div class="rf-terms rf-welcome-article"><div class="rf-section-heading"><div><h2>Regras do Indique &amp; Ganhe</h2><p>Conheça o programa da Magemind antes de participar.</p></div></div>${rules()}
+ function welcome(){return `<div class="rf-terms rf-welcome-article">${rules()}
   <form id="rf-accept-form" class="rf-consent"><label><input id="rf-ack" type="checkbox" required><span class="rf-check" aria-hidden="true">${icon('check')}</span><span>${e(data.rules?.acknowledgement)}</span></label><button class="btn btn-primary" id="rf-join" type="submit" disabled>Concordar e participar ${icon('arrow')}</button><small>Seu aceite fica registrado com a versão destas regras.</small></form></div>${data.finance_access?finance():''}`;}
  function finance(){const w=data.wallet||{},clients=data.clients||[];
+  if(data.state==='suspended')return '';
   return `<div class="rf-stats">${stat('Disponível para saque',money(w.available),'Comissões aprovadas','rf-highlight')}${stat('Em análise',money(w.under_review),'Saques em processamento')}${stat('Recebido',money(w.withdrawn),'Pagamentos registrados')}${stat('Comissão pendente',money(w.pending_commission),'Ainda não disponível')}</div>
   <div class="rf-finance-action"><p>Os valores já registrados permanecem disponíveis para consulta e saque.</p><button type="button" class="btn btn-primary btn-sm" data-rf-action="withdraw" ${Number(w.available)<1?'disabled':''}>Solicitar saque</button></div>
   <div class="rf-lower"><section class="rf-card"><div class="rf-section-heading"><div><h3>Clientes indicados <span class="rf-count">${clients.length}</span></h3><p>Cadastros vinculados à sua indicação</p></div></div>${clients.length?`<div class="rf-table-scroll"><table><thead><tr><th>Cliente</th><th>Demandas</th><th>Comissão</th><th>Status</th></tr></thead><tbody>${clients.map(c=>`<tr><td><strong>${e(c.client_name)}</strong><small>Desde ${date(c.registered_at)}</small></td><td>${Number(c.demand_count||0)}</td><td class="financial-value">${money(c.commission_total)}</td><td><span class="rf-badge ${c.client_status==='Ativo'?'active':''}">${e(c.client_status)}</span></td></tr>`).join('')}</tbody></table></div>`:empty('Quando um novo cliente se cadastrar pelo seu link, ele aparecerá aqui.')}</section>
@@ -63,6 +77,7 @@
  function member(){
   if(data.state==='needs_acceptance')return welcome();
   if(data.state==='unavailable')return empty('Este perfil utiliza uma carteira própria. Acesse Saques para acompanhar seus valores.');
+  if(data.state==='suspended')return `<div class="rf-locked"><div class="rf-lock-message" role="status"><div class="rf-lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></div><h2>Participação suspensa</h2><p>O acesso aos dados do Indique &amp; Ganhe e à solicitação de saques está bloqueado.</p><small>Seu histórico e saldo estão preservados. Somente a equipe interna pode reativar sua participação.</small></div></div>`;
   const active=data.state==='active',link=active?`https://app.magemind.com.br/?ref=${data.code}`:'';
   return `${active?`<section class="rf-link-card"><div><span class="rf-link-icon">${icon('link')}</span><h3>Seu link de indicação</h3><p>O cadastro pelo link identifica você automaticamente como responsável pela indicação.</p></div><div class="rf-link-field"><input id="rf-personal-link" aria-label="Seu link de indicação" readonly value="${e(link)}"><button type="button" class="btn btn-primary btn-sm" data-rf-action="copy">${icon('copy')}<span>Copiar link</span></button></div><div class="rf-link-foot"><span><b>${percent(data.rate)}</b> nas vendas elegíveis da Magemind</span><span>${data.clients?.length||0} clientes indicados</span></div></section>`:`<div class="rf-suspended">${icon('shield')}<div><strong>Participação suspensa</strong><p>Seu link está desativado e novas comissões estão suspensas. A reativação depende da equipe interna. O histórico, os saldos e os clientes já vinculados foram preservados.</p></div></div>`}
   ${finance()}`;
@@ -98,6 +113,10 @@
   const button=document.createElement('button');button.id='referral-rules-help';button.type='button';button.className='btn btn-ghost btn-icon';button.hidden=true;button.disabled=true;button.title='Regras do programa';button.setAttribute('aria-label','Regras do programa');button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','referral-rules-dialog');
   button.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.6-2.5 1.8-2.5 3.5M12 16.5h.01"/></svg>';
   wrapper.prepend(button);
+  const slot=document.createElement('div');slot.id='referral-mobile-help-slot';page().querySelector('.ph').append(slot);
+  const mobile=matchMedia('(max-width:900px)');
+  const place=()=>{const target=mobile.matches?slot:wrapper;if(button.parentElement!==target)target.prepend(button);};
+  mobile.addEventListener('change',place);place();
   const dialog=document.createElement('dialog');dialog.id='referral-rules-dialog';dialog.setAttribute('aria-labelledby','referral-rules-title');dialog.innerHTML='<div class="rf-dialog-head"><div><h2 id="referral-rules-title">Regras do programa</h2><p>Indique &amp; Ganhe Magemind</p></div><button type="button" class="btn btn-ghost btn-icon" aria-label="Fechar regras">×</button></div><div id="referral-rules-content" class="rf-dialog-body"></div>';
   document.body.append(dialog);
   button.addEventListener('click',()=>{if(!visible()||!data?.rules||owner!==DB.me?.id)return;closeNotifPanel();renderRules();dialog.showModal();});
