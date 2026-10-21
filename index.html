@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Supabase SDK -->
   <script src="tracking-env.js"></script>
-  <script src="tracking-pilot-access.js?v=20261020-2"></script>
+  <script src="tracking-pilot-access.js?v=20261021-1"></script>
   <script>if(window.MAGEMIND_TRACKING_ENV.mode!=='local-simulator')document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></'+'script>');</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -499,7 +499,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261014-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261020-2"><link rel="stylesheet" href="tracking-dashboard.css?v=20261020-2"><link rel="stylesheet" href="mobile-shell.css?v=20261020-2"><link rel="stylesheet" href="desktop-sidebar.css?v=20261020-2"><link rel="stylesheet" href="filter-ui.css?v=20261020-2"><link rel="stylesheet" href="app-scrollbars.css?v=20261020-2"><link rel="stylesheet" href="legal.css?v=20261020-2"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261021-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261021-1"><link rel="stylesheet" href="mobile-shell.css?v=20261021-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261021-1"><link rel="stylesheet" href="filter-ui.css?v=20261021-1"><link rel="stylesheet" href="app-scrollbars.css?v=20261021-1"><link rel="stylesheet" href="legal.css?v=20261021-1"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -710,13 +710,13 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="ph">
           <div class="ph-info">
             <div class="ph-title">Demandas</div>
-            <div class="ph-sub" id="demands-sub">Kanban de tarefas</div>
+            <div class="ph-sub" id="demands-sub">Esteira de produção dos criativos.</div>
             <div id="demands-plan-banner" style="display:none;align-items:center;margin-top:6px;background:var(--violetbg);border:1px solid var(--violetborder);border-radius:var(--r2);padding:6px 12px;gap:6px"></div>
           </div>
           <div class="ph-actions">
             <div class="demand-view-controls">
-            <label id="mine-filter-wrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
-              <input type="checkbox" id="mine-filter-chk" onchange="renderKanban()"> Minhas demandas
+            <label id="mine-filter-wrap" class="demand-mine-filter" style="display:none">
+              <input type="checkbox" role="switch" id="mine-filter-chk" onchange="renderKanban()"><span class="demand-mine-track" aria-hidden="true"></span><span>Minhas demandas</span>
             </label>
 
             <div style="display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:3px">
@@ -1461,9 +1461,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260925-2"></script>
 <script src="tasks.js?v=20260925-2"></script>
-<script src="mobile-app.js?v=20261020-2"></script>
-<script src="mobile-shell.js?v=20261020-2"></script>
-<script src="desktop-sidebar.js?v=20261020-2"></script>
+<script src="mobile-app.js?v=20261021-1"></script>
+<script src="mobile-shell.js?v=20261021-1"></script>
+<script src="desktop-sidebar.js?v=20261021-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = window.MAGEMIND_TRACKING_ENV.supabaseUrl || location.origin;
@@ -1967,7 +1967,7 @@ function mapDemand(d){
     assigneeId:d.assignee_id||null,
     status:d.status||'Não iniciado', priority:d.priority||'Média',
     date:d.due_date||'', sortOrder:Number.isFinite(Number(d.sort_order))?Number(d.sort_order):0,
-    createdAt:d.created_at||null,
+    createdAt:d.created_at||null, completedAt:d.completed_at||null, sortKey:d.sort_key??String(d.sort_order??0),
     comments:[], commentsLoaded:false
   };
 }
@@ -2367,7 +2367,7 @@ async function afterLogin(authUser){
     await window.MagemindTrackingAccess?.load(supa);
     document.body.classList.toggle('tracking-pilot',trackingEnabled());
     document.querySelector('.mt-demand-title').hidden=!trackingEnabled()||trackingObserver();
-    document.getElementById('dash-summary-sub').textContent=trackingEnabled()&&!trackingObserver()?'Vendas, resultados e acompanhamento das suas demandas':'Resumo operacional de hoje';
+    document.getElementById('dash-summary-sub').textContent=trackingEnabled()&&!trackingObserver()?'Esses são os resultados da sua operação:':'Resumo operacional de hoje';
     document.querySelector('#pg-settings .ph-sub').textContent=trackingEnabled()&&!trackingObserver()?'Perfil, segurança, notificações e custos':'Perfil, plano, segurança e preferências';
     if(!await recordSecurityAccess('session_access')) return;
     document.getElementById('auth-screen').style.display = 'none';
@@ -2940,7 +2940,7 @@ function goTo(page){
   if(typeof closeMobileMenu==='function') closeMobileMenu();
   const demandsTitle = (isAdmin()||isPartner()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
   const T = {withdrawals:'Saques',partners:'Carteira',goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
-  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:(isAdmin()||isPartner()||isGestor()||isEditor())?'Kanban de tarefas e projetos':(isAffiliate()?'Somente leitura':'Suas demandas ativas'),sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
+  const S = {goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:'Esteira de produção dos criativos.',sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.title = `${({campaigns:'Campanhas',orders:'Pedidos',integrations:'Integrações'})[page]||T[page]||page} · Magemind`;
 
   document.getElementById('client-create').hidden=!hasPermission('clients.create');
@@ -2976,7 +2976,11 @@ function loadDash(){
   document.getElementById('pg-dashboard').classList.toggle('partner-view',isPartner());
   if(isPartner()) return loadDashPartner();
   const summary=document.getElementById('dash-summary-sub');
-  if(summary) summary.style.display=isOperationalStaff()?'':'none';
+  if(summary){
+    const operationSummary=trackingEnabled()&&!trackingObserver();
+    summary.style.display=isOperationalStaff()||operationSummary?'':'none';
+    if(operationSummary)summary.textContent='Esses são os resultados da sua operação:';
+  }
   if(isCEO()||isManager()) return loadDashFull();
   if(isGestor()) return loadDashGestor();
   if(isEditor()) return loadDashEditor();
@@ -3433,10 +3437,11 @@ function loadDemands(){
   if(isAdmin()||isPartner()||isGestor()||isEditor()){
     dd.style.display='block';
     dd.innerHTML='<option value="">Todos os clientes</option>'+
-      DB.clients.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+      DB.clients.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
   } else { dd.style.display='none'; }
   mineWrap.style.display = (isGestor()||isPartner()) ? 'flex' : 'none';
-  document.getElementById('demands-sub').textContent = (isAdmin()||isPartner()||isGestor()||isEditor()) ? 'Kanban de tarefas e projetos' : 'Suas demandas ativas';
+  document.getElementById('demands-sub').textContent = 'Esteira de produção dos criativos.';
+  window.MagemindDemandFilters?.sync();
   renderKanban();
 }
 
@@ -4064,6 +4069,7 @@ function renderKanban(){
       ${canCreate?`<div class="k-add" onclick="openNewDemandWithStatus('${col}')">+ Adicionar demanda</div>`:''}
     </div>`;
   }).join('');
+  if(currentView==='list')renderDemandsList();
 }
 
 function renderCard(d){
@@ -4111,7 +4117,8 @@ function openDemandContextMenu(event,id){
 }
 
 function renderDemandsList(){
-  const demands = getMyDemands();
+  const visible=getMyDemands();
+  const demands=['Não iniciado','Em andamento','Concluído'].flatMap(status=>orderedDemandColumn(status,visible));
   document.getElementById('demands-list-body').innerHTML = demands.map(d=>`
     <tr onclick="openDetail('${d.id}')">
       <td style="font-weight:500">${escapeHTML(d.title)}</td>
@@ -4128,13 +4135,21 @@ function demandOrderNumber(demand){
   const value=Number(demand?.sortOrder);
   return Number.isFinite(value)?value:0;
 }
-function nextDemandInitialOrder(status){
-  const orders=DB.demands.filter(demand=>demand.status===status).map(demandOrderNumber);
-  return orders.length?Math.min(...orders)-1:0;
-}
 function compareDemandOrder(a,b){
-  const byOrder=demandOrderNumber(a)-demandOrderNumber(b);
+  const parts=d=>String(d.sortKey??d.sortOrder??0).match(/^(-?)(\d+)(?:\.(\d+))?$/);
+  const ap=parts(a),bp=parts(b);
+  let byOrder=demandOrderNumber(a)-demandOrderNumber(b);
+  if(ap&&bp){
+    const decimal=p=>({negative:p[1]==='-'&&!/^0*$/.test(p[2]+(p[3]||'')),whole:p[2].replace(/^0+(?=\d)/,''),fraction:p[3]||''});
+    const x=decimal(ap),y=decimal(bp),length=Math.max(x.fraction.length,y.fraction.length);
+    const magnitude=x.whole.length-y.whole.length||x.whole.localeCompare(y.whole)||x.fraction.padEnd(length,'0').localeCompare(y.fraction.padEnd(length,'0'));
+    byOrder=x.negative!==y.negative?(x.negative?-1:1):x.negative?-magnitude:magnitude;
+  }
   if(byOrder) return byOrder;
+  if(a.status==='Concluído'){
+    const completed=String(b.completedAt||'').localeCompare(String(a.completedAt||''));
+    if(completed)return completed;
+  }
   const byCreated=String(b.createdAt||'').localeCompare(String(a.createdAt||''));
   return byCreated||String(a.id).localeCompare(String(b.id));
 }
@@ -4142,12 +4157,13 @@ function orderedDemandColumn(status,source=DB.demands){
   return source.filter(demand=>demand.status===status).slice().sort(compareDemandOrder);
 }
 function assignLocalDemandOrder(cards){
-  cards.forEach((card,index)=>{card.sortOrder=index;});
+  cards.forEach((card,index)=>{card.sortOrder=index;card.sortKey=String(index);});
 }
-function insertDemandAtDropPoint(cards,dragged,targetId,insertAfter){
+function insertDemandAtDropPoint(cards,dragged,targetId,insertAfter,automatic=false){
   const ordered=cards.filter(card=>card.id!==dragged.id);
   const targetIndex=targetId?ordered.findIndex(card=>card.id===targetId):-1;
-  const insertIndex=targetIndex<0?ordered.length:targetIndex+(insertAfter?1:0);
+  const byDate=automatic&&dragged.date?ordered.findIndex(card=>!card.date||card.date<=dragged.date):-1;
+  const insertIndex=targetIndex<0?(byDate<0?ordered.length:byDate):targetIndex+(insertAfter?1:0);
   ordered.splice(insertIndex,0,dragged);
   return ordered;
 }
@@ -4224,11 +4240,11 @@ async function drop(e,col){
 
   if(!dragged||!canMoveDemand(dragged)||kanbanOrderSaving)return;
   const statusChanged=sourceStatus!==col;
-  const originalPositions=DB.demands.map(demand=>({id:demand.id,status:demand.status,sortOrder:demand.sortOrder}));
+  const originalPositions=DB.demands.map(demand=>({id:demand.id,status:demand.status,sortOrder:demand.sortOrder,sortKey:demand.sortKey,completedAt:demand.completedAt}));
   const sourceBefore=orderedDemandColumn(sourceStatus);
   const targetBefore=statusChanged?orderedDemandColumn(col):sourceBefore;
   const sourceAfter=statusChanged?sourceBefore.filter(card=>card.id!==movingId):null;
-  const targetAfter=insertDemandAtDropPoint(targetBefore,dragged,targetId,insertAfter);
+  const targetAfter=statusChanged&&col==='Concluído'?[dragged,...targetBefore]:insertDemandAtDropPoint(targetBefore,dragged,targetId,insertAfter,statusChanged);
   const beforeIds=targetBefore.map(card=>card.id).join('|');
   const afterIds=targetAfter.map(card=>card.id).join('|');
   if(!statusChanged&&beforeIds===afterIds)return;
@@ -4262,7 +4278,7 @@ async function drop(e,col){
     console.error('Falha ao salvar ordem do kanban',error);
     originalPositions.forEach(position=>{
       const demand=DB.demands.find(item=>item.id===position.id);
-      if(demand)Object.assign(demand,{status:position.status,sortOrder:position.sortOrder});
+      if(demand)Object.assign(demand,position);
     });
     await reloadDemandsForRole().catch(()=>{
       renderKanban();
@@ -4339,9 +4355,7 @@ async function saveDemand(){
     if(editDemandId){
       // ── EDITAR
       const currentDemand=DB.demands.find(demand=>demand.id===editDemandId);
-      const movedToAnotherColumn=currentDemand&&currentDemand.status!==status;
       const demandUpdate={title,priority,status,due_date:dueDate,description:desc,refs};
-      if(movedToAnotherColumn)demandUpdate.sort_order=nextDemandInitialOrder(status);
       if(canChangeDemandClient()) demandUpdate.client_id=clientId;
       if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
       const {data:savedDemand,error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId).select('*').single();
@@ -4350,7 +4364,7 @@ async function saveDemand(){
       if(d){
         const assigneeProf = DB.users.find(u=>u.id===assigneeId);
         Object.assign(d,{title:savedDemand.title,priority,status,date:dueDate||'',desc,refs});
-        if(movedToAnotherColumn)d.sortOrder=demandUpdate.sort_order;
+        Object.assign(d,{sortOrder:Number(savedDemand.sort_order),sortKey:savedDemand.sort_key??String(savedDemand.sort_order??0),completedAt:savedDemand.completed_at||null});
         if(canChangeDemandClient()) d.client=clientId;
         if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
       }
@@ -4361,11 +4375,10 @@ async function saveDemand(){
 
     } else {
       // ── CRIAR
-      const initialSortOrder=nextDemandInitialOrder(status);
       const {data:nd, error} = await supa.from('demands').insert({
         title, client_id:clientId, assignee_id:assigneeId,
         priority, status, due_date:dueDate, description:desc, refs,
-        created_by:DB.me.id, sort_order:initialSortOrder
+        created_by:DB.me.id
       }).select('*').single();
       if(error){ toast('Erro ao criar demanda: '+error.message,'err'); return; }
       const mapped = mapDemand(nd);
@@ -5282,8 +5295,7 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
       due_date:source.date||null,
       description:source.desc||'',
       refs:source.refs||'',
-      created_by:DB.me.id,
-      sort_order:nextDemandInitialOrder(copiedStatus)
+      created_by:DB.me.id
     }).select('*').single();
     if(error){ toast('Erro ao duplicar demanda: '+error.message,'err'); return; }
     const copied=mapDemand(nd);
@@ -6030,9 +6042,9 @@ async function clearDB(){
   }
 }
 </script>
-<script src="app-accessibility.js?v=20261020-2"></script>
+<script src="app-accessibility.js?v=20261021-1"></script>
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261020-2"></script><script src="tracking-brands.js?v=20261020-2"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261020-2"></script><script src="tracking-connectors.js?v=20261020-2"></script><script src="tracking-connections.js?v=20261020-2"></script><script src="tracking-revenue-chart.js?v=20261020-2"></script><script src="tracking-dashboard.js?v=20261020-2"></script><script src="tracking-native.js?v=20261020-2"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261020-2"></script></body>
+<script src="tracking-supabase.js?v=20261021-1"></script><script src="tracking-brands.js?v=20261021-1"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261021-1"></script><script src="tracking-connectors.js?v=20261021-1"></script><script src="tracking-connections.js?v=20261021-1"></script><script src="tracking-revenue-chart.js?v=20261021-1"></script><script src="tracking-dashboard.js?v=20261021-1"></script><script src="tracking-native.js?v=20261021-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261021-1"></script></body>
 </html>

@@ -1,8 +1,9 @@
 .mt-root .md-dashboard{--md-gap:12px;--md-row:94px;min-width:0}
 .mt-root .md-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px}
 .mt-root .md-toolbar strong{font-size:12px;font-weight:600}.mt-root .md-toolbar p{font-size:10px;color:var(--text3);margin:4px 0 0;line-height:1.5}
-.mt-root .md-toolbar button,.mt-root .md-link,.mt-root .md-estimate-note button,.mt-root .md-library button{font:500 11px 'Poppins',sans-serif;border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;color:var(--text2);background:var(--bg3);cursor:pointer}
-.mt-root .md-toolbar button:hover,.mt-root .md-library button:hover:not(:disabled){background:var(--bg4);color:var(--text)}
+.mt-root .md-toolbar button,.mt-root .md-dashboard-footer button,.mt-root .md-link,.mt-root .md-estimate-note button,.mt-root .md-library button{font:500 11px 'Poppins',sans-serif;border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;color:var(--text2);background:var(--bg3);cursor:pointer}
+.mt-root .md-toolbar button:hover,.mt-root .md-dashboard-footer button:hover,.mt-root .md-library button:hover:not(:disabled){background:var(--bg4);color:var(--text)}
+.mt-root .md-dashboard-footer button:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
 .mt-root .md-customize{display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .mt-root .md-estimate-note{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;margin-bottom:14px;background:var(--violetbg);border:1px solid var(--violetborder);border-radius:var(--r);color:var(--text2);font-size:10px;line-height:1.6}
 .mt-root .md-estimate-note button{border:0;background:transparent;white-space:nowrap;padding:4px;color:var(--violet3);font-size:10px}
