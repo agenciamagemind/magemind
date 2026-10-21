@@ -12,7 +12,11 @@
 .rf-dialog-head p{font-size:11px;color:var(--text3);margin:4px 0 0}
 .rf-dialog-head button{font-size:23px;flex:none;border-radius:10px}
 .rf-dialog-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 2px 8px}
-.rf-dialog-body .rf-rules-full section:first-child{border-top:0}
+#referral-rules-dialog .rf-rules-article,.rf-welcome-article .rf-rules-article{padding:8px 26px 24px}
+.rf-rules.rf-rules-article p{font-size:12px;line-height:1.95;margin:0 0 17px;color:var(--text2);overflow-wrap:anywhere}
+.rf-rules-article p:last-child{margin-bottom:0}
+.rf-welcome-article{max-width:960px}
+@media(max-width:900px){#referral-rules-dialog .rf-rules-article,.rf-welcome-article .rf-rules-article{padding:4px 20px 24px}.rf-rules.rf-rules-article p{font-size:12px;line-height:1.9}}
 .rf-admin-actions{display:flex;justify-content:flex-end}.rf-admin-actions+.rf-stats{margin-top:14px}
 @media(max-width:900px){#pg-affiliates .referral-view{padding-top:16px!important}#app .topbar #referral-rules-help{width:36px;height:40px;min-width:36px;background:transparent;border:0;box-shadow:none}#notif-wrapper{gap:4px}#referral-rules-dialog{width:calc(100% - 24px);max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)));border-radius:16px}.rf-dialog-head{padding:17px 18px}.rf-dialog-head h2{font-size:16px}}
 .rf-root *{box-sizing:border-box}.rf-root button,.rf-root input,.rf-root select{font-family:inherit}
