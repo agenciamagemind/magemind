@@ -1,5 +1,6 @@
 #modal-doc .modal{width:460px;max-width:calc(100vw - 32px)}
 #modal-doc .m-close{transition:background .15s,color .15s}#modal-doc.open .m-close{visibility:visible}
+#doc-close{margin-left:auto}
 #modal-doc .fg[hidden]{display:none}
 .doc-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}
 .doc-file-picker{display:flex;align-items:center;gap:12px;min-height:86px;padding:16px;border:1px dashed var(--violetborder);border-radius:12px;background:var(--violetbg);cursor:pointer;transition:background .15s,border-color .15s}
