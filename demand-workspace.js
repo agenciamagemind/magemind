@@ -36,20 +36,24 @@
   if(!panel||!DB.me)return;
   const enabled=isOperationalStaff();panel.hidden=!enabled;
   if(!enabled){panel.replaceChildren();return;}
-  const rows=getRoleDemands(),selected=$('client-filter-dd').value;
+  const selected=$('client-filter-dd').value;
   const scopeRows=isEditor()?DB.demands.filter(d=>d.assigneeId===DB.me.id):DB.demands;
   const candidates=(context?.clients||[]).map(c=>{
    const demands=scopeRows.filter(d=>d.client===c.id),pending=demands.filter(d=>d.status!=='Concluído'),plans=(c.plans||[]).filter(p=>cadence(p).recurring);
    return {c,demands,pending,plans,late:pending.filter(d=>matches(d,'late')).length};
   }).filter(x=>x.pending.length||(x.plans.length&&x.c.status==='Ativo')).sort((a,b)=>b.late-a.late||b.pending.length-a.pending.length||a.c.name.localeCompare(b.c.name));
-  const list=candidates.map(({c,demands,pending,plans,late})=>`<article class="production-client ${selected===c.id?'is-selected':''}">
+  const clientCard=({c,demands,pending,plans,late})=>`<article class="production-client ${selected===c.id?'is-selected':''}">
    <div class="production-client-heading"><span class="av av-xs">${clientAvatarHTML(c.id,c.name)}</span><div><h4>${esc(c.name)}</h4><small>${c.status==='Pausado'?'Conta pausada':c.status==='Inativo'?'Conta inativa':plans.length?'Plano mensal':'Produção avulsa'}</small></div>${late?`<span class="production-late">${late} em atraso</span>`:''}</div>
    ${plans.map(p=>`<div class="production-plan"><strong>${esc(p.name)}</strong><small>${esc(cadence(p).text)}</small></div>`).join('')}
    <div class="production-client-stats"><span><strong>${pending.length}</strong> pendentes</span><span><strong>${demands.filter(d=>d.status==='Concluído').length}</strong> concluídas</span></div>
    <div class="production-client-actions"><button type="button" data-production-client="${esc(c.id)}" aria-pressed="${selected===c.id}">Ver demandas <span aria-hidden="true">↗</span></button><button type="button" data-production-info="${esc(c.id)}" aria-label="Informações de ${esc(c.name)}">Informações</button></div>
-  </article>`).join('');
+  </article>`;
+  const groups=[
+   {key:'recurring',title:'Clientes com produção recorrente',clients:candidates.filter(x=>x.plans.length),empty:'Nenhum cliente com produção recorrente no momento.'},
+   {key:'one-off',title:'Clientes com produção avulsa',clients:candidates.filter(x=>!x.plans.length),empty:'Nenhum cliente com produção avulsa pendente.'}
+  ].map(({key,title,clients,empty})=>`<section class="production-client-group" data-production-group="${key}" aria-labelledby="production-${key}-title"><div class="production-list-heading"><h3 id="production-${key}-title">${title}</h3><small>${clients.length}</small></div><div class="production-group-cards">${clients.map(clientCard).join('')||`<p class="production-empty">${empty}</p>`}</div></section>`).join('');
   const details=panel.querySelector('details');if(details)expanded=details.open;
-  panel.innerHTML=`<details ${expanded?'open':''}><summary><span><strong>${isEditor()?'Minha produção':isClient()?'Sua produção':'Visão da produção'}</strong><small>${isEditor()?'Demandas atribuídas a você':'Prazos e acompanhamento dos clientes'}</small></span><span aria-hidden="true">⌄</span></summary><div class="production-body">${summary()}<div class="production-list-heading"><h3>${isClient()?'Seu acompanhamento':'Clientes em acompanhamento'}</h3><small>${candidates.length}</small></div>${isEditor()?'<p class="production-caption">Contagem das demandas atribuídas a você.</p>':''}${loadError?'<p class="production-caption" role="status">Não foi possível atualizar o acompanhamento.</p><button type="button" class="production-reset" data-production-action="retry">Tentar novamente</button>':''}<div class="production-client-list">${context?list||'<p class="production-empty">Nenhuma demanda pendente ou plano mensal neste filtro.</p>':loadError?'':'<p class="production-empty">Carregando acompanhamento…</p>'}</div></div></details>`;
+  panel.innerHTML=`<details ${expanded?'open':''}><summary><span><strong>${isEditor()?'Minha produção':isClient()?'Sua produção':'Visão da produção'}</strong><small>${isEditor()?'Demandas atribuídas a você':'Prazos e acompanhamento dos clientes'}</small></span><span aria-hidden="true">⌄</span></summary><div class="production-body">${summary()}${isEditor()?'<p class="production-caption">Contagem das demandas atribuídas a você.</p>':''}${loadError?'<p class="production-caption" role="status">Não foi possível atualizar o acompanhamento.</p><button type="button" class="production-reset" data-production-action="retry">Tentar novamente</button>':''}<div class="production-client-list">${context?groups:loadError?'':'<p class="production-empty">Carregando acompanhamento…</p>'}</div></div></details>`;
  }
  function showInfo(id){
   const c=context?.clients?.find(c=>c.id===id);if(!c)return;
