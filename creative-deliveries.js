@@ -75,7 +75,7 @@
   });
   new MutationObserver(()=>{if($('pg-demands').classList.contains('active'))folder();}).observe($('pg-demands'),{attributes:true,attributeFilter:['class']});
   new MutationObserver(()=>{if($('pg-settings').classList.contains('active'))settings();}).observe($('pg-settings'),{attributes:true,attributeFilter:['class']});
-  const url=new URL(location.href);if(url.searchParams.has('drive_connection')){const connected=url.searchParams.get('drive_connection')==='connected';url.searchParams.delete('drive_connection');history.replaceState(null,'',url.pathname+url.search+url.hash);setTimeout(()=>{if(DB.me){goTo('settings');toast(connected?'Google Drive conectado. As pastas serão preparadas automaticamente.':'Não foi possível concluir a conexão. Tente novamente.',connected?'ok':'err');}},1200);}
+  const url=new URL(location.href);if(url.searchParams.has('drive_connection')){const connected=url.searchParams.get('drive_connection')==='connected';url.searchParams.delete('drive_connection');history.replaceState(null,'',url.pathname+url.search+url.hash);let attempts=0;const showNotice=()=>{if(!DB.me&&attempts++<150){setTimeout(showNotice,400);return;}if(!DB.me)return;goTo('settings');selectSettingsTab('company');settings();toast(connected?'Google Drive conectado. As pastas serão preparadas automaticamente.':'Não foi possível concluir a conexão. Tente novamente.',connected?'ok':'err');};showNotice();}
  }
  window.MagemindCreatives={open,folder,settings,clear};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
