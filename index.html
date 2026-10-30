@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Supabase SDK -->
   <script src="tracking-env.js"></script>
-  <script src="tracking-pilot-access.js?v=20261029-5"></script>
+  <script src="tracking-pilot-access.js?v=20261030-1"></script>
   <script>if(window.MAGEMIND_TRACKING_ENV.mode!=='local-simulator')document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></'+'script>');</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -499,7 +499,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261014-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261029-5"><link rel="stylesheet" href="tracking-dashboard.css?v=20261029-5"><link rel="stylesheet" href="mobile-shell.css?v=20261029-5"><link rel="stylesheet" href="desktop-sidebar.css?v=20261029-5"><link rel="stylesheet" href="filter-ui.css?v=20261029-5"><link rel="stylesheet" href="demand-workspace.css?v=20261029-5"><link rel="stylesheet" href="demand-detail.css?v=20261029-5"><link rel="stylesheet" href="document-library.css?v=20261029-5"><link rel="stylesheet" href="creative-deliveries.css?v=20261029-5"><link rel="stylesheet" href="app-scrollbars.css?v=20261029-5"><link rel="stylesheet" href="legal.css?v=20261029-5"><link rel="stylesheet" href="referral-program.css?v=20261029-5"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261030-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261030-1"><link rel="stylesheet" href="mobile-shell.css?v=20261030-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-1"><link rel="stylesheet" href="filter-ui.css?v=20261030-1"><link rel="stylesheet" href="demand-workspace.css?v=20261030-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-1"><link rel="stylesheet" href="document-library.css?v=20261030-1"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-1"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-1"><link rel="stylesheet" href="legal.css?v=20261030-1"><link rel="stylesheet" href="referral-program.css?v=20261030-1"><link rel="stylesheet" href="solution-scheduling.css?v=20261030-1"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -1321,37 +1321,24 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <div class="m-close" onclick="closeModal('modal-plans')">✕</div>
     </div>
     <div class="m-body">
+      <div class="fg"><label class="fl" for="p-name">Nome da solução *</label><input class="fi" id="p-name" placeholder="Ex: PLANO GROWTH" maxlength="180"></div>
       <div class="f2">
-        <div class="fg"><label class="fl">Nome da solução *</label><input class="fi" id="p-name" placeholder="Ex: PLANO GROWTH"></div>
-        <div class="fg"><label class="fl">Tipo da solução</label>
-          <select class="fi" id="p-category">
-            <option value="closed_package">Pacote fechado</option>
-            <option value="weekly_monthly">Plano mensal com entrega semanal</option>
-            <option value="infinite_plus">Plano Infinite+</option>
-            <option value="other">Outro serviço</option>
-          </select>
-        </div>
+        <div class="fg"><label class="fl" for="p-category">Tipo de solução</label><select class="fi" id="p-category" onchange="syncSolutionFormState('kind')"><option value="closed_package">Pacote avulso</option><option value="monthly">Plano mensal</option><option value="custom">Plano personalizado</option><option value="other">Outro serviço</option></select></div>
+        <div class="fg" id="p-custom-base-group" hidden><label class="fl" for="p-custom-base">Formato do plano personalizado</label><select class="fi" id="p-custom-base" onchange="syncSolutionFormState()"><option value="monthly">Plano mensal</option><option value="closed_package">Pacote avulso</option><option value="other">Outro serviço</option></select></div>
+        <div class="fg" id="p-delivery-group" hidden><label class="fl" for="p-delivery-cadence">Frequência de entrega</label><select class="fi" id="p-delivery-cadence" onchange="syncSolutionFormState()"><option value="weekly">Semanal</option><option value="daily">Diária</option></select></div>
+        <div class="fg" id="p-qty-group"><label class="fl" id="p-qty-label" for="p-qty">Quantidade de criativos *</label><input class="fi" id="p-qty" type="number" min="1" max="10000" step="1" placeholder="Ex: 6" oninput="syncSolutionFormState()"></div>
       </div>
-      <div class="f3">
-        <div class="fg"><label class="fl">Preço original (R$)</label><input class="fi" id="p-price-orig" type="number" placeholder="Ex: 600"></div>
-        <div class="fg"><label class="fl">Preço atual (R$)</label><input class="fi" id="p-price" type="number" min="0" placeholder="0 para sob consulta"></div>
-        <div class="fg"><label class="fl">Volume / entregas</label><input class="fi" id="p-qty" type="number" min="0" placeholder="Ex: 6"></div>
-      </div>
-      <div class="fg"><label class="fl">Apresentação curta</label><input class="fi" id="p-tagline" placeholder="Ex: Consistência e volume para acelerar seus testes"></div>
-      <div class="fg"><label class="fl">Inclui (um por linha)</label><textarea class="fi" id="p-includes" placeholder="Imagem e vídeo&#10;Qualquer formato&#10;Entrega em até 24h" style="min-height:80px"></textarea></div>
-      <div class="f2">
-        <div class="fg"><label class="fl">Disponibilidade</label>
-          <select class="fi" id="p-custom" onchange="syncSolutionFormState()"><option value="0">Catálogo de soluções</option><option value="1">Plano personalizado de cliente</option></select>
-        </div>
-        <div class="fg"><label class="fl">Status</label>
-          <select class="fi" id="p-active"><option value="1">Ativa</option><option value="0">Desativada</option></select>
-        </div>
-      </div>
+      <fieldset class="solution-weekdays" id="p-weekdays-group" hidden><legend>Dias com entrega *</legend><div class="solution-weekday-options"><label><input type="checkbox" name="solution-weekday" value="1" aria-label="Segunda-feira" onchange="syncSolutionFormState()"><span>Seg</span></label><label><input type="checkbox" name="solution-weekday" value="2" aria-label="Terça-feira" onchange="syncSolutionFormState()"><span>Ter</span></label><label><input type="checkbox" name="solution-weekday" value="3" aria-label="Quarta-feira" onchange="syncSolutionFormState()"><span>Qua</span></label><label><input type="checkbox" name="solution-weekday" value="4" aria-label="Quinta-feira" onchange="syncSolutionFormState()"><span>Qui</span></label><label><input type="checkbox" name="solution-weekday" value="5" aria-label="Sexta-feira" onchange="syncSolutionFormState()"><span>Sex</span></label><label><input type="checkbox" name="solution-weekday" value="6" aria-label="Sábado" onchange="syncSolutionFormState()"><span>Sáb</span></label><label><input type="checkbox" name="solution-weekday" value="7" aria-label="Domingo" onchange="syncSolutionFormState()"><span>Dom</span></label></div></fieldset>
+      <div id="p-schedule-summary" class="solution-schedule-summary" role="status"></div>
+      <div class="f2"><div class="fg"><label class="fl" for="p-price-orig">Preço original (R$)</label><input class="fi" id="p-price-orig" type="number" min="0" step="0.01" placeholder="Ex: 600"></div><div class="fg"><label class="fl" for="p-price">Preço atual (R$)</label><input class="fi" id="p-price" type="number" min="0" step="0.01" placeholder="0 para sob consulta"></div></div>
+      <div class="fg"><label class="fl" for="p-tagline">Apresentação curta</label><input class="fi" id="p-tagline" placeholder="Apresente o principal benefício da solução"></div>
+      <div class="fg"><label class="fl" for="p-includes">Inclui (um por linha)</label><textarea class="fi" id="p-includes" placeholder="Imagem e vídeo&#10;Qualquer formato" style="min-height:80px"></textarea></div>
+      <div class="f2"><div class="fg"><label class="fl" for="p-custom">Disponibilidade</label><select class="fi" id="p-custom" onchange="syncSolutionFormState('availability')"><option value="0">Catálogo de soluções</option><option value="1">Clientes vinculados</option></select></div><div class="fg"><label class="fl" for="p-active">Status</label><select class="fi" id="p-active"><option value="1">Ativa</option><option value="0">Desativada</option></select></div></div>
       <div class="secure-note" id="p-custom-note" style="display:none"><span>i</span><span>Planos personalizados nunca aparecem em Soluções para os clientes. Somente o cliente vinculado poderá vê-lo em Configurações.</span></div>
     </div>
     <div class="m-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-plans')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePlan()">Salvar solução</button>
+      <button class="btn btn-primary" id="solution-save" onclick="savePlan()">Salvar solução</button>
     </div>
   </div>
 </div>
@@ -1447,9 +1434,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20260925-2"></script>
 <script src="tasks.js?v=20260925-2"></script>
-<script src="mobile-app.js?v=20261029-5"></script>
-<script src="mobile-shell.js?v=20261029-5"></script>
-<script src="desktop-sidebar.js?v=20261029-5"></script>
+<script src="mobile-app.js?v=20261030-1"></script>
+<script src="mobile-shell.js?v=20261030-1"></script>
+<script src="desktop-sidebar.js?v=20261030-1"></script>
 <script>
 /* ═══ SUPABASE CONFIG ═══ */
 const SUPA_URL = window.MAGEMIND_TRACKING_ENV.supabaseUrl || location.origin;
@@ -1632,7 +1619,7 @@ function clientHasDemandManagementPlan(){
   const planIds=(client.planIds?.length?client.planIds:[client.plan]).filter(Boolean);
   return planIds.some(id=>{
     const plan=DB.plans.find(item=>item.id===id);
-    return plan?.active!==false && ['Semanal','Diario','Mensal'].includes(plan?.type);
+    return plan?.active!==false && (window.MagemindSolutions?MagemindSolutions.schedule(plan).cadence!=='none':['Semanal','Diario','Mensal'].includes(plan?.type));
   });
 }
 
@@ -1938,6 +1925,7 @@ function safeThemeColor(value, fallback='var(--violetbg)'){
 }
 
 /* ═══ MAPPERS Supabase → cache ═══ */
+function mapPlan(p){return {id:p.id,name:p.name,type:p.type,qty:p.qty,priceOrig:p.price_orig,price:p.price,actionType:p.action_type,toolRoute:p.tool_route,tagline:p.tagline||'',includes:p.includes||'',active:p.active,solutionCategory:p.solution_category||solutionCategoryFromLegacyType(p.type),custom:p.is_custom===true||p.type==='Personalizado',sortOrder:p.sort_order||0,deliveryCadence:p.delivery_cadence,deliveryQuantity:p.delivery_quantity,deliveryWeekdays:p.delivery_weekdays};}
 function mapClient(c){
   return {
     id:c.id, name:c.name, email:c.email, phone:c.phone||'',
@@ -2269,6 +2257,7 @@ async function doRegister(){
    canais realtime). Usado tanto pelo logout explícito quanto pelo evento
    SIGNED_OUT do Supabase (ex: token expirado em outra aba). */
 function clearSessionState(){
+  window.MagemindDemandCapacity?.clear();
   cleanupRealtimeSubscriptions();
   dismissAvatarOnboarding();
   DB.me = null;
@@ -2399,13 +2388,7 @@ async function loadAllData({silent=false}={}){
     // essa tabela; os demais cargos carregam apenas o que sua RLS permite.
     if(role!=='gestor' && role!=='editor'){
       const {data:plans} = await read(supa.from('plans').select('*').order('sort_order').order('created_at'));
-      DB.plans = (plans||[]).map(p=>({
-        id:p.id, name:p.name, type:p.type, qty:p.qty,
-        priceOrig:p.price_orig, price:p.price, actionType:p.action_type, toolRoute:p.tool_route,
-        tagline:p.tagline||'', includes:p.includes||'', active:p.active,
-        solutionCategory:p.solution_category||solutionCategoryFromLegacyType(p.type),
-        custom:p.is_custom===true||p.type==='Personalizado', sortOrder:p.sort_order||0
-      }));
+      DB.plans = (plans||[]).map(mapPlan);
     } else {
       DB.plans = [];
     }
@@ -2533,13 +2516,7 @@ async function loadAllData({silent=false}={}){
         DB.clients = [mapClient(ownClient)];
         if(ownClient.plans && !DB.plans.find(p=>p.id===ownClient.plans.id)){
           const pl = ownClient.plans;
-          DB.plans.push({
-            id:pl.id, name:pl.name, type:pl.type, qty:pl.qty,
-            priceOrig:pl.price_orig, price:pl.price,
-            tagline:pl.tagline||'', includes:pl.includes||'', active:pl.active,
-            solutionCategory:pl.solution_category||solutionCategoryFromLegacyType(pl.type),
-            custom:pl.is_custom===true||pl.type==='Personalizado', sortOrder:pl.sort_order||0
-          });
+          DB.plans.push(mapPlan(pl));
         }
         const {data:ownPlanLinks,error:ownPlanLinksError}=await read(supa.from('client_plans').select('plan_id').eq('client_id',cid));
         if(ownPlanLinksError) console.error('[Magemind] Falha ao carregar planos do cliente:',ownPlanLinksError);
@@ -4152,7 +4129,10 @@ function openNewDemand(status){
 }
 function openNewDemandWithStatus(s){ openNewDemand(s); }
 
+let demandSaveInFlight=false;
 async function saveDemand(){
+  if(demandSaveInFlight)return;
+  const targetDemandId=editDemandId,savingUser=DB.me?.id;
   const title = document.getElementById('d-title').value.trim();
   if(!title){ toast('Digite o título da demanda','err'); return; }
 
@@ -4168,17 +4148,22 @@ async function saveDemand(){
   const refs      = document.getElementById('d-refs')?.value||'';
   if(desc.length>12000){toast('A descrição ficou muito longa. Reduza o texto ou a formatação.','err');return;}
   if(refs.length>8000){toast('As referências ultrapassaram o limite de texto.','err');return;}
+  demandSaveInFlight=true;
+  if(window.MagemindDemandCapacity&&!await MagemindDemandCapacity.validate(clientId,dueDate,targetDemandId)){demandSaveInFlight=false;return;}
+  if(DB.me?.id!==savingUser){demandSaveInFlight=false;return;}
   const btn       = document.querySelector('#modal-demand .btn-primary');
+  const btnLabel  = document.getElementById('md-btn-label');
 
-  if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
+  if(btn) btn.disabled=true;
+  if(btnLabel) btnLabel.textContent='Salvando...';
   try {
-    if(editDemandId){
+    if(targetDemandId){
       // ── EDITAR
-      const currentDemand=DB.demands.find(demand=>demand.id===editDemandId);
+      const currentDemand=DB.demands.find(demand=>demand.id===targetDemandId);
       const demandUpdate={title,priority,status,due_date:dueDate,description:desc,refs};
       if(canChangeDemandClient()) demandUpdate.client_id=clientId;
       if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
-      const {data:savedDemand,error} = await supa.from('demands').update(demandUpdate).eq('id',editDemandId).select('*').single();
+      const {data:savedDemand,error} = await supa.from('demands').update(demandUpdate).eq('id',targetDemandId).select('*').single();
       if(error){ toast('Erro: '+error.message,'err'); return; }
       const d = currentDemand;
       if(d){
@@ -4189,7 +4174,7 @@ async function saveDemand(){
         if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
       }
       if(isStaffRole()){
-        await dbPushNotifToClient(clientId,'✏️','var(--amberbg)','Demanda atualizada',`${DB.me.name} atualizou "${title}".`,editDemandId,'demand_updated');
+        await dbPushNotifToClient(clientId,'✏️','var(--amberbg)','Demanda atualizada',`${DB.me.name} atualizou "${title}".`,targetDemandId,'demand_updated');
       }
       closeModal('modal-demand'); toast('Demanda atualizada! ✓','ok');
 
@@ -4214,7 +4199,9 @@ async function saveDemand(){
     }
     buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent=editDemandId?'Salvar alterações':'Criar demanda'; }
+    demandSaveInFlight=false;
+    if(btn) btn.disabled=false;
+    if(btnLabel) btnLabel.textContent=editDemandId?'Salvar alterações':'Criar demanda';
   }
 }
 
@@ -4864,6 +4851,7 @@ function persistDemandField(key){
     const cfg=demandFieldMap[pending.field];
     const {data:savedField,error}=await supa.from('demands').update({[cfg.db]:pending.value||null}).eq('id',pending.demandId).select('*').single();
     if(error){
+      if(pending.field==='date')window.MagemindDemandCapacity?.restoreDate(pending.demandId,pending.version,key);
       if(currentDemandId===pending.demandId) setDemandSaveState('error','Não salvou ainda. Tenta novamente em um instante.');
       toast('Erro ao salvar alteração: '+error.message,'err'); return;
     }
@@ -5132,9 +5120,9 @@ async function duplicateDemand(id=currentDemandId,openAfter=false){
 
 /* ═══ SOLUCOES ═══ */
 const SOLUTION_CATEGORIES = [
-  {id:'closed_package',label:'Pacotes fechados',short:'Pacote fechado',sub:'Escopos definidos para necessidades pontuais.',accent:'var(--violet)'},
+  {id:'closed_package',label:'Pacotes avulsos',short:'Pacote avulso',sub:'Escopos definidos para necessidades pontuais.',accent:'var(--violet)'},
   {id:'weekly_monthly',label:'Planos mensais com entrega semanal',short:'Plano semanal',sub:'Cadência semanal durante todo o mês.',accent:'var(--cyan)'},
-  {id:'infinite_plus',label:'Planos Infinite+',short:'Infinite+',sub:'Entregas todos os dias para operações de alto volume.',accent:'var(--emerald)'},
+  {id:'infinite_plus',label:'Planos mensais com entrega diária',short:'Plano diário',sub:'Produção diária nos dias incluídos em cada plano.',accent:'var(--emerald)'},
   {id:'other',label:'Outros',short:'Outro serviço',sub:'Tráfego, sites, reputação e soluções especializadas.',accent:'var(--amber)'}
 ];
 
@@ -5177,7 +5165,8 @@ function solutionCardHTML(plan,currentPlanIds,adminView){
   if(isTrackingSolution(plan)) return '';
   const category=SOLUTION_CATEGORIES.find(item=>item.id===(plan.solutionCategory||solutionCategoryFromLegacyType(plan.type)))||SOLUTION_CATEGORIES[3];
   const current=currentPlanIds.has(plan.id);
-  const includes=String(plan.includes||'').split('\n').map(item=>item.trim()).filter(Boolean);
+  const delivery=window.MagemindSolutions?.schedule(plan);
+  const includes=String(plan.includes||'').split('\n').map(item=>item.trim()).filter(item=>item&&!(delivery&&delivery.cadence!=='none'&&/^\d+\s*criativos?\s*por\s*(dia|semana|m[eê]s)/i.test(item)));
   const privatePlan=plan.custom===true||plan.type==='Personalizado';
   const reorderable=adminView&&!privatePlan;
   return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}${reorderable?' has-drag-handle':''}" style="--solution-accent:${category.accent}"${reorderable?` data-solution-id="${plan.id}"`:''}>
@@ -5188,6 +5177,7 @@ function solutionCardHTML(plan,currentPlanIds,adminView){
     </div>
     <h3 class="solution-name">${escapeHTML(plan.name)}</h3>
     <p class="solution-tagline">${escapeHTML(plan.tagline||'Solução Magemind configurada para esta necessidade.')}</p>
+    ${delivery&&delivery.cadence!=='none'?`<div class="solution-cadence">${escapeHTML(MagemindSolutions.describe(plan))}${['daily','weekly'].includes(delivery.cadence)?`<small>${escapeHTML(MagemindSolutions.daysText(delivery.days))}${delivery.cadence==='weekly'?` · até ${delivery.quantity*4} no mês`:''}</small>`:''}</div>`:''}
     <div class="solution-includes">${includes.length?includes.map(item=>`<div class="solution-include"><span class="solution-check">✓</span><span>${escapeHTML(item)}</span></div>`).join(''):'<div class="solution-include"><span class="solution-check">✓</span><span>Escopo definido durante o atendimento</span></div>'}</div>
     <div class="solution-price">${solutionPriceHTML(plan)}</div>
     ${adminView?`<div class="solution-actions"><button class="btn btn-ghost btn-xs" onclick="openEditPlan('${plan.id}')">Editar</button><button class="btn btn-ghost btn-xs" onclick="togglePlan('${plan.id}')">${plan.active?'Desativar':'Ativar'}</button><button class="btn btn-danger btn-xs" style="flex:0 0 auto" aria-label="Excluir solução" title="Excluir solução" onclick="removePlan('${plan.id}')">✕</button></div>`:`<a class="solution-whatsapp" href="${solutionWhatsAppLink(plan.name)}" target="_blank" rel="noopener noreferrer">Contratar <span aria-hidden="true">↗</span></a>`}
@@ -5231,7 +5221,7 @@ function loadSolutions(){
   const summary=document.getElementById('solutions-summary');
   const customCta=document.getElementById('solutions-custom-cta');
   document.getElementById('solutions-page-subtitle').textContent=adminView?'Crie, organize e publique o catálogo comercial da Magemind':'Encontre a solução certa para o próximo passo da sua operação';
-  actions.innerHTML=adminView?`<button class="btn btn-ghost btn-sm" onclick="openNewPlan(true)">Plano personalizado</button><button class="btn btn-primary btn-sm" onclick="openNewPlan(false)">Criar solução</button>`:'';
+  actions.innerHTML=adminView?`<button class="btn btn-primary btn-sm" onclick="openNewPlan(false)">Criar solução</button>`:'';
   toolbar.style.display=adminView?'flex':'none';
   customCta.style.display=adminView?'none':'flex';
   if(!adminView) document.getElementById('solutions-custom-link').href=solutionWhatsAppLink('',true);
@@ -5295,60 +5285,10 @@ async function persistSolutionOrder(){
   toast('Ordem das soluções atualizada','ok');
 }
 
-function syncSolutionFormState(){
-  const custom=document.getElementById('p-custom').value==='1';
-  document.getElementById('p-custom-note').style.display=custom?'flex':'none';
-  document.getElementById('p-category').disabled=custom;
-}
-function openNewPlan(custom=false){
-  if(!hasPermission('solutions.manage')){ toast('Sem permissão para gerenciar soluções','err'); return; }
-  editPlanId=null;
-  document.getElementById('mp-title').textContent=custom?'Criar plano personalizado':'Criar solução';
-  ['p-name','p-tagline','p-includes','p-qty','p-price','p-price-orig'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('p-category').value='closed_package';
-  document.getElementById('p-custom').value=custom?'1':'0';
-  document.getElementById('p-active').value='1';
-  syncSolutionFormState(); openModal('modal-plans');
-}
-function openEditPlan(id){
-  if(!hasPermission('solutions.manage')) return;
-  editPlanId=id;
-  const p=DB.plans.find(item=>item.id===id); if(!p) return;
-  const custom=p.custom===true||p.type==='Personalizado';
-  document.getElementById('mp-title').textContent=custom?'Editar plano personalizado':'Editar solução';
-  document.getElementById('p-name').value=p.name;
-  document.getElementById('p-tagline').value=p.tagline;
-  document.getElementById('p-includes').value=p.includes;
-  document.getElementById('p-qty').value=p.qty||'';
-  document.getElementById('p-price').value=p.price||'';
-  document.getElementById('p-price-orig').value=p.priceOrig||'';
-  document.getElementById('p-category').value=p.solutionCategory||solutionCategoryFromLegacyType(p.type);
-  document.getElementById('p-custom').value=custom?'1':'0';
-  document.getElementById('p-active').value=p.active?'1':'0';
-  syncSolutionFormState(); openModal('modal-plans');
-}
-async function savePlan(){
-  if(!hasPermission('solutions.manage')) return;
-  const name=document.getElementById('p-name').value.trim();
-  if(!name){ toast('Digite o nome da solução','err'); return; }
-  const price=Math.max(0,parseFloat(document.getElementById('p-price').value)||0);
-  const custom=document.getElementById('p-custom').value==='1';
-  const category=document.getElementById('p-category').value||'other';
-  const current=editPlanId?DB.plans.find(item=>item.id===editPlanId):null;
-  const dbData={name,type:solutionLegacyType(category,custom),solution_category:category,is_custom:custom,qty:Math.max(0,parseInt(document.getElementById('p-qty').value)||0),price_orig:Math.max(0,parseFloat(document.getElementById('p-price-orig').value)||price),price,tagline:document.getElementById('p-tagline').value.trim(),includes:document.getElementById('p-includes').value.trim(),active:document.getElementById('p-active').value==='1',sort_order:current?.sortOrder??DB.plans.length,updated_at:new Date().toISOString()};
-  if(editPlanId){
-    const {data:updated,error}=await supa.from('plans').update(dbData).eq('id',editPlanId).select().single();
-    if(error){ toast('Erro: '+error.message,'err'); return; }
-    Object.assign(current,{name:updated.name,type:updated.type,solutionCategory:updated.solution_category,custom:updated.is_custom,qty:updated.qty,priceOrig:updated.price_orig,price:updated.price,tagline:updated.tagline||'',includes:updated.includes||'',active:updated.active,sortOrder:updated.sort_order||0});
-    toast('Solução atualizada! ✓','ok');
-  }else{
-    const {data:created,error}=await supa.from('plans').insert(dbData).select().single();
-    if(error){ toast('Erro: '+error.message,'err'); return; }
-    DB.plans.push({id:created.id,name:created.name,type:created.type,solutionCategory:created.solution_category,custom:created.is_custom,qty:created.qty,priceOrig:created.price_orig,price:created.price,tagline:created.tagline||'',includes:created.includes||'',active:created.active,sortOrder:created.sort_order||0});
-    toast(custom?'Plano personalizado criado! ✓':'Solução criada! ✓','ok');
-  }
-  closeModal('modal-plans'); loadSolutions(); populateSalePlans();
-}
+function syncSolutionFormState(source){window.MagemindSolutions?.sync(source);}
+function openNewPlan(custom=false){window.MagemindSolutions?.openNew(custom);}
+function openEditPlan(id){window.MagemindSolutions?.openEdit(id);}
+async function savePlan(){return window.MagemindSolutions?.save();}
 async function togglePlan(id){
   if(!hasPermission('solutions.manage')) return;
   const p=DB.plans.find(item=>item.id===id); if(!p) return;
@@ -5389,9 +5329,11 @@ function openModal(id){
     if(restricted){ restricted.disabled=!isAdmin(); restricted.hidden=!isAdmin(); }
   }
   document.getElementById(id).classList.add('open');
+  window.MagemindDemandCapacity?.opened(id);
   window.syncAccessibleDialogs?.();
 }
 function closeModal(id){
+  window.MagemindDemandCapacity?.closed(id);
   if(id==='modal-doc'&&window.MagemindDocuments?.busy)return;
   if(id==='modal-detail'&&currentDemandId) flushDemandAutosaves(currentDemandId);
   if(id==='modal-detail') window.MagemindCreatives?.closed();
@@ -5874,9 +5816,9 @@ async function clearDB(){
   }
 }
 </script>
-<script src="app-accessibility.js?v=20261029-5"></script>
+<script src="app-accessibility.js?v=20261030-1"></script>
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261029-5"></script><script src="tracking-brands.js?v=20261029-5"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261029-5"></script><script src="tracking-connectors.js?v=20261029-5"></script><script src="tracking-connections.js?v=20261029-5"></script><script src="tracking-revenue-chart.js?v=20261029-5"></script><script src="tracking-dashboard.js?v=20261029-5"></script><script src="tracking-integration-health.js?v=20261029-5"></script><script src="tracking-native.js?v=20261029-5"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261029-5"></script><script src="demand-workspace.js?v=20261029-5"></script><script src="demand-detail.js?v=20261029-5"></script><script src="document-library.js?v=20261029-5"></script><script src="creative-deliveries.js?v=20261029-5"></script><script src="referral-program.js?v=20261029-5"></script><script src="referral-capture.js?v=20261029-5"></script></body>
+<script src="tracking-supabase.js?v=20261030-1"></script><script src="tracking-brands.js?v=20261030-1"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-1"></script><script src="tracking-connectors.js?v=20261030-1"></script><script src="tracking-connections.js?v=20261030-1"></script><script src="tracking-revenue-chart.js?v=20261030-1"></script><script src="tracking-dashboard.js?v=20261030-1"></script><script src="tracking-integration-health.js?v=20261030-1"></script><script src="tracking-native.js?v=20261030-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261030-1"></script><script src="demand-workspace.js?v=20261030-1"></script><script src="demand-detail.js?v=20261030-1"></script><script src="document-library.js?v=20261030-1"></script><script src="creative-deliveries.js?v=20261030-1"></script><script src="referral-program.js?v=20261030-1"></script><script src="referral-capture.js?v=20261030-1"></script><script src="solution-scheduling.js?v=20261030-1"></script><script src="demand-capacity.js?v=20261030-1"></script></body>
 </html>

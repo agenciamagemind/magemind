@@ -6,6 +6,7 @@
  const matches=(d,scope)=>d.status!=='Concluído'&&Boolean(d.date)&&(scope==='late'?d.date<today():scope==='today'?d.date===today():d.date>today());
  function clear(){epoch++;context=null;owner=null;flight=null;bucket='';loadError=false;DB.demandPeople={};if(panel){panel.hidden=true;panel.replaceChildren();}dialog?.close();$('production-dialog-body')?.replaceChildren();}
  function cadence(plan){
+  if(plan.delivery_cadence||plan.deliveryCadence){const s=MagemindSolutions.schedule(plan);return{recurring:['daily','weekly'].includes(s.cadence),text:MagemindSolutions.describe(plan)};}
   const text=String((plan.includes||'')+' '+plan.name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const explicit=text.match(/(\d+)\s*criativos?\s*(?:por|\/)\s*(dia|semana|mes)/);
   const period=explicit?.[2]||(plan.type==='Diario'||plan.category==='infinite_plus'?'dia':plan.type==='Semanal'?'semana':plan.type==='Mensal'?'mes':plan.category==='weekly_monthly'?'semana':'pacote');
