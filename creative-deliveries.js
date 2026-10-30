@@ -5,6 +5,13 @@
  let epoch=0,folderFlight=null,folderTimer,settingsFlight=null,section,activeDemand=null,loading=0,publishing=false;
  let picker=null,pickerOpen=false,pickerRequest=0,selection=new Map(),dayLink=null;
  function resetPicker(){picker=null;pickerOpen=false;pickerRequest++;selection.clear();dayLink=null;}
+ function collapsePicker(){if(!pickerOpen)return;pickerOpen=false;drawPicker();}
+ function closed(){loading++;resetPicker();activeDemand=null;drawPicker();}
+ function revealPicker(){
+  if(pickerOpen||publishing)return;
+  const d=DB.demands.find(x=>x.id===activeDemand);
+  if(selection.size&&picker?.day===d?.date&&!picker.error){pickerOpen=true;drawPicker();}else loadPicker();
+ }
  async function api(body){
   const{data,error}=await supa.functions.invoke('drive-deliveries',{body});
   if(error){let message;try{message=(await error.context?.json())?.error;}catch{}throw Error(message||'Não foi possível acessar o Drive. Tente novamente.');}
@@ -94,7 +101,9 @@
   $('agency-settings-card').after(card);
   $('drive-config-form').addEventListener('submit',async e=>{e.preventDefault();if(!isAdmin())return;const btn=e.submitter;btn.disabled=true;try{const url=new URL($('drive-config-root').value),root=url.hostname==='drive.google.com'&&url.pathname.match(/\/folders\/([\w-]+)$/)?.[1];if(!root)throw Error('Informe o link da pasta CLIENTES no Drive.');await api({action:'config_save',client_id:$('drive-config-id').value.trim(),client_secret:$('drive-config-secret').value.trim(),root});$('drive-config-secret').value='';await settings();}catch(error){$('drive-connection-status').textContent=error.message;}finally{btn.disabled=false;}});
   $('drive-connect-button').addEventListener('click',async()=>{if(!isAdmin())return;try{const{url}=await api({action:'oauth_start'});location.assign(url);}catch(error){$('drive-connection-status').textContent=error.message;}});
-  section.addEventListener('focusin',e=>{if(e.target.id==='creative-drive-url'&&!pickerOpen)loadPicker();});
+  section.addEventListener('focusin',e=>{if(e.target.id==='creative-drive-url')revealPicker();});
+  section.addEventListener('click',e=>{if(e.target.id==='creative-drive-url')revealPicker();});
+  document.addEventListener('click',e=>{if(pickerOpen&&!e.composedPath().some(node=>node.id==='creative-delivery-form'))collapsePicker();});
   section.addEventListener('input',e=>{if(e.target.id==='creative-drive-url'&&selection.size){selection.clear();drawPicker();syncSubmit();}});
   section.addEventListener('change',e=>{const id=e.target.dataset.pickerFile;if(!id)return;const file=picker?.files.find(f=>f.id===id);if(!file||file.already_delivered)return;if(e.target.checked){if(selection.size>=30){e.target.checked=false;status('Selecione até 30 criativos por entrega.',true);return;}selection.set(id,file.drive_url);$('creative-drive-url').value='';}else selection.delete(id);e.target.closest('label').classList.toggle('selected',e.target.checked);syncSubmit();});
   section.addEventListener('click',e=>{if(e.target.closest('[data-picker-refresh]'))loadPicker();else if(e.target.closest('[data-picker-more]')&&!picker.loading)loadPicker(true);});
@@ -117,6 +126,6 @@
   new MutationObserver(()=>{if($('pg-settings').classList.contains('active'))settings();}).observe($('pg-settings'),{attributes:true,attributeFilter:['class']});
   const url=new URL(location.href);if(url.searchParams.has('drive_connection')){const connected=url.searchParams.get('drive_connection')==='connected';url.searchParams.delete('drive_connection');history.replaceState(null,'',url.pathname+url.search+url.hash);let attempts=0;const showNotice=()=>{if(!DB.me&&attempts++<150){setTimeout(showNotice,400);return;}if(!DB.me)return;goTo('settings');selectSettingsTab('company');settings();toast(connected?'Google Drive conectado. As pastas serão preparadas automaticamente.':'Não foi possível concluir a conexão. Tente novamente.',connected?'ok':'err');};showNotice();}
  }
- window.MagemindCreatives={open,folder,settings,clear};
+ window.MagemindCreatives={open,folder,settings,clear,closed};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
