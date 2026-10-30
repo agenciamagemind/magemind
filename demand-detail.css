@@ -22,6 +22,12 @@
 #modal-detail .cmt{align-items:flex-start;gap:12px;margin:0 0 12px}
 #modal-detail .cmt>.av{width:30px;height:30px;flex:none;margin:0!important}
 #modal-detail .cmt-bubble{border-radius:12px;padding:10px 12px}
+#modal-detail #det-client-group[hidden]{display:none!important}
+#modal-detail .detail-assignee-person{display:flex;align-items:center;gap:10px;min-width:0;font-size:12px;line-height:1.6;color:var(--text2)}
+#modal-detail .detail-assignee-person>.av{flex:none;width:32px;height:32px}
+#modal-detail .detail-assignee-person>.fi,#modal-detail .detail-assignee-person>span{min-width:0;flex:1;overflow-wrap:anywhere}
+#modal-detail #det-admin-controls{display:flex;flex-direction:column;gap:10px}
+#modal-detail #det-admin-controls>.btn{width:100%;justify-content:center;margin:0}
 @media(min-width:901px){
  #modal-detail .dd-grid{grid-template-rows:minmax(0,1fr);overflow:clip;align-items:stretch}
  #modal-detail .dd-main,#modal-detail .dd-side{position:relative;contain:layout;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;overflow-anchor:none;scroll-padding:20px}
