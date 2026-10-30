@@ -9,7 +9,7 @@
   if(mobile.matches){if(metadata.parentElement!==main)main.prepend(metadata);if(actions.parentElement!==main)main.append(actions);}
   else{if(metadata.parentElement!==side)side.prepend(metadata);if(actions.parentElement!==side)side.append(actions);}
  }
- function fitTitle(){const title=document.getElementById('det-title');if(title?.tagName==='TEXTAREA'){title.style.height='auto';title.style.height=Math.min(title.scrollHeight,150)+'px';}}
+ function fitTitle(){const title=document.getElementById('det-title');if(title?.tagName==='TEXTAREA'){title.style.height='auto';const css=getComputedStyle(title),border=parseFloat(css.borderTopWidth)+parseFloat(css.borderBottomWidth);title.style.height=Math.min(title.scrollHeight+border,150)+'px';}}
  function opened(){
   arrange();const root=modal();
   document.getElementById('det-metadata').classList.toggle('detail-client',isClient());
