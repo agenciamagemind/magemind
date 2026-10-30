@@ -14,6 +14,18 @@
 #modal-detail .detail-rich-text{overflow-wrap:anywhere;max-width:100%}
 #modal-detail .detail-rich-text img{max-width:100%;height:auto}
 #modal-detail .detail-rich-text pre{white-space:pre-wrap;overflow-wrap:anywhere}
+#modal-detail .detail-comments-head{gap:12px;align-items:center}
+#modal-detail .detail-comment-composer{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px}
+#modal-detail .detail-comment-composer .av{width:30px;height:30px;margin:0!important;align-self:center}
+#modal-detail .detail-comment-composer textarea{display:block;min-width:0;width:100%;height:40px;min-height:40px!important;max-height:140px;padding:10px 0!important;line-height:20px;resize:none}
+#modal-detail .detail-comment-composer .detail-comment-send{min-height:36px;align-self:center!important;margin:0}
+#modal-detail .cmt{align-items:flex-start;gap:12px;margin:0 0 12px}
+#modal-detail .cmt>.av{width:30px;height:30px;flex:none;margin:0!important}
+#modal-detail .cmt-bubble{border-radius:12px;padding:10px 12px}
+@media(min-width:901px){
+ #modal-detail .dd-grid{grid-template-rows:minmax(0,1fr);overflow:clip;align-items:stretch}
+ #modal-detail .dd-main,#modal-detail .dd-side{position:relative;contain:layout;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;overflow-anchor:none;scroll-padding:20px}
+}
 @media(max-width:900px){
  #modal-detail.overlay.open{padding:12px max(10px,var(--safe-right)) max(12px,var(--safe-bottom)) max(10px,var(--safe-left));align-items:center!important}
  #modal-detail.overlay.open>.modal.modal-lg{width:100%;max-width:600px!important;height:auto;max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px)!important;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border2)!important;border-radius:20px!important;box-shadow:0 24px 80px #0005;background:var(--bg2)}
@@ -49,7 +61,7 @@
  #modal-detail .detail-comments-count{font-size:9px;padding:2px 7px}
  #modal-detail #det-comments>div:only-child:not(.cmt){padding:10px 0!important;font-size:12px!important;color:var(--text3)}
  #modal-detail .detail-comment-composer{position:static;display:grid;grid-template-columns:26px minmax(0,1fr) 36px;align-items:end;gap:8px;margin:12px 0 0;padding:8px;border:1px solid var(--border2);border-radius:12px;background:var(--bg3);box-shadow:none;backdrop-filter:none}
- #modal-detail .detail-comment-composer .av{width:26px;height:26px;margin:0 0 6px!important;font-size:9px}
+ #modal-detail .detail-comment-composer .av{width:26px;height:26px;margin:0!important;font-size:9px}
  #modal-detail .detail-comment-composer textarea{height:40px;min-height:40px!important;max-height:140px;padding:9px 1px!important;border:0!important;border-radius:0!important;background:transparent!important;font-size:16px!important;line-height:1.35!important;resize:none}
  #modal-detail .detail-comment-composer .detail-comment-send{width:36px;min-width:36px;height:38px;min-height:38px;padding:0;margin:0;grid-column:auto;align-self:end;border-radius:9px}
  #modal-detail #det-admin-controls:empty{display:none}
