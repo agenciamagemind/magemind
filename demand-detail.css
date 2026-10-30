@@ -2,6 +2,18 @@
 #modal-detail.open #det-close{visibility:visible}
 #modal-detail #det-close:focus-visible{outline:1px solid var(--violet3);outline-offset:3px}
 #modal-detail .detail-comment-composer[hidden]{display:none!important}
+#modal-detail.overlay{padding:16px;align-items:center}
+#modal-detail>.modal.modal-lg{display:flex;flex-direction:column;height:auto;min-height:0;max-height:calc(100dvh - 32px);overflow:clip}
+#modal-detail .m-head{position:relative;flex:0 0 auto;min-width:0}
+#modal-detail .m-head>div{min-width:0}
+#modal-detail .m-title{min-width:0;overflow-wrap:anywhere}
+#modal-detail textarea.m-title{resize:none;overflow:auto;min-height:30px;max-height:150px;line-height:1.45}
+#modal-detail .dd-grid{position:relative;contain:layout;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;align-items:start;overscroll-behavior:contain;overflow-anchor:none;scroll-padding:20px}
+#modal-detail .dd-main,#modal-detail .dd-side{min-width:0;min-height:0;max-height:none;overflow:visible}
+#modal-detail .dd-main>*{flex:0 0 auto;min-width:0}
+#modal-detail .detail-rich-text{overflow-wrap:anywhere;max-width:100%}
+#modal-detail .detail-rich-text img{max-width:100%;height:auto}
+#modal-detail .detail-rich-text pre{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:900px){
  #modal-detail.overlay.open{padding:12px max(10px,var(--safe-right)) max(12px,var(--safe-bottom)) max(10px,var(--safe-left));align-items:center!important}
  #modal-detail.overlay.open>.modal.modal-lg{width:100%;max-width:600px!important;height:auto;max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px)!important;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border2)!important;border-radius:20px!important;box-shadow:0 24px 80px #0005;background:var(--bg2)}

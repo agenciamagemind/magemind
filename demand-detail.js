@@ -14,7 +14,7 @@
   arrange();const root=modal();
   document.getElementById('det-metadata').classList.toggle('detail-client',isClient());
   fitTitle();
-  for(const el of root.querySelectorAll('.dd-grid,.dd-main,.dd-side'))el.scrollTop=0;
+  for(const el of [root,...root.querySelectorAll('.modal,.dd-grid,.dd-main,.dd-side')]){el.scrollTop=0;el.scrollLeft=0;}
   document.getElementById('det-close')?.focus({preventScroll:true});
   requestAnimationFrame(()=>{if(root.classList.contains('open'))root.querySelector('.dd-grid').scrollTop=0;});
  }
