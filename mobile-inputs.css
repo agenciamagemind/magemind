@@ -1,0 +1,14 @@
+/* Keep editable controls readable at their resting scale on touch browsers. */
+@media(max-width:900px),(pointer:coarse){
+ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+ html body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=hidden]):not([type=button]):not([type=submit]),
+ html body textarea,html body select,html body [contenteditable=true]{font-size:16px!important}
+ html body input,html body textarea,html body select{min-width:0;max-width:100%;box-sizing:border-box}
+ .capacity-date-wrap{width:100%;min-width:0;min-height:44px}
+ .capacity-date-wrap input[readonly]{position:absolute;inset:0;width:100%!important;height:100%;opacity:0;pointer-events:none}
+ .capacity-date-wrap .capacity-calendar-toggle:not([hidden]){position:relative;inset:auto;transform:none;display:flex;align-items:center;gap:8px;width:100%;height:44px;padding:10px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text2);font:400 14px/1.4 'Poppins',sans-serif;text-align:left}
+ .capacity-date-wrap .capacity-date-label{display:block;flex:1;min-width:0;white-space:nowrap}
+ .capacity-date-wrap .capacity-calendar-toggle svg{flex:none;width:16px;height:16px;color:var(--text3)}
+ .capacity-date-wrap .capacity-calendar-toggle:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
+}
+.capacity-date-label{display:none}

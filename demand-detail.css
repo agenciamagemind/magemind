@@ -76,3 +76,61 @@
  #modal-detail .detail-editor,#modal-detail .demand-rich-input{font-size:16px;min-height:120px}
 }
 @media(max-width:360px){#modal-detail .m-head{padding:15px}#modal-detail .dd-main{padding:14px;gap:16px}#modal-detail .detail-meta-fields{gap:10px}#modal-detail .detail-meta-fields:not(.detail-client){grid-template-columns:1fr}}
+
+/* A compact document surface, with consistent controls and one mobile scroll. */
+@media(max-width:900px){
+ #modal-detail.overlay.open{top:var(--demand-viewport-top,0px);bottom:auto;height:var(--demand-viewport-height,100dvh);padding:10px max(10px,var(--safe-right)) max(10px,var(--safe-bottom)) max(10px,var(--safe-left))}
+ #modal-detail.overlay.open>.modal.modal-lg{max-height:calc(var(--demand-viewport-height,100dvh) - var(--safe-top) - var(--safe-bottom) - 20px)!important;border-radius:18px!important}
+ #modal-detail>.modal{transform:translateY(6px);transition:transform .2s cubic-bezier(.2,.75,.25,1)}
+ #modal-detail.open>.modal{transform:translateY(0)}
+ #modal-detail .m-head{padding:16px 16px 12px;gap:12px}
+ #modal-detail .m-head>div{flex:1;min-width:0}
+ #modal-detail .m-title{font-size:16px!important;line-height:1.4;letter-spacing:-.2px}
+ #modal-detail textarea.m-title{max-height:112px;padding:2px 0!important}
+ #modal-detail #det-close{width:34px;height:34px;border-radius:10px}
+ #modal-detail #det-badges{margin-top:8px!important;gap:6px}
+ #modal-detail #det-badges .badge{font-size:10px;line-height:1.4;padding:4px 8px}
+ #modal-detail .detail-save-state{font-size:9px;line-height:1.5;margin-top:7px;color:var(--text3)}
+ #modal-detail .dd-main{padding:14px 16px 18px;gap:22px}
+ #modal-detail .detail-meta-fields{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--bg3);gap:12px}
+ #modal-detail .detail-side-group{min-width:0;max-width:100%}
+ #modal-detail .dd-label{font-size:9px;letter-spacing:.055em;margin-bottom:6px;line-height:1.4}
+ #modal-detail .detail-meta-fields .fi{width:100%;max-width:100%;min-width:0;min-height:44px;height:44px;padding:9px 10px;border-radius:10px;background:var(--bg2);color:var(--text2);font-family:'Manrope',sans-serif}
+ #modal-detail .detail-meta-fields select.fi{appearance:none;-webkit-appearance:none;padding-right:30px;background:var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239998ad' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 9 3 3 3-3'/%3E%3C/svg%3E") no-repeat right 9px center;background-size:16px}
+ #modal-detail .detail-assignee-person{gap:9px;font-size:13px;line-height:1.5}
+ #modal-detail .detail-assignee-person>.av{width:30px;height:30px;font-size:10px}
+ #modal-detail .detail-assignee-person>.fi{width:0;flex:1 1 0}
+ #modal-detail .capacity-date-wrap .capacity-calendar-toggle:not([hidden]){height:44px;background:var(--bg2);padding:9px 10px;font-size:13px;font-family:'Manrope',sans-serif}
+ #modal-detail .detail-section-head{gap:10px;min-height:28px;margin-bottom:10px}
+ #modal-detail .detail-section-title{font-size:12px;line-height:1.5;font-weight:600;gap:7px}
+ #modal-detail .detail-section-title>span{font-size:12px;line-height:1}
+ #modal-detail .detail-edit-btn{min-height:32px;padding:6px 0 6px 8px;font-size:11px}
+ #modal-detail .detail-rich-text{font-size:13px;line-height:1.75;color:var(--text2)}
+ #modal-detail .detail-rich-text h2{font-size:18px;line-height:1.45;margin:14px 0 8px}
+ #modal-detail .detail-rich-text h3{font-size:15px;line-height:1.5;margin:12px 0 7px}
+ #modal-detail .detail-rich-text p{margin-bottom:9px}
+ #modal-detail .detail-rich-text ul,#modal-detail .detail-rich-text ol{padding-left:20px}
+ #modal-detail .detail-empty{font-size:12px;color:var(--text3)}
+ #modal-detail .detail-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:4px;border:1px solid var(--border);border-radius:11px;background:var(--bg3)}
+ #modal-detail .detail-status-grid .btn{min-height:36px;padding:6px 3px;font:600 10px/1.35 'Manrope',sans-serif;border-radius:8px;white-space:normal;gap:4px;background:transparent!important;border:1px solid transparent!important;color:var(--text3)!important;transition:background .18s,border-color .18s,color .18s}
+ #modal-detail .detail-status-grid .btn[aria-pressed=true]{background:var(--bg2)!important;border-color:var(--border2)!important;color:var(--text)!important}
+ #modal-detail .detail-status-grid .detail-status-dot{width:5px;height:5px;flex:none;border-radius:50%;background:var(--text3)}
+ #modal-detail [data-detail-status="Em andamento"] .detail-status-dot{background:var(--amber)}
+ #modal-detail [data-detail-status="Concluído"] .detail-status-dot{background:var(--emerald)}
+ #modal-detail #det-comments-section{padding-top:18px}
+ #modal-detail .detail-comments-head{gap:8px;margin-bottom:10px}
+ #modal-detail .detail-comments-count{font-size:9px;padding:3px 7px;white-space:nowrap}
+ #modal-detail #det-comments>div:only-child:not(.cmt){font-size:12px!important;padding:10px 0!important;text-align:left!important}
+ #modal-detail .cmt{gap:9px;margin-bottom:10px}
+ #modal-detail .cmt>.av{width:26px;height:26px;font-size:9px}
+ #modal-detail .cmt-bubble{min-width:0;padding:10px 11px;border-radius:11px}
+ #modal-detail .cmt-name{font-size:11px}#modal-detail .cmt-text{overflow-wrap:anywhere}
+ #modal-detail .cmt-text{font-size:12px;line-height:1.7}
+ #modal-detail .detail-comment-composer{grid-template-columns:26px minmax(0,1fr) 38px;gap:8px;padding:8px;margin-top:12px;align-items:center;border-radius:12px}
+ #modal-detail .detail-comment-composer textarea{height:40px;min-height:40px!important;padding:9px 0!important;line-height:22px!important}
+ #modal-detail .detail-comment-composer .detail-comment-send{height:38px;min-height:38px;width:38px;align-self:center;border-radius:10px;box-shadow:none}
+ #modal-detail #det-admin-controls{gap:8px;padding-top:18px}
+ #modal-detail #det-admin-controls>.btn{min-height:40px;font:600 12px/1.4 'Manrope',sans-serif;border-radius:10px;white-space:normal}
+}
+@media(max-width:360px){#modal-detail .detail-meta-fields{padding:10px;gap:10px}#modal-detail .detail-meta-fields:not(.detail-client){grid-template-columns:repeat(2,minmax(0,1fr))}#modal-detail .detail-status-grid .btn{font-size:9px}}
+@media(prefers-reduced-motion:reduce){#modal-detail,#modal-detail *{scroll-behavior:auto!important;transition:none!important}}
