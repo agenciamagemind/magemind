@@ -1613,14 +1613,16 @@ function hasPermission(perm){
 }
 
 function clientHasDemandManagementPlan(){
-  if(!isClient()||!DB.me?.clientId) return false;
-  const client=DB.clients.find(item=>item.id===DB.me.clientId);
-  if(!client) return false;
-  const planIds=(client.planIds?.length?client.planIds:[client.plan]).filter(Boolean);
-  return planIds.some(id=>{
-    const plan=DB.plans.find(item=>item.id===id);
-    return plan?.active!==false && (window.MagemindSolutions?MagemindSolutions.schedule(plan).cadence!=='none':['Semanal','Diario','Mensal'].includes(plan?.type));
-  });
+  return isClient()&&Boolean(DB.me?.clientId)&&DB.demandAccess?.userId===DB.me.id
+    &&DB.demandAccess?.date===MagemindCore.civilDate()&&DB.demandAccess?.allowed===true;
+}
+async function refreshDemandAccess(){
+  if(!isClient()||!DB.me?.clientId){DB.demandAccess=null;return;}
+  const userId=DB.me.id,date=MagemindCore.civilDate();
+  try{
+    const {data,error}=await supa.rpc('client_has_demand_management_plan');
+    if(DB.me?.id===userId)DB.demandAccess={userId,date,allowed:!error&&data===true};
+  }catch{if(DB.me?.id===userId)DB.demandAccess={userId,date,allowed:false};}
 }
 
 function trackingObserver(){return trackingEnabled()&&['ceo','manager'].includes(getRole());}
@@ -2263,7 +2265,7 @@ function clearSessionState(){
   cleanupRealtimeSubscriptions();
   dismissAvatarOnboarding();
   DB.me = null;
-  DB.clients = []; DB.users = []; DB.demands = []; DB.sales = [];
+  DB.clients = []; DB.users = []; DB.demands = []; DB.sales = []; DB.demandAccess=null;
   window.clearGoalsState?.();
   window.MagemindTrackingNative?.clear();
   window.MagemindTrackingAccess?.clear();
@@ -2549,6 +2551,7 @@ async function loadAllData({silent=false}={}){
         .select('*').eq('to_user_id',DB.me.id).order('created_at',{ascending:false}).limit(50));
       DB.notifications = (notifs||[]).map(mapNotif);
     }
+    if(isClient())await refreshDemandAccess();
     if(isAdmin()||isPartner()) await loadPartnerData();
     await refreshNotifications();
     await loadCompanySettings();
@@ -5775,6 +5778,7 @@ async function refreshSales(){
   if(error)throw error;
   if(DB.me?.id!==userId)return;
   DB.sales=(data||[]).map(mapSale);renderPaymentAlert();
+  if(isClient()){await refreshDemandAccess();if(DB.me?.id!==userId)return;buildNav();if(document.getElementById('pg-demands')?.classList.contains('active'))loadDemands();}
   if(document.getElementById('pg-sales')?.classList.contains('active'))loadSales();
   if(document.getElementById('pg-dashboard')?.classList.contains('active'))loadDash();
   if(document.getElementById('pg-goals')?.classList.contains('active'))loadGoals();
@@ -5821,5 +5825,5 @@ async function clearDB(){
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261030-7"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-connections.js?v=20261030-7"></script><script src="tracking-revenue-chart.js?v=20261030-7"></script><script src="tracking-dashboard.js?v=20261030-7"></script><script src="tracking-integration-health.js?v=20261030-7"></script><script src="tracking-native.js?v=20261030-7"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261030-7"></script><script src="demand-workspace.js?v=20261030-7"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261030-7"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261030-7"></script><script src="demand-touch.js?v=20261030-7"></script></body>
+<script src="tracking-supabase.js?v=20261030-7"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-connections.js?v=20261030-7"></script><script src="tracking-revenue-chart.js?v=20261030-7"></script><script src="tracking-dashboard.js?v=20261030-7"></script><script src="tracking-integration-health.js?v=20261030-7"></script><script src="tracking-native.js?v=20261030-7"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261014-5"></script><script src="filter-ui.js?v=20261030-7"></script><script src="demand-workspace.js?v=20261030-7"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261030-7"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261031-1"></script><script src="demand-touch.js?v=20261030-7"></script></body>
 </html>

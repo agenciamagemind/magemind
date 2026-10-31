@@ -18,15 +18,15 @@
    if(!Array.isArray(data?.days)){current.input.readOnly=false;current.button.hidden=true;return;}
    current.cache.set(data.month.slice(0,7),data);current.data=data;
    if(adjust&&!t.exclude){current.input.value=data.next_date||'';if(!data.next_date)toast('Não há datas de entrega disponíveis. Entre em contato com a equipe.','err');}
-   current.input.min=data.min_date||'';current.button.hidden=typeof HTMLElement.prototype.showPopover!=='function';current.input.readOnly=!current.button.hidden;
+   current.input.min=data.min_date||'';current.input.max=data.max_date||'';current.button.hidden=typeof HTMLElement.prototype.showPopover!=='function';current.input.readOnly=!current.button.hidden;
   }catch{if(request===sequence&&state===current){if(adjust&&!t.exclude)current.input.value='';toast('Não foi possível consultar as datas disponíveis. Tente novamente.','err');}}
   finally{if(state===current&&request===sequence){current.input.removeAttribute('aria-busy');current.button.disabled=false;syncDisplay(current);}}
  }
  async function validate(client,date,exclude=null,notify=true){
   const existing=exclude&&DB.demands.find(d=>d.id===exclude);if(existing&&existing.client===client&&existing.date===date)return true;
   if(isClient()&&(!date||date<tomorrow())){if(notify)toast('As entregas devem ser agendadas a partir de amanhã.','err');return false;}
-  try{const data=await read(client,date,exclude);if(!data||!Array.isArray(data.plans))return true;
-   if(data.allowed||(!isClient()&&!data.plans.length))return true;
+  try{const data=await read(client,date,exclude);if(!data||!Array.isArray(data.plans)||typeof data.allowed!=='boolean')throw Error('Invalid capacity response');
+   if(data.allowed)return true;
    if(notify)toast(data.reason||'Esta data não está disponível para a entrega.','err');return false;
   }catch{if(notify)toast('Não foi possível validar a entrega. Tente novamente.','err');return false;}
  }
