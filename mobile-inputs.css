@@ -12,3 +12,9 @@
  .capacity-date-wrap .capacity-calendar-toggle:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
 }
 .capacity-date-label{display:none}
+/* Interface labels should not become a selection while swiping the app. */
+@media(max-width:900px){
+ body :where(button,[role=button],[role=tab],label,select,option,svg,.sb-logo,.sb-label,.sb-group-title,.mobile-tab-label,.ph-title,.ph-sub,.fl,.dd-label,.badge,.chip,.settings-card-title,.detail-section-title,.md-tile-heading,.md-tile small,.mt-period-label,.mt-period-caption){-webkit-user-select:none;user-select:none}
+ body :where(button,[role=button],[role=tab]){-webkit-touch-callout:none}
+ body :where(input,textarea,[contenteditable]:not([contenteditable=false])){-webkit-user-select:text;user-select:text}
+}

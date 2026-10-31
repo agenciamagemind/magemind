@@ -41,7 +41,6 @@
  #app .sidebar .sb-group-title{margin:0 10px 8px;font-size:10px;letter-spacing:.09em;color:var(--text3)}
  #app .sidebar .sb-group-items{display:flex;flex-direction:column;gap:3px}
  #app .sidebar .sb-item{display:flex;align-items:center;gap:13px;width:100%;height:auto;min-height:54px;padding:7px 10px;border:1px solid transparent;border-radius:14px;background:transparent;white-space:normal;overflow:visible}
- #app .sidebar .sb-item:hover{background:var(--bg3)}
  #app .sidebar .sb-item.active{background:var(--violetbg);border-color:var(--violetborder)}
  #app .sidebar .sb-icon{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--bg3);color:var(--text2);opacity:1}
  #app .sidebar .sb-icon svg{width:18px;height:18px}
@@ -60,6 +59,14 @@
  body.mobile-keyboard-open #app .main{padding-bottom:0}
  body.mobile-keyboard-open .mobile-bottom-nav{display:none!important}
  @keyframes mobile-refresh-spin{to{transform:rotate(360deg)}}
+}
+/* Touch browsers retain :hover after a swipe. Keep that state visually neutral. */
+@media(max-width:900px) and (hover:none){
+ #app .sidebar .sb-item:hover:not(.active){background:transparent;color:var(--text2)}
+ #app .sidebar .sb-item:active:not(.active){background:var(--bg3)}
+}
+@media(max-width:900px) and (hover:hover) and (pointer:fine){
+ #app .sidebar .sb-item:hover:not(.active){background:var(--bg3);color:var(--text)}
 }
 @media(max-width:900px) and (display-mode:standalone), (max-width:900px) and (display-mode:fullscreen){
  html,body{height:100vh}
