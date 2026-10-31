@@ -44,6 +44,9 @@
 .settings-panel[hidden],.settings-tabs button[hidden]{display:none!important}
 #pg-settings #profile-cards-row{grid-template-columns:minmax(0,1fr)!important}
 .settings-panel>.btn{justify-self:start}
+/* Focus the dialog context on opening; only keyboard navigation highlights controls. */
+[data-dialog-surface]:focus{outline:none!important}
+:is(.overlay,.install-guide) :is(.m-close,button[aria-label^="Fechar"]),dialog :is(#close-dialog,button[aria-label^="Fechar"]),.mobile-more-close{background:transparent!important;border:0!important;box-shadow:none!important}
 .client-preview-eye{min-width:32px;display:inline-flex;align-items:center;justify-content:center}
 .client-preview-eye svg{width:17px;height:17px;pointer-events:none}
 #modal-client-preview .modal{width:620px;max-width:100%;max-height:90dvh}

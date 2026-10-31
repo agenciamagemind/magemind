@@ -21,7 +21,7 @@
   document.getElementById('mobile-bottom-nav')?.toggleAttribute('inert',open);
   if(mobile()){sidebar.toggleAttribute('inert',!open);sidebar.setAttribute('aria-hidden',String(!open));sidebar.setAttribute('role','dialog');sidebar.setAttribute('aria-label','Mais opções');sidebar.setAttribute('aria-modal',String(open));}
   else{sidebar.removeAttribute('role');sidebar.removeAttribute('aria-label');sidebar.removeAttribute('aria-modal');}
-  if(open){window.closeNotifPanel?.();resetPull();document.querySelector('.mobile-more-close')?.focus({preventScroll:true});}
+  if(open){window.closeNotifPanel?.();resetPull();window.focusDialogSurface(sidebar);}
  }
  const previousToggle=window.toggleMobileMenu;
  window.toggleMobileMenu=force=>{previousToggle?.(force);menuState();};

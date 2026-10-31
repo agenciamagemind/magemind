@@ -62,7 +62,7 @@
   const plans=(c.plans||[]).map(p=>`<li><strong>${esc(p.name)}</strong><span>${esc(cadence(p).text)}</span></li>`).join('');
   dialog.dataset.clientId=id;$('production-dialog-title').textContent=c.name;
   $('production-dialog-body').innerHTML=`${admin?`<div class="production-contact"><div><small>E-mail</small><span>${esc(c.email||'Não informado')}</span></div><div><small>Telefone</small><span>${esc(c.phone||'Não informado')}</span></div></div>`:''}<section><h3>Planos e entregas</h3><ul class="production-dialog-plans">${plans||'<li>Sem plano vinculado</li>'}</ul></section><section><h3>Briefing de produção</h3>${canWrite?`<p class="production-caption">Compartilhado com a equipe que trabalha nas demandas. Use somente orientações de produção.</p><textarea id="production-brief" aria-label="Briefing de produção" maxlength="12000" placeholder="Público, linguagem, referências e orientações para os criativos…">${esc(c.production_brief||'')}</textarea><div class="production-save-row"><span id="production-save-status" role="status"></span><button type="button" class="btn btn-primary btn-sm" data-production-save="${esc(c.id)}">Salvar briefing</button></div>`:`<p class="production-brief-text">${esc(c.production_brief||'O briefing de produção ainda não foi informado pela gestão.')}</p>`}</section>${admin?`<section><h3>Observações administrativas</h3><p class="production-brief-text">${esc(c.notes||'Sem observações administrativas.')}</p></section>`:''}`;
-  dialog.showModal();
+  window.openAccessibleDialog(dialog);
  }
  function init(){
   const board=$('kanban-board'),list=$('demand-list-view');if(!board||!list)return;

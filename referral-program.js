@@ -119,7 +119,7 @@
   mobile.addEventListener('change',place);place();
   const dialog=document.createElement('dialog');dialog.id='referral-rules-dialog';dialog.setAttribute('aria-labelledby','referral-rules-title');dialog.innerHTML='<div class="rf-dialog-head"><div><h2 id="referral-rules-title">Regras do programa</h2><p>Indique &amp; Ganhe Magemind</p></div><button type="button" class="btn btn-ghost btn-icon" aria-label="Fechar regras">×</button></div><div id="referral-rules-content" class="rf-dialog-body"></div>';
   document.body.append(dialog);
-  button.addEventListener('click',()=>{if(!visible()||!data?.rules||owner!==DB.me?.id)return;closeNotifPanel();renderRules();dialog.showModal();});
+  button.addEventListener('click',()=>{if(!visible()||!data?.rules||owner!==DB.me?.id)return;closeNotifPanel();renderRules();window.openAccessibleDialog(dialog);});
   dialog.querySelector('button').addEventListener('click',closeRules);
   let backdropDown=false;
   const outside=event=>{const r=dialog.getBoundingClientRect();return event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom;};

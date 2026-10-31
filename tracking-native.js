@@ -45,7 +45,7 @@
  }
  const button=(label,action,attrs='',primary=false)=>'<button type="button" class="'+(primary?'primary':'quiet')+'" data-action="'+action+'" '+attrs+'>'+label+'</button>';
  const pill=status=>'<span class="pill '+esc(status)+'">'+esc(statusLabel[status]||status)+'</span>';
- function modal(title,html){$('dialog-title').textContent=title;$('dialog-content').innerHTML=html;$('tracking-dialog').showModal();}
+ function modal(title,html){$('dialog-title').textContent=title;$('dialog-content').innerHTML=html;window.openAccessibleDialog($('tracking-dialog'));}
  function metric(label,value,note='',cls=''){return '<article class="metric '+cls+'"><span class="metric-label">'+label+'</span><strong>'+esc(value)+'</strong><small>'+esc(note)+'</small></article>';}
  function empty(title,text,action=''){return '<div class="empty"><span class="eyebrow">COMECE PELA SUA OPERAÇÃO</span><h2>'+title+'</h2><p>'+text+'</p><div class="actions">'+action+'</div></div>';}
  function panel(title,html){return '<section class="panel"><div class="panel-head"><h2>'+title+'</h2></div><div class="panel-body">'+html+'</div></section>';}

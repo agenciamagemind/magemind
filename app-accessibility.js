@@ -8,10 +8,19 @@
   document.addEventListener('click',event=>{const el=event.target.closest('button,a,[role="button"]');if(el)lastActivator=el;},true);
   const focusable='button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"],[contenteditable="true"]';
   const visible=el=>el.getClientRects().length&&!el.closest('[inert]')&&getComputedStyle(el).visibility!=='hidden';
+  const dialogSurface=dialog=>{
+    const heading=dialog.matches('dialog')?dialog.querySelector('h1,h2'):null;
+    const target=heading&&!heading.isContentEditable?heading:dialog;
+    target.tabIndex=-1;target.setAttribute('data-dialog-surface','');return target;
+  };
+  window.focusDialogSurface=dialog=>dialogSurface(dialog).focus({preventScroll:true});
+  window.openAccessibleDialog=dialog=>{
+    const target=dialogSurface(dialog);target.setAttribute('autofocus','');dialog.showModal();target.focus({preventScroll:true});
+  };
   const initialFocus=dialog=>{
     const selector=dialog.dataset.dialogInitialFocus;
     const preferred=selector?dialog.querySelector(selector):null;
-    return preferred&&visible(preferred)?preferred:[...dialog.querySelectorAll(focusable)].find(visible)||dialog;
+    return preferred&&visible(preferred)&&!preferred.matches('.m-close,button[aria-label^="Fechar"]')?preferred:dialogSurface(dialog);
   };
   const surface=()=>stack.at(-1)||(matchMedia('(max-width:900px)').matches?document.querySelector('.sidebar.mobile-open'):null);
   function annotate(root){
@@ -107,7 +116,7 @@
       const mobile=matchMedia('(max-width:900px)').matches;const open=sidebar.classList.contains('mobile-open');
       sidebar.toggleAttribute('inert',mobile&&!open);sidebar.setAttribute('aria-hidden',String(mobile&&!open));
       document.getElementById('mobile-more-tab')?.setAttribute('aria-expanded',String(mobile&&open));
-      if(mobile&&open&&!menuWasOpen&&!stack.length)([...sidebar.querySelectorAll(focusable)].find(visible)||sidebar).focus({preventScroll:true});
+      if(mobile&&open&&!menuWasOpen&&!stack.length)window.focusDialogSurface(sidebar);
       if(menuWasOpen&&!open&&!stack.length)document.getElementById('mobile-more-tab')?.focus();
       menuWasOpen=mobile&&open;
     };
