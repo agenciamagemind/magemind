@@ -42,7 +42,9 @@ body.legal-page{margin:0;background:#09090f;color:#e9e7f1;font:16px/1.8 system-u
 .app-legal-links{display:flex;justify-content:center;gap:8px 18px;flex-wrap:wrap;margin:20px 0 0;font-size:11px;line-height:1.6}
 .app-legal-links a{color:var(--text3,#a39db4);text-decoration:none;text-underline-offset:3px}
 .app-legal-links a:hover,.app-legal-links a:focus-visible{color:var(--violet2,#c7b3ff);text-decoration:underline}
-#pg-settings .app-legal-links{justify-content:flex-start;padding:0 24px;margin:0 0 18px}
+#pg-settings .app-legal-links{flex:none;justify-content:flex-start;flex-wrap:nowrap;gap:16px;max-width:920px;margin:20px 24px 0;padding:14px 0 8px;border-top:1px solid var(--border);font-size:11px}
+#pg-settings .app-legal-links a{display:inline-flex;align-items:center;min-height:36px;white-space:nowrap}
+@media(max-width:900px){#pg-settings .app-legal-links{justify-content:center;gap:14px;margin:18px 16px 0;font-size:11px}}
 @media(max-width:780px){.legal-top-inner{padding:16px 22px;align-items:flex-start}.legal-top nav{gap:6px 14px;justify-content:flex-end;max-width:170px;font-size:11px}.legal-brand{font-size:20px}.legal-brand img{width:32px;height:32px}.legal-hero{padding:36px 22px 26px}.legal-hero p{font-size:15px}.legal-layout{display:block;padding:0 22px 40px}.legal-toc{position:static;margin-bottom:32px;padding:16px 20px}.legal-toc ol{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px}.legal-toc li{margin:4px 0}.legal-body{font-size:15px}.legal-body h2{font-size:19px}.legal-contact,.legal-note{padding:17px 18px}.legal-footer{padding:24px 22px}}
 @media(prefers-reduced-motion:no-preference){.legal-page{scroll-behavior:smooth}}
 @media print{body.legal-page{background:white;color:black;font-size:11pt}.legal-top,.legal-toc,.legal-action,.skip-link{display:none!important}.legal-hero,.legal-layout{display:block;padding:0;max-width:none}.legal-body p,.legal-body li,.legal-body strong,.legal-body h2,.legal-body h3,.legal-hero p,.legal-updated,.legal-page a{color:black}.legal-contact,.legal-note{background:none;border:1px solid #bbb}.legal-body section{break-inside:avoid}.legal-footer{color:black}}

@@ -34,11 +34,9 @@
  #app .sidebar{position:absolute;inset:auto max(12px,var(--safe-right)) calc(var(--mobile-nav-h) + var(--mobile-nav-bottom) + 10px) max(12px,var(--safe-left));width:auto;min-width:0;height:auto;max-height:calc(var(--app-viewport-height) - var(--mobile-nav-h) - var(--mobile-nav-bottom) - var(--safe-top) - 26px);padding:0;border:1px solid var(--border2);border-radius:24px;background:var(--bg2);box-shadow:0 20px 70px #0008;transform:translateY(20px);opacity:0;visibility:hidden;transition:opacity .18s ease,transform .18s ease;overflow:hidden}
  #app .sidebar::before{display:none}
  #app .sidebar.mobile-open{transform:none;opacity:1;visibility:visible}
- .mobile-more-head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:16px;padding:22px 20px 17px;border-bottom:1px solid var(--border)}
- .mobile-more-head h2{font:600 20px/1.25 'Poppins',sans-serif;color:var(--text);letter-spacing:-.4px}
- .mobile-more-head p{margin-top:4px;font-size:12px;color:var(--text2)}
+ .mobile-more-head{display:flex;flex:none;align-items:center;justify-content:flex-end;padding:12px 14px 0}
  .mobile-more-close{display:grid;place-items:center;width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--bg3);color:var(--text2);cursor:pointer}
- #app .sidebar .sb-nav{flex:0 1 auto;min-height:0;padding:18px 12px 14px;display:block;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ #app .sidebar .sb-nav{flex:0 1 auto;min-height:0;padding:8px 12px 14px;display:block;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
  #app .sidebar .sb-group+.sb-group{margin-top:20px}
  #app .sidebar .sb-group-title{margin:0 10px 8px;font-size:10px;letter-spacing:.09em;color:var(--text3)}
  #app .sidebar .sb-group-items{display:flex;flex-direction:column;gap:3px}
@@ -51,7 +49,6 @@
  #app .sidebar .sb-label{flex:1;min-width:0;font-size:14px!important;font-weight:500;white-space:normal;line-height:1.4}
  #app .sidebar .sb-label::after{display:none;content:none}
  #app .sidebar .sb-badge{position:static;flex:none;margin-left:auto}
- #app .sidebar .mobile-direct-item,#app .sidebar .mobile-group-empty{display:none!important}
  #app .main .content{min-height:0;padding-bottom:calc(var(--mobile-nav-h) + var(--mobile-nav-bottom) + 16px);transform:translateY(var(--mobile-pull-distance,0px));transition:transform .38s cubic-bezier(.2,.75,.25,1)}
  #app .main.mobile-pulling .content{transition:none}
  .mobile-pull-indicator{position:absolute;z-index:365;top:calc(var(--mobile-header-height) + var(--safe-top) + 14px);left:50%;display:grid;place-items:center;width:26px;height:26px;transform:translateX(-50%);pointer-events:none}
@@ -72,7 +69,7 @@
 }
 @media(max-width:900px) and (max-height:500px){
  :root{--mobile-header-height:52px;--mobile-nav-h:58px}
- .mobile-more-head{padding:14px 18px 12px}
+ .mobile-more-head{padding:8px 12px 0}
  #app .sidebar .sb-nav{padding-top:10px}
  #app .sidebar .sb-item{min-height:46px}
 }

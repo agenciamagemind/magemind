@@ -76,8 +76,8 @@
   if(folderFlight)return folderFlight;
   const version=epoch;folderFlight=(async()=>{
    try{const data=await api({action:'my_folder'});if(version!==epoch||!isClient())return;
-    note.innerHTML=accessNote(data);note.hidden=!data.needs_google_account;link.hidden=false;if(data.state==='ready'&&data.folder_url){link.href=data.folder_url;link.innerHTML=driveIcon+'Meus criativos ↗';link.removeAttribute('aria-disabled');}
-    else{link.removeAttribute('href');link.innerHTML=driveIcon+'Preparando meus criativos';link.setAttribute('aria-disabled','true');if($('pg-demands').classList.contains('active'))folderTimer=setTimeout(folder,15000);}
+    note.innerHTML=accessNote(data);note.hidden=!data.needs_google_account;link.hidden=false;if(data.state==='ready'&&data.folder_url){link.href=data.folder_url;link.innerHTML=driveIcon+'Meus criativos';link.removeAttribute('aria-disabled');link.removeAttribute('aria-busy');link.removeAttribute('title');}
+    else{link.removeAttribute('href');link.innerHTML=driveIcon+'Meus criativos';link.setAttribute('aria-disabled','true');link.setAttribute('aria-busy','true');link.title='Preparando sua pasta no Drive';if($('pg-demands').classList.contains('active'))folderTimer=setTimeout(folder,15000);}
    }catch{if(version===epoch)link.hidden=true;}
   })().finally(()=>{if(version===epoch)folderFlight=null;});return folderFlight;
  }
@@ -93,7 +93,7 @@
  }
  function init(){
   section=document.createElement('section');section.id='det-deliveries';section.className='detail-section detail-section-card creative-delivery-section';section.hidden=true;$('det-comments-section').before(section);
-  const link=document.createElement('a');link.id='my-creatives-link';link.className='btn btn-ghost btn-sm my-creatives-link';link.hidden=true;link.target='_blank';link.rel='noopener noreferrer';$('pg-demands').querySelector('.ph-actions').prepend(link);
+  const link=document.createElement('a');link.id='my-creatives-link';link.className='btn btn-ghost btn-sm my-creatives-link';link.hidden=true;link.target='_blank';link.rel='noopener noreferrer';$('pg-demands').querySelector('.demand-view-controls').prepend(link);
   const note=document.createElement('div');note.id='my-creatives-access-note';note.hidden=true;$('pg-demands').querySelector('.ph').after(note);
   document.addEventListener('click',async e=>{const button=e.target.closest('[data-creative-retry]');if(!button||!isClient())return;const version=epoch;button.disabled=true;try{const result=await api({action:'check_my_access'});if(version!==epoch)return;await folder();if(activeDemand===currentDemandId&&currentDemandId)await open(currentDemandId);toast(result.needs_google_account?'O Google ainda não reconheceu esse e-mail. Confira a vinculação e tente novamente em instantes.':'Acesso à pasta liberado.',result.needs_google_account?'err':'ok');}catch(error){if(version===epoch)toast(error.message,'err');}finally{if(button.isConnected)button.disabled=false;}});
   const card=document.createElement('div');card.id='drive-settings-card';card.className='settings-card';card.hidden=true;

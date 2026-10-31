@@ -14,11 +14,6 @@
   document.documentElement.style.setProperty('--app-viewport-height',Math.round(height)+'px');
  }
  function scheduleViewport(){if(!viewportFrame)viewportFrame=requestAnimationFrame(viewport);}
- function menuLinks(){
-  const direct=(document.getElementById('mobile-bottom-nav')?.dataset.directPages||'').split(',');
-  document.querySelectorAll('.sidebar .sb-item').forEach(button=>button.classList.toggle('mobile-direct-item',direct.includes(button.id.replace('nav-',''))));
-  document.querySelectorAll('.sidebar .sb-group').forEach(group=>group.classList.toggle('mobile-group-empty',!group.querySelector('.sb-item:not(.mobile-direct-item)')));
- }
  function menuState(){
   const sidebar=document.querySelector('.sidebar');if(!sidebar)return;
   const open=mobile()&&sidebar.classList.contains('mobile-open');
@@ -30,8 +25,6 @@
  }
  const previousToggle=window.toggleMobileMenu;
  window.toggleMobileMenu=force=>{previousToggle?.(force);menuState();};
- const previousBuild=window.buildMobileNav;
- window.buildMobileNav=items=>{previousBuild?.(items);menuLinks();};
  function resetPull(){
   gesture=null;
   const main=document.querySelector('#app .main');
@@ -86,11 +79,11 @@
  }
  function init(){
   viewport();const sidebar=document.querySelector('.sidebar'),nav=document.getElementById('sb-nav'),main=document.querySelector('#app .main');if(!sidebar||!nav||!main)return;
-  const header=document.createElement('div');header.className='mobile-more-head';header.innerHTML='<div><h2>Mais</h2><p>As outras áreas da sua conta</p></div><button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';header.querySelector('button').addEventListener('click',()=>window.closeMobileMenu());sidebar.insertBefore(header,nav);
+  const header=document.createElement('div');header.className='mobile-more-head';header.innerHTML='<button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';header.querySelector('button').addEventListener('click',()=>window.closeMobileMenu());sidebar.insertBefore(header,nav);
   const indicator=document.createElement('div');indicator.id='mobile-pull-indicator';indicator.className='mobile-pull-indicator';indicator.hidden=true;indicator.setAttribute('role','status');indicator.setAttribute('aria-live','polite');indicator.innerHTML='<span class="mobile-pull-icon" aria-hidden="true"></span><span id="mobile-pull-label">Puxe para atualizar</span>';main.insertBefore(indicator,main.querySelector('.content'));
   main.addEventListener('touchstart',start,{passive:true});main.addEventListener('touchmove',move,{passive:false});main.addEventListener('touchend',end,{passive:true});main.addEventListener('touchcancel',()=>{if(!refreshing)resetPull();},{passive:true});
   main.addEventListener('scroll',()=>{if(gesture?.edge==='top'&&main.scrollTop>1)resetPull();},{passive:true});
-  new MutationObserver(menuLinks).observe(nav,{childList:true});menuLinks();menuState();
+  menuState();
  }
  addEventListener('resize',()=>{scheduleViewport();menuState();if(!refreshing)resetPull();},{passive:true});
  window.visualViewport?.addEventListener('resize',scheduleViewport,{passive:true});
