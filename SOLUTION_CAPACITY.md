@@ -14,7 +14,7 @@ Planos mensais definem entrega diária ou semanal, quantidade por período e dia
 - Clientes não podem agendar para hoje ou para datas passadas, nem enviando uma gravação diretamente pela API. Cards históricos não têm sua data alterada pela atualização. A equipe mantém a possibilidade de corrigir metadados históricos.
 - Diário: quantidade máxima por data de entrega permitida. Dias sem uso não acumulam saldo em outros dias.
 - Semanal: quantidade máxima de segunda a domingo e teto de quatro vezes essa quantidade no ciclo contratado. Por exemplo, 3/semana permite no máximo 12 no mês, mesmo em meses com cinco semanas. A semana que atravessa a virada do mês continua sendo uma única semana.
-- A vigência mensal começa na data da venda confirmada e inclui o dia de aniversário no mês seguinte até o fim desse dia, em São Paulo. Ex.: 01/10 → 01/11; 31/01/2028 → 29/02/2028. A data final é inclusiva: 19/10 permite entrega em 19/11; 31/01/2028 permite entrega em 29/02/2028. Novas reservas para dias posteriores exigem outra contratação. Meses menores usam seu último dia, sem soma fixa de 30 dias e sem cron. O teto semanal de quatro vezes a quantidade vale por ciclo contratado, e não reinicia na virada do mês do calendário.
+- A compra confirmada libera agendamentos imediatamente. O mês dos planos diários e semanais é contado pela **data original de entrega do primeiro criativo concluído dessa compra**, registrada no histórico de consumo, e inclui o aniversário no mês seguinte até o fim desse dia, em São Paulo. Ex.: compra em 19/10, primeira entrega em 20/10 → última entrega permitida em 20/11. A marcação de conclusão no dia seguinte não troca a data de entrega do card. Antes da primeira conclusão, o calendário usa uma janela provisória de um mês da compra; a primeira entrega fixa a janela definitiva. Concluir antecipadamente um card com data futura não posterga o início além de hoje. Reabrir, excluir, reagendar ou editar esse card não reinicia o mês. Cada nova compra mantém sua própria data inicial. Meses menores usam seu último dia: 31/01/2028 → 29/02/2028; 31/01/2027 → 28/02/2027. Novas reservas posteriores ao aniversário exigem outra contratação. Não há soma fixa de 30 dias nem cron. O teto semanal de quatro vezes a quantidade vale por ciclo contratado e não reinicia na virada do mês do calendário.
 - Pacote avulso: quantidade total por compra, sem renovação automática. A entrega pode ir até o aniversário de um mês da criação original da demanda, inclusive. Editar ou reagendar não prorroga essa janela; o servidor define e protege a data de criação.
 - Havendo mais de um plano, o servidor reserva primeiro no diário, depois no semanal e depois no pacote, considerando a disponibilidade de cada um.
 - Demandas em aberto já reservam espaço; sua exclusão libera essa reserva. A conclusão consome o serviço e excluir ou reabrir o card não devolve um criativo já entregue.
@@ -46,6 +46,7 @@ No fluxo comercial atual, `Fechado` é a confirmação de compra registrada pela
 - `node --test tests/*.test.mjs`
 - Os testes de banco usam PostgreSQL via PGlite, com RLS, triggers e transações reais. As solicitações concorrentes no harness são serializadas pelo PGlite; a proteção em PostgreSQL com múltiplas conexões depende do bloqueio de cliente, compartilhado por reservas e cancelamentos.
 - `node scripts/solution-scheduling-qa.mjs` (1440, 375 e 320 px; dados isolados)
+- `node scripts/first-delivery-rescheduling-qa.mjs` (CEO e cliente; 1440, 390 e 320 px; retorno de dezembro para os dias 19/11 e 20/11)
 - `node scripts/creative-deliveries-qa.mjs`
 - `node scripts/demand-detail-layout-qa.mjs`
 
@@ -53,7 +54,7 @@ Publicar o frontend somente com `node scripts/tracking-pilot-build.mjs --fronten
 
 ## Reagendamentos excepcionais autorizados
 
-Desde 02/11/2026, autorizações pontuais podem permitir reagendar um card existente para uma data exata após a vigência. Elas ficam em `private.production_schedule_exceptions`, não prorrogam o plano e não permitem que o cliente crie novos cards fora da vigência. Quantidade e dias da semana continuam validados.
+Desde 02/11/2026, autorizações pontuais podem permitir reagendar um card existente para uma data exata após a vigência. Elas ficam em `private.production_schedule_exceptions`, não prorrogam o plano e não permitem que o cliente crie novos cards fora da vigência. Quantidade e dias da semana continuam validados. Ao corrigir um card para uma data regular, sua autorização excepcional é removida; ela não pode ser reutilizada para voltar à data antiga fora da vigência.
 
 O RPC `get_demand_schedule_alerts` fornece os alertas somente à equipe operacional; editores recebem apenas os cards atribuídos a eles. Clientes e participantes recebem lista vazia. No Kanban, a equipe vê borda/fundo vermelhos e o rótulo “Fora da vigência”; o cliente mantém a apresentação normal. O encerramento da sessão limpa os alertas em cache.
 
