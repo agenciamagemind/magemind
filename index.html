@@ -4120,7 +4120,7 @@ async function drop(e,col){
   }
 }
 
-function openNewDemand(status){
+function openNewDemand(status,prefill=null){
   if(!hasPermission('demands.create')){ toast('Sem permissão para criar demandas','err'); return; }
   editDemandId = null;
   document.getElementById('md-title').textContent = 'Nova demanda';
@@ -4135,21 +4135,29 @@ function openNewDemand(status){
     document.getElementById('d-client-wrap').style.display='none';
     document.getElementById('d-assignee-wrap').style.display='none';
   }
+  if(prefill&&canSelectDemandClient()){
+    const clientId=prefill.client||'';
+    if(clientId&&![...dc.options].some(option=>option.value===clientId)){
+      const option=new Option(prefill.clientName||cn(clientId),clientId);option.hidden=true;dc.add(option);
+    }
+    dc.value=clientId;
+  }
   const allowedStatuses=['Não iniciado','Em andamento','Concluído'];
   document.getElementById('d-status').value = typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
-  populateDemandAssignee();
-  document.getElementById('d-title').value = '';
-  setDemandRichEditor('d-desc','');
-  document.getElementById('d-priority').value = 'Média';
-  if(document.getElementById('d-refs')) document.getElementById('d-refs').value = '';
+  populateDemandAssignee(prefill?.assigneeId||'');
+  document.getElementById('d-title').value = prefill?.title||'';
+  setDemandRichEditor('d-desc',prefill?.desc||'');
+  document.getElementById('d-priority').value = prefill?.priority||'Média';
+  if(document.getElementById('d-refs')) document.getElementById('d-refs').value = prefill?.refs||'';
   document.getElementById('d-date').value = tomorrowDateInput();
   openModal('modal-demand');
+  document.querySelector('#modal-demand .modal').scrollTop=0;
 }
 function openNewDemandWithStatus(s){ openNewDemand(s); }
 
 let demandSaveInFlight=false;
 async function saveDemand(){
-  if(demandSaveInFlight)return;
+  if(demandSaveInFlight||document.getElementById('d-date')?.getAttribute('aria-busy')==='true')return;
   const targetDemandId=editDemandId,savingUser=DB.me?.id;
   const title = document.getElementById('d-title').value.trim();
   if(!title){ toast('Digite o título da demanda','err'); return; }
@@ -4997,7 +5005,7 @@ async function openDetail(id){
   // Ações administrativas ficam reservadas a quem pode editar a demanda.
   if(editable){
     document.getElementById('det-admin-controls').innerHTML = `
-      ${hasPermission('demands.create')?`<button class="btn btn-ghost btn-sm" data-action="duplicate-demand" data-id="${d.id}" data-open-detail="true">⧉ Duplicar demanda</button>`:''}
+      ${hasPermission('demands.create')?`<button class="btn btn-ghost btn-sm" data-action="duplicate-demand" data-id="${d.id}">⧉ Duplicar demanda</button>`:''}
       ${canDeleteDemand()?`<button class="btn btn-danger btn-sm" data-action="delete-demand" data-id="${d.id}">✕ Excluir demanda</button>`:''}`;
   } else {
     document.getElementById('det-admin-controls').innerHTML = isEditor()
@@ -5097,40 +5105,16 @@ async function deleteDemand(){
   buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
 }
 
-let demandDuplicateInFlight=false;
-async function duplicateDemand(id=currentDemandId,openAfter=false){
-  if(demandDuplicateInFlight) return;
+function duplicateDemand(id=currentDemandId){
   if(!hasPermission('demands.create')){ toast('Sem permissão para duplicar demandas','err'); return; }
   const source=DB.demands.find(x=>x.id===id);
   if(!source||!canViewDemand(source)){ toast('Demanda não encontrada','err'); return; }
-  demandDuplicateInFlight=true;
+  const baseTitle=String(source.title||'Demanda').replace(/\s+\(cópia(?: \d+)?\)$/i,'');
+  let title=baseTitle+' (cópia)',copy=2;
+  while(DB.demands.some(d=>d.client===source.client&&d.title===title)) title=`${baseTitle} (cópia ${copy++})`;
   closeDemandContextMenu();
-  try{
-    const title=source.title;
-    const copiedStatus=source.status||'Não iniciado';
-    const {data:nd,error}=await supa.from('demands').insert({
-      title,
-      client_id:source.client||null,
-      assignee_id:source.assigneeId||null,
-      priority:source.priority||'Média',
-      status:copiedStatus,
-      due_date:source.date||null,
-      description:source.desc||'',
-      refs:source.refs||'',
-      created_by:DB.me.id
-    }).select('*').single();
-    if(error){ toast('Erro ao duplicar demanda: '+error.message,'err'); return; }
-    const copied=mapDemand(nd);
-    copied.comments=[];
-    DB.demands.unshift(copied);
-    await supa.from('activity').insert({icon:'⧉',bg:'var(--violetbg)',text:`${DB.me.name} duplicou demanda: ${title}`});
-    if(isStaffRole()) await dbPushNotifToClient(source.client,'📋','var(--violetbg)','Demanda duplicada',`${DB.me.name} criou "${title}".`,nd.id,'demand_created');
-    buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
-    toast('Demanda duplicada! ✓','ok');
-    if(openAfter) await openDetail(nd.id);
-  } finally {
-    demandDuplicateInFlight=false;
-  }
+  closeModal('modal-detail');
+  openNewDemand('Não iniciado',{...source,title});
 }
 
 /* ═══ SOLUCOES ═══ */
@@ -5698,7 +5682,7 @@ document.addEventListener('click', function(e){
   if(action === 'open-detail')   { openDetail(id); }
   if(action === 'edit-demand')   { openEditDemand(id); }
   if(action === 'delete-demand') { currentDemandId = id; deleteDemand(); }
-  if(action === 'duplicate-demand') { duplicateDemand(id,btn.dataset.openDetail==='true'); }
+  if(action === 'duplicate-demand') { duplicateDemand(id); }
   if(action === 'change-status') { changeStatus(btn.dataset.status); }
 });
 document.addEventListener('contextmenu',function(e){
