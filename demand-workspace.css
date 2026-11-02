@@ -18,3 +18,7 @@
 
 .production-client.is-selected{border-color:var(--violetborder);box-shadow:inset 2px 0 var(--violet2)}
 .demand-overdue{display:inline-flex;align-items:center;gap:4px;color:var(--demand-late);font-size:9px;line-height:1.4;padding:2px 5px;background:var(--demand-late-bg);border-radius:5px}.demand-overdue svg{width:11px;height:11px;flex:none}
+.k-card.demand-plan-alert{border-color:#ef6476;background:linear-gradient(135deg,rgba(185,35,58,.24),rgba(129,26,45,.14)),var(--bg3);box-shadow:inset 3px 0 0 #ef6476}
+.k-card.demand-plan-alert:hover{border-color:#ff8b99;background:linear-gradient(135deg,rgba(185,35,58,.3),rgba(129,26,45,.2)),var(--bg4)}
+.demand-plan-alert-badge{display:inline-flex;align-items:center;max-width:100%;padding:3px 6px;border:1px solid rgba(255,129,148,.35);border-radius:5px;background:rgba(181,32,57,.24);color:#ffb2be;font-size:9px;font-weight:700;line-height:1.4}
+.demand-plan-alert-row{background:rgba(185,35,58,.12)}.demand-plan-alert-row .demand-plan-alert-badge{margin-left:8px;vertical-align:middle}

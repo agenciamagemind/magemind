@@ -4,7 +4,7 @@
  let context=null,owner=null,flight=null,bucket='',panel,dialog,expanded=false,loadError=false,epoch=0;
  const today=()=>MagemindCore.civilDate();
  const matches=(d,scope)=>d.status!=='Concluído'&&Boolean(d.date)&&(scope==='late'?d.date<today():scope==='today'?d.date===today():d.date>today());
- function clear(){epoch++;context=null;owner=null;flight=null;bucket='';loadError=false;DB.demandPeople={};if(panel){panel.hidden=true;panel.replaceChildren();}dialog?.close();$('production-dialog-body')?.replaceChildren();}
+ function clear(){epoch++;context=null;owner=null;flight=null;bucket='';loadError=false;DB.demandPeople={};DB.demandScheduleAlerts={};if(panel){panel.hidden=true;panel.replaceChildren();}dialog?.close();$('production-dialog-body')?.replaceChildren();}
  function cadence(plan){
   if(plan.delivery_cadence||plan.deliveryCadence){const s=MagemindSolutions.schedule(plan);return{recurring:['daily','weekly'].includes(s.cadence),text:MagemindSolutions.describe(plan)};}
   const text=String((plan.includes||'')+' '+plan.name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -23,8 +23,13 @@
    const {data,error}=response;loadError=Boolean(error);
    if(error){console.error('[Magemind] Contexto da produção:',error.message);render();return;}
    context=data||{people:[],clients:[]};DB.demandPeople=Object.fromEntries((context.people||[]).map(p=>[p.id,p]));
+   if(isOperationalStaff()){
+    try{const alerts=await supa.rpc('get_demand_schedule_alerts');if(DB.me?.id!==uid||version!==epoch)return;
+     if(alerts.error)throw alerts.error;DB.demandScheduleAlerts=Object.fromEntries((Array.isArray(alerts.data)?alerts.data:[]).map(a=>[a.demand_id,a]));
+    }catch(error){console.error('[Magemind] Alertas internos da produção:',error.message);}
+   }else DB.demandScheduleAlerts={};
    DB.demands.forEach(d=>{const p=DB.demandPeople[d.assigneeId];if(p)Object.assign(d,{assignee:p.name,assigneePhoto:p.photo,assigneeAv:p.av||avatarInitials(p.name)});});
-   render();
+   render();if(document.getElementById('pg-demands')?.classList.contains('active'))renderKanban();
   })().finally(()=>{if(owner===uid&&version===epoch)flight=null;});
   return flight;
  }
