@@ -2,6 +2,7 @@
 (() => {
  'use strict';
  const $=id=>document.getElementById(id),esc=v=>escapeHTML(String(v??''));let state=null,sequence=0,calendar=null;
+ const staffDates=()=>['ceo','manager','partner','gestor','editor'].includes(DB.me?.role);
  const today=()=>MagemindCore.civilDate(),iso=d=>d.toISOString().slice(0,10),parse=s=>new Date(s+'T12:00:00Z');
  const tomorrow=()=>{const d=parse(today());d.setUTCDate(d.getUTCDate()+1);return iso(d);};
  function target(){return state?.modal==='modal-demand'?{client:canSelectDemandClient()?$('d-client').value:DB.me?.clientId,date:$('d-date').value,exclude:editDemandId||null}:{client:DB.demands.find(d=>d.id===currentDemandId)?.client,date:$('det-date')?.value,exclude:currentDemandId};}
@@ -17,8 +18,8 @@
   try{const data=await dates(t,(t.date||tomorrow()).slice(0,7),adjust&&!t.exclude);if(request!==sequence||state!==current||DB.me?.id!==uid)return;
    if(!Array.isArray(data?.days)){current.input.readOnly=false;current.button.hidden=true;return;}
    current.cache.set(data.month.slice(0,7),data);current.data=data;
-   if(adjust&&!t.exclude){current.input.value=data.next_date||'';if(!data.next_date)toast('Não há datas de entrega disponíveis. Entre em contato com a equipe.','err');}
-   current.input.min=data.min_date||'';current.input.max=data.max_date||'';current.button.hidden=typeof HTMLElement.prototype.showPopover!=='function';current.input.readOnly=!current.button.hidden;
+   if(adjust&&!t.exclude){current.input.value=data.next_date||(staffDates()?t.date||tomorrow():'');if(!data.next_date&&!staffDates())toast('Não há datas de entrega disponíveis. Entre em contato com a equipe.','err');}
+   current.input.min=staffDates()?'':data.min_date||'';current.input.max=staffDates()?'':data.max_date||'';current.button.hidden=typeof HTMLElement.prototype.showPopover!=='function';current.input.readOnly=!current.button.hidden;
   }catch{if(request===sequence&&state===current){if(adjust&&!t.exclude)current.input.value='';toast('Não foi possível consultar as datas disponíveis. Tente novamente.','err');}}
   finally{if(state===current&&request===sequence){current.input.removeAttribute('aria-busy');current.button.disabled=false;syncDisplay(current);}}
  }
@@ -37,7 +38,7 @@
   const render=(message='')=>{
    const first=parse(month+'-01'),last=new Date(first);last.setUTCMonth(last.getUTCMonth()+1);last.setUTCDate(0);const offset=(first.getUTCDay()+6)%7,data=current.cache.get(month),availability=new Map(data?.days.map(d=>[d.date,d.available]));
    surface.setAttribute('aria-busy',String(!data&&!message));
-   surface.innerHTML=`<div class="production-calendar-head"><button type="button" data-calendar-step="-1" aria-label="Mês anterior">‹</button><strong>${esc(new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(first))}</strong><button type="button" data-calendar-step="1" aria-label="Próximo mês">›</button></div><div class="production-calendar-grid">${['S','T','Q','Q','S','S','D'].map(d=>`<small aria-hidden="true">${d}</small>`).join('')}${'<span></span>'.repeat(offset)}${Array.from({length:last.getUTCDate()},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0'),disabled=availability.get(date)!==true;return `<button type="button" data-calendar-date="${date}" ${disabled?'disabled':''} ${date===t.date?'aria-current="date"':''} aria-label="${esc(fDate(date))}">${i+1}</button>`;}).join('')}</div><p role="status">${esc(message||(!data?'Consultando datas…':'Selecione uma data disponível.'))}</p>`;position();
+   surface.innerHTML=`<div class="production-calendar-head"><button type="button" data-calendar-step="-1" aria-label="Mês anterior">‹</button><strong>${esc(new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(first))}</strong><button type="button" data-calendar-step="1" aria-label="Próximo mês">›</button></div><div class="production-calendar-grid">${['S','T','Q','Q','S','S','D'].map(d=>`<small aria-hidden="true">${d}</small>`).join('')}${'<span></span>'.repeat(offset)}${Array.from({length:last.getUTCDate()},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0'),muted=availability.get(date)!==true,disabled=muted&&(!staffDates()||!data);return `<button type="button" data-calendar-date="${date}" ${muted?'class="production-calendar-muted"':''} ${disabled?'disabled':''} ${date===t.date?'aria-current="date"':''} aria-label="${esc(fDate(date))}">${i+1}</button>`;}).join('')}</div><p role="status">${esc(message||(!data?'Consultando datas…':'Selecione uma data disponível.'))}</p>`;position();
   };
   const load=async(force=false)=>{
    const requested=month,version=++generation;if(force)current.cache.delete(requested);render();if(current.cache.has(requested))return;
@@ -59,7 +60,7 @@
   let wrap=input.closest('.capacity-date-wrap');if(!wrap){wrap=document.createElement('div');wrap.className='capacity-date-wrap';input.before(wrap);wrap.append(input);}
   wrap.querySelectorAll('button').forEach(b=>b.remove());const button=document.createElement('button');button.type='button';button.className='capacity-calendar-toggle';button.hidden=true;button.setAttribute('aria-label','Escolher data de entrega');button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>';wrap.append(button);
   const label=document.createElement('span');label.className='capacity-date-label';label.id=input.id+'-display';button.prepend(label);button.setAttribute('aria-describedby',label.id);
-  state={modal:id,input,button,label,wrap,data:null,cache:new Map()};button.addEventListener('click',showCalendar);input.readOnly=typeof HTMLElement.prototype.showPopover==='function';button.hidden=!input.readOnly;button.disabled=input.readOnly;input.min=isClient()||id==='modal-demand'&&!editDemandId?tomorrow():'';syncDisplay();refresh(true);
+  state={modal:id,input,button,label,wrap,data:null,cache:new Map()};button.addEventListener('click',showCalendar);input.readOnly=typeof HTMLElement.prototype.showPopover==='function';button.hidden=!input.readOnly;button.disabled=input.readOnly;input.min=staffDates()?'':isClient()||id==='modal-demand'&&!editDemandId?tomorrow():'';syncDisplay();refresh(true);
  }
  async function restoreDate(id,version,key){
   const user=DB.me?.id;try{const{data,error}=await supa.from('demands').select('due_date').eq('id',id).maybeSingle();if(DB.me?.id!==user||error||!data||demandAutosaveVersions.get(key)!==version)return;const d=DB.demands.find(d=>d.id===id);if(d)d.date=data.due_date||'';demandAutosavePending.delete(key);if(currentDemandId===id){$('det-date').value=data.due_date||'';refresh();}renderKanban();}catch{}
