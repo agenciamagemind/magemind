@@ -1,13 +1,14 @@
 (function(){
  'use strict';
  let goals=[],owner='',filter='all',editing=null,expenseId=null,previewDemand=null,loading=0;
+ const archiveRequests=new Map();
  const el=id=>document.getElementById(id),esc=value=>escapeHTML(String(value??''));
  const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${kind==='edit'?'<path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/>':'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'}</svg>`;
  const frame=(id,title,body,footer)=>`<div class="overlay" id="${id}" onclick="if(event.target===this)closeModal('${id}')"><div class="modal finance-modal"><div class="m-head"><div class="m-title" id="${id}-title">${title}</div><button type="button" class="m-close" aria-label="Fechar" onclick="closeModal('${id}')">✕</button></div><div class="m-body">${body}</div><div class="m-foot">${footer}</div></div></div>`;
  const field=(id,label,input)=>`<div class="fg"><label class="fl" for="${id}">${label}</label>${input}</div>`;
  const input=(id,type='text',extra='')=>`<input class="fi" id="${id}" type="${type}" ${extra}>`;
  const cancel=id=>`<button type="button" class="btn btn-ghost" onclick="closeModal('${id}')">Cancelar</button>`;
- window.clearGoalsState=function(){loading++;goals=[];owner='';editing=null;expenseId=null;previewDemand=null;window.MagemindTasks?.clear();const grid=el('goals-grid'),summary=el('goals-summary');if(grid)grid.innerHTML='';if(summary)summary.innerHTML='';};
+ window.clearGoalsState=function(){loading++;archiveRequests.clear();goals=[];owner='';editing=null;expenseId=null;previewDemand=null;window.MagemindTasks?.clear();const grid=el('goals-grid'),summary=el('goals-summary');if(grid)grid.innerHTML='';if(summary)summary.innerHTML='';};
  document.body.insertAdjacentHTML('beforeend',
  frame('modal-goal','Nova meta',
  field('g-title','Nome da meta',input('g-title','text','maxlength="160" placeholder="Ex.: Fechar 3 planos Supreme"'))+
@@ -34,26 +35,26 @@
  function fmt(g,v){return g.metric==='revenue'?formatCurrencyBRL(v):Number(v).toLocaleString('pt-BR')+' '+(g.metric==='count'?(Number(v)===1?'venda':'vendas'):esc(g.unit));}
  window.loadGoals=async function(){
   const request=++loading;if(!isAdmin()){goals=[];owner='';el('goals-grid').innerHTML='';return;}
-  const user=DB.me.id;if(owner!==user){goals=[];owner=user;filter='all';el('goals-search').value='';}
+  const user=DB.me.id;if(owner!==user){archiveRequests.clear();goals=[];owner=user;filter='all';el('goals-search').value='';}
   el('goals-grid').setAttribute('aria-busy','true');if(!goals.length)el('goals-grid').innerHTML='<div class="goals-empty">Carregando metas...</div>';
   try{const rows=await allRows('goal_progress','*','end_date');if(request!==loading||DB.me?.id!==user||!isAdmin())return;goals=rows;renderGoals();}
-  catch(error){if(request===loading){el('goals-grid').innerHTML='<div class="goals-empty">Não foi possível carregar as metas.<button class="btn btn-ghost" onclick="loadGoals()">Tentar novamente</button></div>';toast('Erro ao carregar metas: '+error.message,'err');}}
+  catch(error){if(request===loading){if(!goals.length)el('goals-grid').innerHTML='<div class="goals-empty">Não foi possível carregar as metas.<button class="btn btn-ghost" onclick="loadGoals()">Tentar novamente</button></div>';toast('Erro ao carregar metas: '+error.message,'err');}}
   finally{if(request===loading)el('goals-grid').removeAttribute('aria-busy');}
  };
- window.setGoalFilter=function(value){filter=value;renderGoals();};
+ window.setGoalFilter=function(value){if(value!==filter)el('goals-search').value='';filter=value;renderGoals();};
  window.renderGoals=function(){
   if(!isAdmin()||owner!==DB.me.id)return;
   const visible=goals.filter(g=>!g.archived),counts={active:visible.filter(g=>['active','scheduled'].includes(state(g))).length,achieved:visible.filter(g=>state(g)==='achieved').length,missed:visible.filter(g=>state(g)==='missed').length};
   el('goals-summary').innerHTML=Object.entries(counts).map(([key,n])=>`<div class="goal-summary"><span>${key==='active'?'No radar':key==='achieved'?'Metas atingidas':'Prazos encerrados'}</span><strong>${n}</strong><small>${key==='active'?'Ativas e programadas':key==='achieved'?'Resultado alcançado':'Revise os próximos passos'}</small></div>`).join('');
   document.querySelectorAll('[data-goal-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.goalFilter===filter);b.setAttribute('aria-pressed',String(b.dataset.goalFilter===filter));});
-  const search=el('goals-search').value.toLocaleLowerCase('pt-BR');
+  const search=el('goals-search').value.trim().toLocaleLowerCase('pt-BR');
   const rows=goals.filter(g=>(filter==='all'?!g.archived:filter==='active'?['active','scheduled'].includes(state(g)):state(g)===filter)&&g.title.toLocaleLowerCase('pt-BR').includes(search));
   el('goals-grid').innerHTML=rows.length?rows.map(g=>{
     const s=state(g),current=Number(g.current_value),target=Number(g.target),remaining=Math.max(0,target-current),percent=Math.min(100,current/target*100);
     const remainingDays=Math.round((Date.parse(g.end_date+'T12:00Z')-Date.parse(MagemindCore.civilDate()+'T12:00Z'))/86400000);
     const days=Math.max(1,remainingDays+1);
     const deadline=s==='achieved'?'Meta atingida':s==='archived'?'Meta arquivada':remainingDays<0?'Prazo encerrado':remainingDays===0?'Último dia para concluir':`Faltam <strong>${remainingDays}</strong> ${remainingDays===1?'dia':'dias'}`;
-    return `<article class="goal-card ${s}"><div class="goal-card-top"><span class="goal-kind">${icon('target')}${g.metric==='revenue'?'Faturamento':g.metric==='count'?'Vendas fechadas':'Objetivo livre'}</span><button class="btn btn-ghost btn-xs sale-icon" aria-label="Editar meta ${esc(g.title)}" onclick="openGoal('${g.id}')">${icon('edit')}</button></div><h2>${esc(g.title)}</h2><span class="goal-state">${s==='achieved'?'✓ ':''}${labels[s]}</span><div class="goal-amount"><strong>${fmt(g,current)}</strong><span>de ${fmt(g,target)}</span></div><div class="goal-track" role="progressbar" aria-label="Progresso de ${esc(g.title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent.toFixed(1)}"><span style="width:${percent}%"></span></div><div class="goal-progress-copy"><span>${remaining?'Restante: '+fmt(g,remaining):'Meta alcançada'}</span><strong>${Math.round(percent)}%</strong></div><div class="goal-period">${fDate(g.start_date)} → ${fDate(g.end_date)}</div><div class="goal-deadline">${deadline}</div>${g.plan_id?`<div class="goal-detail">${esc(g.plan_name)}</div>`:''}${g.description?`<p class="goal-description">${esc(g.description)}</p>`:''}<div class="goal-card-foot"><span>${g.metric==='manual'?'Atualização manual':s==='active'&&remaining?fmt(g,Math.ceil(remaining/days*(g.metric==='revenue'?100:1))/(g.metric==='revenue'?100:1))+' / dia para atingir':'Atualização automática pelas vendas'}</span><div>${g.metric==='manual'&&!g.archived?`<button class="btn btn-ghost btn-sm" onclick="openGoalProgress('${g.id}')">Atualizar</button>`:''}<button class="btn btn-ghost btn-sm" onclick="archiveGoal('${g.id}')">${g.archived?'Restaurar':'Arquivar'}</button></div></div></article>`;
+    return `<article id="goal-card-${esc(g.id)}" class="goal-card ${s}"><div class="goal-card-top"><span class="goal-kind">${icon('target')}${g.metric==='revenue'?'Faturamento':g.metric==='count'?'Vendas fechadas':'Objetivo livre'}</span><button class="btn btn-ghost btn-xs sale-icon" aria-label="Editar meta ${esc(g.title)}" onclick="openGoal('${g.id}')">${icon('edit')}</button></div><h2>${esc(g.title)}</h2><span class="goal-state">${s==='achieved'?'✓ ':''}${labels[s]}</span><div class="goal-amount"><strong>${fmt(g,current)}</strong><span>de ${fmt(g,target)}</span></div><div class="goal-track" role="progressbar" aria-label="Progresso de ${esc(g.title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent.toFixed(1)}"><span style="width:${percent}%"></span></div><div class="goal-progress-copy"><span>${remaining?'Restante: '+fmt(g,remaining):'Meta alcançada'}</span><strong>${Math.round(percent)}%</strong></div><div class="goal-period">${fDate(g.start_date)} → ${fDate(g.end_date)}</div><div class="goal-deadline">${deadline}</div>${g.plan_id?`<div class="goal-detail">${esc(g.plan_name)}</div>`:''}${g.description?`<p class="goal-description">${esc(g.description)}</p>`:''}<div class="goal-card-foot"><span>${g.metric==='manual'?'Atualização manual':s==='active'&&remaining?fmt(g,Math.ceil(remaining/days*(g.metric==='revenue'?100:1))/(g.metric==='revenue'?100:1))+' / dia para atingir':'Atualização automática pelas vendas'}</span><div>${g.metric==='manual'&&!g.archived?`<button class="btn btn-ghost btn-sm" onclick="openGoalProgress('${g.id}')">Atualizar</button>`:''}<button class="btn btn-ghost btn-sm" data-goal-archive ${archiveRequests.has(g.id)?'disabled':''} onclick="archiveGoal('${g.id}')">${g.archived?'Restaurar':'Arquivar'}</button></div></div></article>`;
    }).join(''):`<div class="goals-empty">${icon('target')}<h2>${goals.length?'Nenhuma meta neste filtro':'O próximo resultado começa aqui'}</h2><p>Defina o que quer alcançar e acompanhe cada avanço.</p><button class="btn btn-primary" onclick="openGoal()">Criar meta</button></div>`;
  };
  window.syncGoalFields=function(){const metric=el('g-metric').value;el('g-unit').closest('.fg').hidden=metric!=='manual';el('g-plan').closest('.fg').hidden=metric==='manual';el('g-target').step=metric==='count'?'1':'0.01';el('g-target').min=metric==='count'?'1':'0.01';el('g-rule').textContent=metric==='manual'?'Escolha uma unidade e atualize o total realizado quando avançar.':metric==='revenue'?'Soma automática das vendas fechadas entre o início e o prazo, até hoje. Gastos não reduzem o faturamento.':'Cada venda fechada conta uma vez no período. Selecione um plano específico ou todos.';};
@@ -63,7 +64,30 @@
  window.saveGoal=async function(){if(!isAdmin()||el('goal-save').disabled)return;const target=Number(el('g-target').value),metric=el('g-metric').value;const payload={title:el('g-title').value.trim(),metric,target,unit:metric==='manual'?el('g-unit').value.trim():'unidades',plan_id:metric==='manual'?null:el('g-plan').value||null,start_date:el('g-start').value,end_date:el('g-end').value,description:el('g-description').value.trim()};if(!payload.title||!payload.unit||!Number.isFinite(target)||target<=0||target>999999999999.99||!payload.start_date||!payload.end_date||payload.start_date>payload.end_date||(metric==='count'&&!Number.isInteger(target))){toast('Revise nome, valor, unidade e período da meta.','err');return;}const current=editing;el('goal-save').disabled=true;try{await mutate(current?supa.from('goals').update(payload).eq('id',current.id).eq('updated_at',current.updated_at):supa.from('goals').insert(payload));closeModal('modal-goal');await loadGoals();toast('Meta salva.','ok');}catch(error){toast('Não foi possível salvar. Reabra a meta se outra pessoa a alterou. '+error.message,'err');}finally{el('goal-save').disabled=false;}};
  window.openGoalProgress=function(id){if(!isAdmin())return;editing=goals.find(g=>g.id===id);if(!editing||editing.metric!=='manual')return;el('goal-progress-title').textContent=editing.title;el('g-current').value=editing.manual_value;openModal('modal-goal-progress');};
  window.saveGoalProgress=async function(){if(!isAdmin()||!editing||el('goal-progress-save').disabled)return;const value=Number(el('g-current').value),g=editing;if(el('g-current').value===''||!Number.isFinite(value)||value<0||value>999999999999.99){toast('Informe um total válido.','err');return;}el('goal-progress-save').disabled=true;try{await mutate(supa.from('goals').update({manual_value:value}).eq('id',g.id).eq('updated_at',g.updated_at));closeModal('modal-goal-progress');await loadGoals();toast('Progresso atualizado.','ok');}catch(error){toast('Não foi possível salvar. Reabra a meta para atualizar os dados.','err');}finally{el('goal-progress-save').disabled=false;}};
- window.archiveGoal=async function(id){if(!isAdmin())return;const g=goals.find(x=>x.id===id);if(!g)return;try{await mutate(supa.from('goals').update({archived:!g.archived}).eq('id',id).eq('updated_at',g.updated_at));await loadGoals();}catch(error){toast('Não foi possível atualizar a meta. Recarregue e tente novamente.','err');}};
+ window.archiveGoal=async function(id){
+  if(!isAdmin()||owner!==DB.me.id||archiveRequests.has(id))return;
+  const g=goals.find(x=>x.id===id);if(!g)return;
+  const user=DB.me.id,request={};
+  const stillCurrent=()=>archiveRequests.get(id)===request&&DB.me?.id===user&&owner===user&&isAdmin();
+  const button=()=>el('goal-card-'+id)?.querySelector('[data-goal-archive]');
+  archiveRequests.set(id,request);const pending=button();if(pending)pending.disabled=true;
+  try{
+   const saved=await mutate(supa.from('goals').update({archived:!g.archived}).eq('id',id).eq('updated_at',g.updated_at));
+   if(!stillCurrent())return;
+   const current=goals.find(x=>x.id===id)||g;
+   const updated={...current,archived:saved.archived,updated_at:saved.updated_at};
+   goals=goals.some(x=>x.id===id)?goals.map(x=>x.id===id?updated:x):[...goals,updated];
+   // A read started before this write can still return the previous archive flag.
+   loading++;el('goals-grid').removeAttribute('aria-busy');archiveRequests.delete(id);
+   const destination=state(updated);
+   setGoalFilter(destination==='scheduled'?'active':destination);
+   if(el('pg-goals').classList.contains('active'))el('goal-card-'+id)?.scrollIntoView({block:'nearest'});
+  }catch(error){
+   if(stillCurrent())toast('Não foi possível atualizar a meta. Recarregue e tente novamente.','err');
+  }finally{
+   if(archiveRequests.get(id)===request){archiveRequests.delete(id);const current=button();if(current)current.disabled=false;}
+  }
+ };
 
  window.openNewExpense=()=>openExpense();
  window.openExpense=function(id){if(!isAdmin())return;expenseId=id||null;const e=DB.sales.find(s=>s.id===id);el('modal-expense-title').textContent=e?'Editar gasto':'Adicionar gasto';el('e-title').value=e?.service||'';el('e-value').value=e?.value||'';el('e-date').value=e?.date||MagemindCore.civilDate();el('e-notes').value=e?.desc||'';const names=[...new Set([e?.assignee||DB.me.name,...activeOperationalUsers().map(u=>u.name)].filter(Boolean))];el('e-assignee').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');openModal('modal-expense');};
