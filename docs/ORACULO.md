@@ -1,5 +1,7 @@
 # Oráculo no aplicativo Magemind
 
+Atualização comercial em 09/11/2026: novo workspace com contexto e agenda lateral, aba Desempenho, metas progressivas e acompanhamento por temperatura. O motor e as tabelas aditivas ficam no projeto Oráculo, documentados em `docs/acompanhamento-comercial.md`. O app desta rodada altera somente o CSS específico do Oráculo e a versão do cache; não altera cargos ou páginas dos demais módulos.
+
 Publicado em 09/11/2026. A seção `oraculo` fica no grupo Trabalho, depois de Documentos, exclusivamente para `ceo` e `manager`. Outros cargos mantêm as páginas anteriores. O ícone `oracle-icon.png` é a imagem fornecida pelo responsável, usada como máscara de luminância.
 
 O app carrega sob demanda `/embedded` no Worker existente `oraculo-magemind.oraculo-magemind.workers.dev`. A interface incorporada reutiliza `public/app.js` do Oráculo, com tema isolado, navegação interna por abas e adaptação para teclado móvel e paisagem. Não há cópia de conversas, nova instância do agente ou novo número de WhatsApp.

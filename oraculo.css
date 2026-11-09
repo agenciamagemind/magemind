@@ -17,3 +17,5 @@ body.oraculo-open #pg-oraculo.page.active{display:flex;flex:1;min-height:0;overf
  body.oraculo-keyboard-open #app{height:var(--oraculo-viewport-height,100%)}
  body.oraculo-keyboard-open #mobile-bottom-nav{display:none!important}
 }
+
+@media(min-width:901px){body.oraculo-open #app .main>.content{padding:0 0 8px}body.oraculo-open #app .main .topbar{height:44px;min-height:44px}body.oraculo-open #pg-oraculo #oraculo-workspace{border-radius:12px 0 0 12px}}
