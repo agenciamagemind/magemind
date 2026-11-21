@@ -499,7 +499,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261121-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-5"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-2"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-4"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261121-3"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-5"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-5"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-2"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-4"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261121-3"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-6"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -566,7 +566,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
       <div class="sb-account">
       <button class="sb-user" type="button" onclick="goTo('settings')" aria-label="Abrir configurações da conta">
-        <div class="av av-sm" id="sb-av">?</div>
+        <div class="av av-sm" id="sb-av"><span class="profile-avatar-default" aria-hidden="true"></span></div>
         <div class="sb-user-info">
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-name">–</div>
           <div style="font-size:11px;color:var(--text3)" id="sb-role">–</div>
@@ -609,7 +609,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           </div>
         </div>
         <button class="topbar-profile mobile-only" type="button" onclick="goTo('settings')" aria-label="Abrir configurações do perfil" title="Meu perfil">
-          <span class="av" id="topbar-av">?</span>
+          <span class="av" id="topbar-av"><span class="profile-avatar-default" aria-hidden="true"></span></span>
         </button>
       </div>
     </div>
@@ -905,7 +905,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div class="settings-card">
                 <div class="settings-card-title">👤 Informações pessoais</div>
                 <div class="profile-av-wrap">
-                  <div class="profile-av-big" id="profile-av-big" onclick="document.getElementById('av-file').click()">?
+                  <div class="profile-av-big" id="profile-av-big" onclick="document.getElementById('av-file').click()"><span class="profile-avatar-default" aria-hidden="true"></span>
                     <input type="file" id="av-file" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
                   </div>
                   <div style="font-size:11px;color:var(--text3)">Clique para alterar foto</div>
@@ -1263,7 +1263,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           </div>
           <div id="det-comments"></div>
           <div class="detail-comment-composer" id="det-comment-input">
-            <div class="av av-sm" id="det-comment-av" style="margin-bottom:4px;flex-shrink:0">?</div>
+            <div class="av av-sm" id="det-comment-av" style="margin-bottom:4px;flex-shrink:0"><span class="profile-avatar-default" aria-hidden="true"></span></div>
             <textarea class="fi" id="new-comment" rows="1" style="flex:1;resize:none" placeholder="Escreva um comentário..."></textarea>
             <button class="btn btn-primary btn-sm detail-comment-send" style="align-self:flex-end" onclick="addComment()" aria-label="Enviar comentário"><span>Enviar</span></button>
           </div>
@@ -1400,7 +1400,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <div class="overlay" id="avatar-onboarding" role="dialog" aria-modal="true" aria-labelledby="avatar-onboarding-title" onclick="if(event.target===this)dismissAvatarOnboarding()">
   <div class="modal avatar-onboarding-modal">
     <div class="avatar-onboarding-body">
-      <div class="avatar-onboarding-preview" id="avatar-onboarding-preview">?</div>
+      <div class="avatar-onboarding-preview" id="avatar-onboarding-preview"><span class="profile-avatar-default" aria-hidden="true"></span></div>
       <div class="avatar-onboarding-title" id="avatar-onboarding-title">Dê um rosto ao seu perfil</div>
       <div class="avatar-onboarding-copy">Pode ser uma foto bonita sua ou a logomarca da sua empresa. Assim todo mundo reconhece você mais rápido pelo sistema.</div>
       <div class="avatar-onboarding-hint">JPG, PNG, WebP ou HEIC. A imagem será otimizada antes do envio.</div>
@@ -1845,10 +1845,9 @@ function personName(id,fallback=''){
 }
 function avatarHTML(person,name,alt=''){
   const photo=safeImageUrl(person?.photo);
-  const initials=String(person?.av||'').trim();
   return photo
     ? `<img src="${photo}" alt="${escapeHTML(alt||name||'Foto de perfil')}" loading="lazy" decoding="async">`
-    : escapeHTML(initials&&!/^(?:\?+|undefined|null)$/i.test(initials)?initials:avatarInitials(name));
+    : '<span class="profile-avatar-default" aria-hidden="true"></span>';
 }
 function profileAvatarHTML(profileId,name){
   return avatarHTML(DB.avatarProfiles?.[profileId]||DB.demandPeople?.[profileId]||DB.users.find(user=>user.id===profileId),personName(profileId,name),name?`Foto de ${name}`:'Foto de perfil');
@@ -2783,7 +2782,7 @@ function updateSidebarUser(){
   if(!u) return;
   window.MagemindSupport?.sync();
   const avEl = document.getElementById('sb-av');
-  const avatarMarkup = safeImageUrl(u.photo) ? `<img src="${safeImageUrl(u.photo)}" alt="">` : escapeHTML(u.av);
+  const avatarMarkup = avatarHTML(u,u.name);
   avEl.innerHTML = avatarMarkup;
   const topbarAv = document.getElementById('topbar-av');
   if(topbarAv) topbarAv.innerHTML = avatarMarkup;
@@ -2799,11 +2798,7 @@ function updateSidebarUser(){
   }
   updateNotifBadge();
   const cmtAv = document.getElementById('det-comment-av');
-  if(cmtAv){
-    cmtAv.innerHTML = safeImageUrl(u.photo)
-      ? `<img src="${safeImageUrl(u.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      : escapeHTML(u.av);
-  }
+  if(cmtAv) cmtAv.innerHTML = avatarMarkup;
 }
 
 function buildNav(){
@@ -4612,9 +4607,7 @@ function loadProfile(){
   document.getElementById('prof-email').value = u.email;
   document.getElementById('prof-phone').value = u.phone||'';
   const bigAv = document.getElementById('profile-av-big');
-  bigAv.innerHTML = safeImageUrl(u.photo)
-    ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`
-    : `${escapeHTML(u.av)}<input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`;
+  bigAv.innerHTML = avatarHTML(u,u.name)+`<input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`;
   const planCard = document.getElementById('plan-card');
   if(isClient()){
     planCard.style.display='block';
@@ -5799,5 +5792,5 @@ async function clearDB(){
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" class="mm-glass mm-anchored-popover mm-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="sr-only" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-5"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-3"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-5"></script><script src="dashboard-appearance.js?v=20261121-3"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-4"></script><script src="demand-workspace.js?v=20261121-3"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261121-4"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
+<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-5"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-6"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-5"></script><script src="dashboard-appearance.js?v=20261121-3"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-4"></script><script src="demand-workspace.js?v=20261121-3"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261121-4"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
 </html>

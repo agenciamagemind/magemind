@@ -46,15 +46,30 @@
   for(const r of Array.isArray(items)?items:[]){if(!catalog[r?.id]||result.some(it=>it.id===r.id))continue;const w=Math.max(minimum(r.id),Math.min(cols(),Number(r.w)||3)),h=Math.max(minimumHeight(r.id),Math.min(4,Number(r.h)||1));let item={id:r.id,x:Math.max(0,Math.min(cols()-w,Number(r.x)||0)),y:Math.max(0,Math.min(95,Number(r.y)||0)),w,h};if(result.some(it=>overlaps(it,item)))item={...item,...vacant(result,w,h,item.y,item.x)};result.push(item);}
   return result;
  }
- function defaults(){
-  if(device==='mobile'){const result=[];for(const id of ['net','spend','profit','roas','demands','pending','approved','product_cost','fees','refunds','tax','chargebacks','margin','roi','expenses','payments','products','revenue']){const w=catalog[id][2]==='metric'?2:4,h=catalog[id][2]==='metric'?1:3;result.push({id,...vacant(result,w,h)});}return result;}
-  return normalize([
-   ['net',0,0,3,1],['spend',3,0,3,1],['roas',6,0,2,1],['profit',8,0,4,1],
-   ['products',0,1,4,3],['pending',4,1,3,1],['product_cost',7,1,2,1],['demands',9,1,3,3],
-   ['refunds',4,2,3,1],['tax',7,2,2,1],['fees',4,3,3,1],['margin',7,3,2,1],
-   ['payments',0,4,4,3],['revenue',4,4,5,3],['expenses',9,4,3,1],['roi',9,5,3,1],['chargebacks',9,6,3,1],['approved',0,7,3,1],['approval',3,7,3,3],['sources',6,7,3,3],['demand_list',9,7,3,3]
-  ].map(([id,x,y,w,h])=>({id,x,y,w,h})));
- }
+ const defaultTiles={
+  desktop:[
+   ['profit',0,0,4,1],['net',4,0,2,1],['approved',6,0,2,1],['margin',8,0,2,1],['roi',10,0,2,1],
+   ['pending',0,1,2,1],['spend',2,1,2,1],['fees',4,1,2,1],['refunds',6,1,2,1],['chargebacks',8,1,2,1],['roas',10,1,2,1],
+   ['revenue',0,2,6,3],['refund_rate',6,2,2,1],['chargeback_rate',8,2,2,1],['expenses',10,2,2,1],
+   ['payments',6,3,3,2],['approval',9,3,3,2],
+   ['demands',0,5,3,3],['demand_list',3,5,3,3],['sources',6,5,3,3],['products',9,5,3,3]
+  ],
+  mobile:[
+   ['profit',0,0,4,1],
+   ['net',0,1,2,1],['spend',2,1,2,1],
+   ['approved',0,2,2,1],['roas',2,2,2,1],
+   ['demands',0,3,4,3],
+   ['pending',0,6,2,1],
+   ['product_cost',0,7,2,1],['fees',2,7,2,1],
+   ['refunds',0,8,2,1],['tax',2,8,2,1],
+   ['chargebacks',0,9,2,1],['margin',2,9,2,1],
+   ['roi',0,10,2,1],['expenses',2,10,2,1],
+   ['payments',0,11,4,3],
+   ['products',0,14,4,3],
+   ['revenue',0,17,4,3]
+  ],
+ };
+ function defaults(){return defaultTiles[device].map(([id,x,y,w,h])=>({id,x,y,w,h}));}
  const layout=()=>editing?draft:saved[device]?.layout||defaults();
  function move(id,change){
   const item=draft.find(i=>i.id===id);if(!item)return;
