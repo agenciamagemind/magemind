@@ -497,9 +497,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="auth.css?v=20260911-4">
 <link rel="stylesheet" href="goals.css?v=20260925-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
-<link rel="stylesheet" href="product-ui.css?v=20261030-7">
+<link rel="stylesheet" href="product-ui.css?v=20261121-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-1"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-1"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261030-7"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-1"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-2"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-2"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261030-7"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-2"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -591,6 +591,10 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <div class="topbar-right">
         <span id="saved-ind" style="font-size:10px;color:var(--emerald);opacity:0;transition:opacity .4s;white-space:nowrap">✓ salvo</span>
         <div style="position:relative" id="notif-wrapper">
+          <button type="button" class="btn btn-ghost btn-icon" id="dashboard-privacy" aria-label="Ocultar dados dos blocos" title="Ocultar dados dos blocos" aria-controls="pg-dashboard" aria-pressed="false" onclick="toggleDashboardPrivacy()" hidden>
+            <svg class="privacy-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            <svg class="privacy-eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 11s3.4 5 9 5 9-5 9-5M6.2 14l-2 2.4M12 16v3M17.8 14l2 2.4"/></svg>
+          </button>
           <button type="button" class="btn btn-ghost btn-icon" title="Notificações" aria-label="Notificações" aria-haspopup="dialog" aria-controls="notif-panel" aria-expanded="false" onclick="toggleNotifPanel()" id="btn-notif">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:99px;background:var(--rose);color:#fff;font-size:9px;font-weight:700;align-items:center;justify-content:center;padding:0 3px;line-height:1">0</span>
@@ -664,7 +668,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div id="dash-activity"></div>
             </div>
             <div class="card-block" id="card-dash-status" style="padding:16px">
-              <div style="font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;margin-bottom:12px">Demandas por status</div>
+              <div class="cb-title" style="margin-bottom:12px">Demandas por status</div>
               <div id="demand-status-bars"></div>
             </div>
           </div>
@@ -914,7 +918,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div class="settings-card-title">💎 Meu Plano</div>
               <div id="plan-content"></div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="profile-cards-row">
+            <div id="profile-cards-row">
               <div class="settings-card">
                 <div class="settings-card-title">👤 Informações pessoais</div>
                 <div class="profile-av-wrap">
@@ -933,9 +937,9 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <div class="settings-card">
                 <div class="settings-card-title">🔒 Alterar senha</div>
                 <div style="display:flex;flex-direction:column;gap:12px">
-                  <div class="fg"><label class="fl">Senha atual</label><input class="fi" id="prof-pass-cur" type="password" placeholder="••••••••"></div>
-                  <div class="fg"><label class="fl">Nova senha</label><input class="fi" id="prof-pass-new" type="password" placeholder="Mínimo 8 caracteres"></div>
-                  <div class="fg"><label class="fl">Confirmar nova senha</label><input class="fi" id="prof-pass-con" type="password" placeholder="••••••••"></div>
+                  <div class="fg"><label class="fl" for="prof-pass-cur">Senha atual</label><input class="fi" id="prof-pass-cur" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+                  <div class="fg"><label class="fl" for="prof-pass-new">Nova senha</label><input class="fi" id="prof-pass-new" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+                  <div class="fg"><label class="fl" for="prof-pass-con">Confirmar nova senha</label><input class="fi" id="prof-pass-con" type="password" autocomplete="new-password" placeholder="••••••••"></div>
                   <button class="btn btn-primary btn-sm" onclick="changePassword()">Alterar senha</button>
                 </div>
               </div>
@@ -1427,7 +1431,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="product-ui.js?v=20261121-1"></script>
+<script src="product-ui.js?v=20261121-2"></script>
 <script src="partners.js?v=20260923-7"></script>
 <script src="partner-workspace.js?v=20260923-7"></script>
 <script src="firewall-sessions.js?v=20260923-1"></script>
@@ -2366,7 +2370,7 @@ async function afterLogin(authUser){
     document.body.classList.toggle('tracking-pilot',trackingEnabled());
     document.querySelector('.mt-demand-title').hidden=!trackingEnabled()||trackingObserver();
     document.getElementById('dash-summary-sub').textContent=trackingEnabled()&&!trackingObserver()?'Esses são os resultados da sua operação:':'Resumo operacional de hoje';
-    document.querySelector('#pg-settings .ph-sub').textContent=trackingEnabled()&&!trackingObserver()?'Perfil, segurança, notificações e custos':'Perfil, plano, segurança e preferências';
+    document.querySelector('#pg-settings .ph-sub').textContent=trackingEnabled()&&!trackingObserver()?'Perfil, custos, aparência e notificações':'Perfil, aparência e notificações';
     if(!await recordSecurityAccess('session_access')) return;
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -2896,6 +2900,7 @@ function goTo(page){
   const ni = document.getElementById('nav-'+page); if(ni) ni.classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg = document.getElementById('pg-'+page); if(pg) pg.classList.add('active');
+  syncDashboardPrivacyControl(page);
   const mainScroll=document.querySelector('#app .main');
   if(mainScroll){mainScroll.scrollTop=0;mainScroll.classList.remove('content-scrolled');}
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
@@ -4654,10 +4659,8 @@ function loadProfile(){
     ? `<img src="${safeImageUrl(u.photo)}" alt=""><input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`
     : `${escapeHTML(u.av)}<input type="file" id="av-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" onchange="uploadAvatar(event)">`;
   const planCard = document.getElementById('plan-card');
-  const profileCardsRow = document.getElementById('profile-cards-row');
   if(isClient()){
     planCard.style.display='block';
-    if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
     const currentPlans=getCurrentClientPlans();
     document.getElementById('plan-content').innerHTML=currentPlans.length?`
       <div style="display:flex;flex-direction:column;gap:15px">${currentPlans.map((pd,index)=>`
@@ -4671,13 +4674,11 @@ function loadProfile(){
       : `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap"><div><div style="font-size:13px;color:var(--text2);font-weight:600">Nenhum plano definido</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Explore os pacotes, planos e serviços disponíveis.</div></div><button class="btn btn-primary btn-sm" onclick="goTo('solutions')">Conhecer soluções</button></div>`;
   } else if(isAffiliate()){
     planCard.style.display='block';
-    if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
     document.getElementById('plan-content').innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--violet2)">Indique &amp; Ganhe</span><span class="badge b-amber">Comissão ${DB.me.commissionRate||0}%</span></div>
       <div style="font-size:13px;color:var(--text3)">Percentual de comissão sobre vendas fechadas dos clientes indicados. Somente CEO e Gerentes podem alterar esse valor em Indique &amp; Ganhe.</div>`;
   } else {
     planCard.style.display='none';
-    if(profileCardsRow) profileCardsRow.style.gridTemplateColumns='1fr 1fr';
   }
   window.renderPushSettings?.();
 }
@@ -5840,5 +5841,5 @@ async function clearDB(){
 <script src="push-notifications.js?v=20260925-2"></script>
 <div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" class="mm-glass mm-anchored-popover mm-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-1"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-1"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-1"></script><script src="dashboard-appearance.js?v=20261121-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-1"></script><script src="demand-workspace.js?v=20261102-1"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261030-7"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
+<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-1"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-2"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-1"></script><script src="dashboard-appearance.js?v=20261121-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-1"></script><script src="demand-workspace.js?v=20261102-1"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261030-7"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
 </html>

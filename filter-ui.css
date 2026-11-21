@@ -54,19 +54,26 @@
 .demand-client-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--text2);font:11px 'Poppins',sans-serif;text-align:left;cursor:pointer}
 .demand-client-option>span:first-child{min-width:0}.demand-client-option strong{display:block;font-weight:500;overflow-wrap:anywhere}.demand-client-option small{display:block;font-size:10px;color:var(--text3);margin-top:3px;overflow-wrap:anywhere}
 .demand-client-option:hover,.demand-client-option:focus-visible{outline:0;background:var(--bg3);color:var(--text)}.demand-client-option[aria-selected=true]{background:var(--violetbg);color:var(--violet3)}.demand-client-check{flex:none;color:var(--violet3)}.demand-client-empty{font-size:11px;color:var(--text3);padding:12px 10px;margin:0}
-.mt-root .md-dashboard-footer{display:none}
-@media(max-width:900px){#app #pg-dashboard:has(>.dash-grid-empty){padding-bottom:0}#app #pg-dashboard>.dash-grid-empty{display:none}.mt-root .md-dashboard-footer{display:flex;justify-content:flex-start;margin-top:18px;padding:4px 0 10px}.mt-root .md-dashboard-footer .md-customize{padding:10px 14px;min-height:40px;border-radius:10px}.demand-client-picker{max-width:100%}.demand-client-trigger{width:100%;min-width:160px}}
+@media(max-width:900px){#app #pg-dashboard:has(>.dash-grid-empty){padding-bottom:0}#app #pg-dashboard>.dash-grid-empty{display:none}.demand-client-picker{max-width:100%}.demand-client-trigger{width:100%;min-width:160px}}
 #sales-period-filter.sales-period-bar{display:flex!important;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px!important}
 .mm-period-toggle{min-height:var(--filter-h);gap:9px;min-width:0;justify-content:flex-start;text-align:left;white-space:normal}
 .mm-period-toggle svg,.mm-period-toggle .mm-chevron{flex:none}
 .mm-period-toggle .mm-chevron{margin-left:auto}
 #app :is(#firewall-period,.rev-period-btn,#sales-period-filter>button)[hidden]{display:none!important}
 #sales-period-caption{flex-basis:auto;padding:0;font-size:11px}
-#notif-wrapper{display:flex;align-items:center;gap:8px}#dashboard-customize{width:38px;height:38px;border-radius:12px;background:var(--bg2);box-shadow:0 8px 24px #0004}#dashboard-customize svg{width:17px;height:17px}
+#notif-wrapper{display:flex;align-items:center;gap:8px}
+#notif-wrapper :is(#dashboard-customize,#dashboard-privacy){flex:none;width:38px;height:38px;padding:0;border-radius:50%;background:var(--bg2)}
+#notif-wrapper :is(#dashboard-customize,#dashboard-privacy)[hidden]{display:none}
+#dashboard-privacy[aria-pressed=true]{color:var(--accent-text);border-color:var(--accent-line)}
+#dashboard-privacy[aria-pressed=true] .privacy-eye-open,#dashboard-privacy[aria-pressed=false] .privacy-eye-closed{display:none}
+#pg-dashboard[data-dashboard-private] :is(.md-tile-body,.stat > :not(.stat-label),.dash-grid .card-block > :not(.cb-head,.cb-title)){
+ filter:blur(12px);opacity:.5;user-select:none;pointer-events:none
+}
+#pg-dashboard[data-dashboard-private] .md-info{visibility:hidden}
 .app-metric-tooltip{position:fixed;z-index:900;width:max-content;max-width:min(300px,calc(100vw - 24px));padding:12px 14px;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px #0006;font-size:12px;line-height:1.65;pointer-events:none}
-@media(min-width:901px){.mt-root .md-customize-mobile{display:none}.mt-root .md-info{cursor:help}}
+@media(min-width:901px){.mt-root .md-info{cursor:help}}
 @media(max-width:900px){
- #dashboard-customize{display:none!important}#tracking-toolbar{gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+ #tracking-toolbar{gap:8px;margin:10px 0 16px;flex-wrap:wrap}
  #tracking-toolbar .mt-period-control{flex:1 1 150px;min-width:0}
  #tracking-toolbar #tracking-period-toggle{width:100%;min-width:0;max-width:none}
  #tracking-toolbar #tracking-period-toggle .mt-period-chevron{margin-left:auto!important}
@@ -93,6 +100,13 @@
  #sales-period-filter.sales-period-bar{padding:12px!important;gap:7px}
  #sales-period-filter .mm-period-toggle{width:100%}
  #sales-period-caption{font-size:10px}
+}
+@media(max-width:380px){
+ #app .topbar:has(#dashboard-privacy:not([hidden])){gap:4px}
+ #app .topbar:has(#dashboard-privacy:not([hidden])) :is(.topbar-right,#notif-wrapper){gap:4px}
+ #app .topbar:has(#dashboard-privacy:not([hidden])) .topbar-brand{gap:5px}
+ #app .topbar:has(#dashboard-privacy:not([hidden])) .topbar-brand img{width:29px;height:29px}
+ #app .topbar:has(#dashboard-privacy:not([hidden])) .sb-logo-text{font-size:14px}
 }
 @keyframes filter-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#tracking-refresh svg{animation:none}.mt-root .app-filter-toggle>span:last-child{transition:none}}

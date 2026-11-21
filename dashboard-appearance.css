@@ -25,19 +25,20 @@
   --mm-panel-radius: 24px;
   --mm-row-radius: 14px;
   --mm-surface: linear-gradient(145deg, #ffffff09, transparent 58%), var(--bg2);
-  --mm-glass-light: radial-gradient(ellipse at 12% -40%, #ffffff24, transparent 64%), linear-gradient(151deg, #ffffff0a, transparent 50%, #00000019);
-  --glass: var(--mm-glass-light), var(--mm-glass-fill, #242424);
-  --glass-edge: #ffffff29;
+  /* Material from the public Magemind header, with a neutral tint behind the glass. */
+  --mm-glass-light: linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.035) 42%, rgba(255,255,255,.065));
+  --mm-glass-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.029'/%3E%3C/svg%3E");
+  --mm-glass-texture: var(--mm-glass-grain) 0 0 / 180px 180px repeat, var(--mm-glass-light);
+  --glass: var(--mm-glass-texture), #191919;
+  --glass-edge: rgba(255,255,255,.12);
+  --mm-glass-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 24px 80px rgba(0,0,0,.25);
 }
 
 :root[data-accent="blue"] { --accent-ink: #fff; --accent-text: #9bb6ff; }
 ::selection { background: var(--accent); color: var(--accent-ink); }
 input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
 
-#app > .sidebar {
-  background: linear-gradient(160deg, #242424, #181818 50%, #151515);
-}
-#app .sidebar::before { background: radial-gradient(circle, #ffffff0b, transparent 72%); }
+#app .sidebar::before { content: none; }
 .sb-logo-text { background-image: linear-gradient(135deg, #f5f5f5, #bcbcbc); }
 #app .sidebar .sb-bottom { background: transparent; }
 #app .sidebar .sb-item.active {
@@ -114,19 +115,35 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .demand-rich-editor:focus-within { box-shadow: 0 0 0 3px var(--accent-soft); }
 .install-app-icon { box-shadow: 0 8px 24px #0007; }
 
-.mm-glass, #tracking-dialog, #modal-sales-period .modal {
-  background: var(--glass);
-  border: 1px solid var(--glass-edge);
-  box-shadow: inset 0 1px 0 #ffffff19, inset 0 -1px 0 #ffffff08, 0 18px 48px #0007;
+.mm-glass, #tracking-dialog, #modal-sales-period .modal, #app > .sidebar,
+#app #pg-dashboard :is(.stat, .card-block), .mobile-bottom-nav {
+  background: var(--mm-glass-texture), var(--mm-glass-fill, #191919);
+  border-color: var(--glass-edge);
+  box-shadow: var(--mm-glass-shadow);
 }
+.mm-glass, #tracking-dialog, #modal-sales-period .modal { border-style: solid; border-width: 1px; }
 #tracking-dialog, .overlay .modal { border-radius: var(--mm-panel-radius); }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mm-glass, #tracking-dialog, #modal-sales-period .modal {
-    --mm-glass-fill: rgb(24 24 24 / 84%);
-    -webkit-backdrop-filter: blur(24px) saturate(132%);
-    backdrop-filter: blur(24px) saturate(132%);
+  .mm-glass, #tracking-dialog, #modal-sales-period .modal, #app > .sidebar,
+  #app #pg-dashboard :is(.stat, .card-block), .mobile-bottom-nav {
+    --mm-glass-fill: rgb(18 18 18 / var(--mm-glass-opacity, .72));
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
   }
+}
+#app #pg-dashboard :is(.md-tile, .stat, .card-block) {
+  --mm-glass-opacity: .54;
+  --mm-glass-shadow: inset 0 1px 0 #ffffff19, 0 6px 20px #0002;
+}
+#app > .sidebar { --mm-glass-opacity: .63; }
+#app[data-custom-background] :is(.md-tile, .sidebar, #pg-dashboard .stat, #pg-dashboard .card-block) {
+  --text2: #e0e0e0;
+  --text3: #d0d0d0;
+}
+#app.sidebar-expanded:not(.sidebar-pinned) > .sidebar {
+  --mm-glass-opacity: .52;
+  box-shadow: inset -1px 0 0 #ffffff0d, 12px 0 36px #0004;
 }
 
 .mm-anchored-popover {
@@ -185,7 +202,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 #notif-panel .notif-text { display: block; overflow: visible; overflow-wrap: anywhere; }
 
 @media (prefers-reduced-transparency: reduce) {
-  .mm-glass, #tracking-dialog, #modal-sales-period .modal {
+  .mm-glass, #tracking-dialog, #modal-sales-period .modal, #app > .sidebar,
+  #app #pg-dashboard :is(.stat, .card-block), .mobile-bottom-nav {
     --mm-glass-fill: #242424;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -287,9 +305,9 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-#app[data-custom-background] .topbar :is(#btn-notif, #dashboard-customize, .mobile-menu-btn, .topbar-brand, .topbar-profile) {
-  --mm-glass-fill: rgb(24 24 24 / 83%);
-  background: var(--glass);
+#app[data-custom-background] .topbar :is(#btn-notif, #dashboard-customize, #dashboard-privacy, .mobile-menu-btn, .topbar-brand, .topbar-profile) {
+  --mm-glass-fill: rgb(18 18 18 / 64%);
+  background: var(--mm-glass-texture), var(--mm-glass-fill);
   border: 1px solid var(--glass-edge);
   border-radius: 999px;
   color: var(--text);
@@ -317,7 +335,14 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .mm-image-preview:active { cursor: grabbing; }
 .mm-preview-interface { position: absolute; inset: 6%; pointer-events: none; font-size: clamp(8px, 1.8vw, 15px); text-shadow: 0 1px 6px #000; }
 .mm-preview-panels { display: flex; gap: 4%; margin-top: 9%; }
-.mm-preview-panels > div { flex: 1; min-width: 0; display: grid; gap: 5px; padding: 6%; font-size: .65em; background: #232323e6; border: 1px solid #ffffff20; border-radius: 7px; }
+.mm-preview-panels > div { flex: 1; min-width: 0; display: grid; gap: 5px; padding: 6%; font-size: .65em; background: var(--mm-glass-texture), var(--mm-glass-fill, #191919); border: 1px solid var(--glass-edge); border-radius: 7px; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mm-preview-panels > div {
+    --mm-glass-fill: rgb(18 18 18 / 54%);
+    -webkit-backdrop-filter: blur(6px) saturate(140%);
+    backdrop-filter: blur(6px) saturate(140%);
+  }
+}
 .mm-preview-panels span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .mm-preview-panels i { height: 3px; width: 100%; background: #ffffff20; border-radius: 20px; }
 .mm-preview-panels i:last-child { width: 62%; background: var(--accent); opacity: .6; }
@@ -344,15 +369,9 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 @media (max-width: 900px) {
   #app > .mm-background { inset-inline-start: 0; }
   .mm-period-popover .mt-period-option, .notif-panel-head button { min-height: 44px; }
-  #app .sidebar, .mobile-bottom-nav { background: var(--glass); border-color: var(--glass-edge); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
-  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    #app .sidebar, .mobile-bottom-nav { --mm-glass-fill: rgb(24 24 24 / 84%); }
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    #app .sidebar, .mobile-bottom-nav { --mm-glass-fill: #242424; -webkit-backdrop-filter: none; backdrop-filter: none; }
-  }
+  .mobile-sidebar-backdrop { background: #09090952; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .mobile-tab { color: var(--text2); }
-  .mobile-tab.active { color: var(--accent-text); background: linear-gradient(160deg, #ffffff20, #ffffff09); }
+  .mobile-tab.active { color: var(--accent-text); background: #ffffff10; }
   .mobile-tab.active .mobile-tab-icon { color: inherit; }
   .mt-root .mt-ad-filters > .search { grid-row: 1; }
   .mt-root .mt-ad-filters > .app-filter-toggle { grid-row: 2; grid-column: 1; }

@@ -121,7 +121,7 @@ function setupSettingsTabs() {
     tabs.className = 'settings-tabs';
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Setores das configurações');
-    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['appearance','Aparência'], ['company','Empresa']];
+    const sections = [['profile','Perfil'], ['appearance','Aparência'], ['notifications','Notificações'], ['company','Empresa']];
     sections.forEach(([id, label]) => {
       const panel = id === 'profile' ? mount : document.createElement('div');
       if (id !== 'profile') { panel.id = `settings-panel-${id}`; host.appendChild(panel); }
@@ -136,9 +136,6 @@ function setupSettingsTabs() {
       tabs.appendChild(tab);
     });
     host.prepend(tabs);
-    document.getElementById('settings-panel-security').append(
-      document.getElementById('prof-pass-cur').closest('.settings-card')
-    );
     mount.append(document.querySelector('#profile-layout button[onclick="doLogout()"]'));
     document.getElementById('settings-panel-notifications').append(
       document.getElementById('push-settings-card'), document.getElementById('mobile-install-settings')
@@ -159,7 +156,7 @@ function setupSettingsTabs() {
     if(!document.getElementById('settings-tab-tracking')){
       const panel=document.createElement('div');panel.id='settings-panel-tracking';panel.className='settings-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','settings-tab-tracking');host.append(panel);
       const tab=document.createElement('button');tab.type='button';tab.id='settings-tab-tracking';tab.textContent='Custos';tab.dataset.section='tracking';tab.setAttribute('role','tab');tab.setAttribute('aria-controls',panel.id);tab.addEventListener('click',()=>selectSettingsTab('tracking'));
-      document.getElementById('settings-tab-company').before(tab);
+      document.getElementById('settings-tab-appearance').before(tab);
       const notifications=document.createElement('div');notifications.id='tracking-notifications-mount';notifications.className='mt-root';document.getElementById('settings-panel-notifications').prepend(notifications);
     }
   }else{
@@ -178,6 +175,45 @@ function selectSettingsTab(section) {
     document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
   });
   if (section === 'appearance') window.MagemindAppearance?.render();
+}
+
+const dashboardSensitiveContent = '.md-tile-body, .md-info, .stat > :not(.stat-label), .dash-grid .card-block > :not(.cb-head, .cb-title)';
+const dashboardPrivacyKey = userId => 'mm_dashboard_private_' + userId;
+let dashboardPrivacyObserver;
+let dashboardPrivacyUser;
+
+function setDashboardPrivacy(hidden) {
+  const page = document.getElementById('pg-dashboard');
+  const toggle = document.getElementById('dashboard-privacy');
+  page.toggleAttribute('data-dashboard-private', hidden);
+  toggle.setAttribute('aria-pressed', String(hidden));
+  toggle.title = hidden ? 'Mostrar dados dos blocos' : 'Ocultar dados dos blocos';
+  const syncContent = () => {
+    page.querySelectorAll(dashboardSensitiveContent).forEach(node => node.toggleAttribute('inert', hidden));
+  };
+  syncContent();
+  dashboardPrivacyObserver?.disconnect();
+  if (hidden) {
+    dashboardPrivacyObserver = new MutationObserver(syncContent);
+    dashboardPrivacyObserver.observe(page, {childList: true, subtree: true});
+  }
+}
+
+function syncDashboardPrivacyControl(page) {
+  const active = page === 'dashboard' && Boolean(DB.me);
+  document.getElementById('dashboard-privacy').hidden = !active;
+  if (!active || dashboardPrivacyUser === DB.me.id) return;
+  dashboardPrivacyUser = DB.me.id;
+  let hidden = false;
+  try { hidden = localStorage.getItem(dashboardPrivacyKey(dashboardPrivacyUser)) === 'true'; } catch {}
+  setDashboardPrivacy(hidden);
+}
+
+function toggleDashboardPrivacy() {
+  if (!DB.me) return;
+  const hidden = !document.getElementById('pg-dashboard').hasAttribute('data-dashboard-private');
+  setDashboardPrivacy(hidden);
+  try { localStorage.setItem(dashboardPrivacyKey(DB.me.id), String(hidden)); } catch {}
 }
 
 function openClientPreview(id) {

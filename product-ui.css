@@ -42,7 +42,7 @@
 .settings-tabs button:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
 .settings-panel{max-width:920px;display:grid;gap:16px;margin-top:0!important;min-width:0}
 .settings-panel[hidden],.settings-tabs button[hidden]{display:none!important}
-#pg-settings #profile-cards-row{grid-template-columns:minmax(0,1fr)!important}
+#profile-cards-row{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .settings-panel>.btn{justify-self:start}
 /* Focus the dialog context on opening; only keyboard navigation highlights controls. */
 [data-dialog-surface]:focus{outline:none!important}
