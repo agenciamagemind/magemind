@@ -28,7 +28,7 @@
  const state={workspace:null,tab:'overview',preset:'week',...periods.range('week'),currency:'BRL',page:1,status:'',provider:'',channel:'',payment:'',search:'',account_id:''};
  function campaignView(provider){
   const key=state.workspace+':'+provider;
-  if(!adViews.has(key))adViews.set(key,{level:'campaign',sort:'spend_minor',direction:'desc',parent:'',account:'',collapsed:false});
+  if(!adViews.has(key))adViews.set(key,{level:'campaign',sort:'spend_minor',direction:'desc',parent:'',account:''});
   return adViews.get(key);
  }
  let costFlow=null,filterTimer=0;
@@ -232,11 +232,9 @@
   if(observer()&&!connected.length)return '<div class="mt-admin-empty"><div class="mt-connect-brands">'+adProviders.map(p=>brand.logo(p)).join('')+'</div><h3>Esta operação ainda não tem contas de anúncios conectadas</h3><p>As campanhas aparecerão aqui quando o responsável conectar uma conta.</p></div>';
   const platformHeading=p=>brand.logo(p)+'<h2>'+brand.name(p)+'</h2>';
   if(!connected.length){
-   const preview=adProviders.map(p=>'<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager"><div class="mt-platform-heading">'+platformHeading(p)+'</div><div class="mt-platform-empty"><div class="skeleton"></div></div></section>').join('');
-   return '<div class="mt-campaigns-lock"><div class="mt-campaigns-preview" inert aria-hidden="true">'+preview+
-    '</div><div class="mt-connect-overlay"><div class="mt-connect-message mm-glass"><div class="mt-connect-brands">'+adProviders.map(p=>brand.logo(p)).join('')+
-    '</div><h2>Conecte sua conta de anúncios</h2><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+
-    (canManage?button('Abrir Integrações','setup-ads','',true):'<p>Peça ao responsável pela operação para conectar uma conta em Integrações.</p>')+'</div></div></div>';
+   return '<div class="mt-campaigns-lock"><section class="mt-connect-message mm-glass" aria-labelledby="campaign-connect-title"><div class="mt-connect-brands">'+adProviders.map(p=>brand.logo(p)).join('')+
+    '</div><h1 id="campaign-connect-title">Conecte sua conta de anúncios</h1><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+
+    (canManage?button('Abrir Integrações','setup-ads','',true):'<p>Peça ao responsável pela operação para conectar um perfil em Integrações.</p>')+'</section></div>';
   }
   const levels={campaign:['Campanhas','Campanha'],group:['Conjuntos / grupos','Conjunto / grupo'],ad:['Anúncios','Anúncio']};
   const accountKey=row=>row.provider+':'+row.account_id;
@@ -288,8 +286,8 @@
    const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
    const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordenar resultados</span>',sortOptions,sort+':'+direction)+'</div>';
    const breadcrumb=parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'';
-   return '<details class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'"'+(view.collapsed?'':' open')+'>'+
-    '<summary class="mt-platform-heading">'+heading+'<span class="mt-platform-count">'+entries.length+' '+countLabel.toLowerCase()+'</span><svg class="mt-platform-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>'+
+   return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'">'+
+    '<header class="mt-platform-heading">'+heading+'<span class="mt-platform-count">'+entries.length+' '+countLabel.toLowerCase()+'</span></header>'+
     '<div class="mt-platform-tools">'+tabs+mobileSort+breadcrumb+'</div>'+
     (entries.length?'<div class="mt-ad-table-scroll" tabindex="0" role="region" aria-label="'+plural+' · '+brand.name(p)+'">'+
     '<table class="mt-ad-table" role="table" data-mobile-table="scroll"><thead role="rowgroup"><tr role="row"><th scope="col">Veiculação</th>'+
@@ -300,7 +298,7 @@
       '<td role="cell" class="mt-ad-name">'+(level!=='ad'?'<button type="button" data-action="ad-drill" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" title="Ver '+(level==='campaign'?'conjuntos / grupos':'anúncios')+'">'+esc(r.name)+'<span aria-hidden="true"> ›</span></button>':'<strong>'+esc(r.name)+'</strong>')+
       '<small>'+esc(account(r))+'</small></td>'+metricCells(r)+'</tr>').join('')+
     '</tbody><tfoot role="rowgroup"><tr role="row"><td role="cell"></td><th scope="row" title="Soma das linhas filtradas. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+
-      metricCells(totals)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</details>';
+      metricCells(totals)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
   }).join('');
   const compact=!observer();
   return '<div class="filters mt-ad-filters'+(compact?' mt-compact-filters':'')+'">'+(compact?'<span data-tracking-toolbar></span>':'')+
@@ -315,6 +313,7 @@
   const card=p=>{
    const rows=data.filter(i=>i.provider===p),checkout=checkoutProviders.includes(p),available=p==='meta'||checkout||p==='custom';
    const heading='<div class="mt-integration-brand">'+brand.logo(p)+'<h3>'+brand.name(p)+'</h3></div>';
+   if(p==='meta')return '<article class="integration-card mt-integration-meta">'+heading+connections.metaIntegrationCard(rows,['owner','admin'].includes(workspace()?.role))+'</article>';
    if(pilot&&!available)return '<article class="integration-card mt-integration-'+p+'">'+heading+'<p>A ativação desta conexão é feita pela Magemind.</p>'+
     (['owner','admin'].includes(workspace()?.role)?button('Solicitar conexão','campaign-integrate','data-id="'+p+'"',true):'')+'</article>';
    return '<article class="integration-card mt-integration-'+p+'">'+heading+'<p>'+(p==='meta'?'Entre com sua conta Meta e escolha as contas de anúncios.':checkout?'Receba pedidos e pagamentos por webhook.':'Pedidos enviados pela API da sua operação.')+'</p>'+rows.map(i=>{
@@ -631,10 +630,6 @@
   clearTimeout(filterTimer);
   filterTimer=setTimeout(applyClientFilters,260);
  });
- document.addEventListener('toggle',event=>{
-  if(!event.target.matches?.('details.mt-ad-manager[data-platform]')||!event.target.isConnected)return;
-  campaignView(event.target.dataset.platform).collapsed=!event.target.open;
- },true);
  $('tracking-currency').addEventListener('change',()=>{state.currency=$('tracking-currency').value;state.page=1;render();});
  const periodPopover=bindAnchoredPopover($('tracking-period-popover'),$('tracking-period-toggle'));
  function closePeriod(){periodPopover.close();}
@@ -689,7 +684,7 @@
      if(grant&&workspaces.some(row=>row.id===w))state.workspace=w;
      goTo(returnPage);
      try{
-      if(grant&&w===state.workspace)await connections.accounts(grant);
+      if(grant&&w===state.workspace)await connections.accounts(grant,{fromOAuth:true});
       else{
        const messages={
         token_revoked:'A Meta devolveu uma autorização inválida. Renove o acesso com o perfil responsável pela conta de anúncios.',

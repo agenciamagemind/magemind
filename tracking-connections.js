@@ -7,15 +7,15 @@
  const adPlatforms=['meta','google','tiktok'];
  const metaId=id=>/^act_\d+$/.test(id||'');
  const authKey='magemind-meta-return';
+ const reconnectKey='magemind-meta-reconnect';
  const linkIcon='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 13a4 4 0 0 0 6 .3l3.1-3.1a4 4 0 0 0-5.7-5.7l-1.7 1.7M14 11a4 4 0 0 0-6-.3l-3.1 3.1a4 4 0 0 0 5.7 5.7l1.7-1.7" stroke-linecap="round"/></svg>';
  let c;
  const configure=context=>{c=context;};
  const status=i=>window.MagemindIntegrationHealth.integrationHealth(i);
  const action=(label,name,id='',style='quiet')=>'<button type="button" class="'+style+'" data-action="'+name+'"'+(id?' data-id="'+esc(id)+'"':'')+'>'+label+'</button>';
  const support=(message='Olá! Preciso de ajuda com a conexão de anúncios na Magemind.')=>{
-  const phone=typeof getAgencyPhone==='function'?String(getAgencyPhone()||'').replace(/\D/g,''):'';
-  const url=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(message):'mailto:contato@magemind.com.br?body='+encodeURIComponent(message);
-  return '<a class="mt-support-link" href="'+url+'" target="_blank" rel="noopener noreferrer">Falar com o suporte</a>';
+  const phone=(typeof getAgencyPhone==='function'?String(getAgencyPhone()||'').replace(/\D/g,''):'')||'554899391390';
+  return '<a class="mt-support-link" href="https://wa.me/'+phone+'?text='+encodeURIComponent(message)+'" target="_blank" rel="noopener noreferrer">Suporte pelo WhatsApp</a>';
  };
  const accessHelp='Confira sua função na conta de anúncios da Meta. Peça ao administrador acesso para gerenciar campanhas e renove a conexão.';
  function webhook(provider){
@@ -43,9 +43,13 @@
    '<p class="small">Mantenha este endereço em sigilo. O painel mostra a conexão como ativa ao receber o primeiro evento válido.</p>'+
    (id?action('Configurar taxa','cost-integration',id):''));
  }
- async function meta(integration=null){
-  const r=await edge({action:'oauth_start',provider:'meta',...(integration?{integration}:{})});
-  try{sessionStorage.setItem(authKey,c.state.tab==='ads'?'campaigns':'integrations');}catch{}
+ async function meta(integration=null,profileAccount=null){
+  const r=await edge({action:'oauth_start',provider:'meta',...(integration?{integration}:{}),...(profileAccount?{reconnect:true}:{})});
+  try{
+   sessionStorage.setItem(authKey,c.state.tab==='ads'?'campaigns':'integrations');
+   if(profileAccount)sessionStorage.setItem(reconnectKey,JSON.stringify({workspace:c.state.workspace,id:profileAccount}));
+   else sessionStorage.removeItem(reconnectKey);
+  }catch{if(profileAccount)throw new Error('Permita armazenamento nesta aba para reconectar o perfil.');}
   location.assign(r.url);
  }
  function returnPage(){
@@ -59,6 +63,34 @@
    (problem?' title="'+esc(problem.label+' · '+problem.action)+'"':'')+'>'+linkIcon+' Conexões'+
    (problem?'<span class="mt-connection-dot" aria-hidden="true"></span><span class="sr-only"> · requer atenção</span>':'')+'</button>';
  }
+ const profileKey=a=>a.provider+':'+(a.provider_profile_id||a.id);
+ const accountName=a=>a.name||a.account_id;
+ const profileName=a=>a.provider_profile_name||(a.provider==='meta'?'Perfil Meta':c.brand.name(a.provider));
+ const adAccounts=rows=>rows.filter(a=>adPlatforms.includes(a.provider)&&!a.account_id.startsWith('oauth:'));
+ function profiles(rows){
+  const groups=new Map();
+  for(const account of rows){
+   const key=profileKey(account);
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(account);
+  }
+  return [...groups.values()];
+ }
+ function metaIntegrationCard(rows,canManage){
+  const accounts=adAccounts(rows);
+  const active=accounts.filter(a=>a.connected);
+  const history=profiles(accounts.filter(a=>!a.connected));
+  const count=profiles(active).length;
+  const summary=active.length
+   ?'<p>'+count+(count===1?' perfil conectado':' perfis conectados')+' · '+active.length+(active.length===1?' conta de anúncios':' contas de anúncios')+'</p>'
+   :history.length?'<p>'+history.length+(history.length===1?' perfil disponível':' perfis disponíveis')+' para reconectar.</p>'
+   :'<p>Conecte seu perfil Meta e selecione as contas de anúncios que deseja acompanhar.</p>';
+  if(!canManage)return summary;
+  return summary+'<div class="actions mt-meta-integration-actions">'+(active.length
+   ?action('Testar conexão','campaign-check')+action('Gerenciar','campaign-connections','','primary')
+   :(history.length?action('Reconectar perfil',history.length===1?'campaign-profile-reconnect':'campaign-connections',history.length===1?history[0][0].id:''):'')+
+    action('Conectar perfil','campaign-link','','primary'))+'</div>';
+ }
  function accountCard(account){
   const health=status(account);
   const readonly=account.management_access===false&&account.connected;
@@ -69,40 +101,35 @@
    (date?'<p class="small">Dados de '+esc(date)+'</p>':'')+
    (health.action&&account.connected?'<p>'+esc(health.action)+'</p>':readonly?'<p>'+accessHelp+'</p>':'')+
    '<div class="mt-account-actions">'+
-    (real&&account.connected?action('Testar conexão','campaign-test',account.id):'')+
     (account.connected&&health.kind!=='authorization'?action('Sincronizar','campaign-sync',account.id):'')+
-    (real&&(!account.connected||health.kind==='authorization'||readonly)?action('Renovar acesso','campaign-renew',account.id):'')+
+    (real&&account.connected&&(health.kind==='authorization'||readonly)?action('Renovar acesso','campaign-renew',account.id):'')+
     (account.connected?action('Desconectar conta','campaign-disconnect',account.id,'quiet mt-fee-danger'):'')+
    '</div></article>';
  }
  async function hub(note='',problem=false){
-  const rows=(await c.api('/integrations')).filter(x=>adPlatforms.includes(x.provider)&&!x.account_id.startsWith('oauth:'));
+  const rows=adAccounts(await c.api('/integrations'));
   const active=rows.filter(i=>i.connected);
-  const groups=new Map();
-  for(const account of active){
-   const key=account.provider_profile_id||'existing-'+account.provider;
-   if(!groups.has(key))groups.set(key,[]);
-   groups.get(key).push(account);
-  }
-  const needsAttention=list=>list.some(account=>status(account).kind==='authorization');
-  const blocks=[...groups.values()].sort((left,right)=>Number(needsAttention(right))-Number(needsAttention(left))).map(list=>{
-   const first=list[0],profile=first.provider_profile_id;
-   const canAdd=list.find(i=>i.provider==='meta'&&i.mode!=='simulated'&&status(i).kind!=='authorization');
+  const blocks=profiles(rows).map(list=>{
+   const first=list[0],profile=first.provider_profile_id,connected=list.filter(a=>a.connected),inactive=list.filter(a=>!a.connected);
+   const isMeta=first.provider==='meta';
+   const canAdd=connected.find(i=>isMeta&&i.mode!=='simulated'&&status(i).kind!=='authorization');
    return '<section class="mt-meta-profile"><div class="mt-meta-profile-heading">'+c.brand.logo(first.provider)+
-    '<div><h3>'+esc(first.provider_profile_name||(first.provider==='meta'?'Contas Meta Ads':c.brand.name(first.provider)))+'</h3>'+
-    '<p>'+list.length+(list.length===1?' conta vinculada':' contas vinculadas')+'</p></div></div>'+
+    '<div><h3>'+esc(profileName(first))+'</h3>'+
+    '<p>'+connected.length+(connected.length===1?' conta conectada':' contas conectadas')+
+    (inactive.length?' · '+inactive.length+(inactive.length===1?' desconectada':' desconectadas'):'')+'</p></div></div>'+
     '<div class="mt-profile-actions">'+
      (canAdd?action('Adicionar contas','campaign-add',canAdd.id):'')+
-     (profile?action('Desconectar perfil','campaign-profile-disconnect',profile,'quiet mt-fee-danger'):'')+
+     (isMeta&&connected.length?(profile?action('Desconectar perfil','campaign-profile-disconnect',profile,'quiet mt-fee-danger'):
+      action('Desconectar perfil','campaign-legacy-disconnect',connected[0].id,'quiet mt-fee-danger')):'')+
+     (isMeta&&inactive.length?action('Reconectar perfil','campaign-profile-reconnect',inactive[0].id):'')+
+     (isMeta&&!connected.length?'<a class="mt-support-link" href="https://www.facebook.com/settings?tab=business_tools" target="_blank" rel="noopener noreferrer">Remover acesso na Meta</a>':'')+
     '</div><div class="mt-connection-accounts">'+list.map(accountCard).join('')+'</div></section>';
   }).join('');
-  const inactive=rows.filter(i=>!i.connected);
   c.modal('Conexões de anúncios',
    '<div class="mt-connections-panel"><header><p>Gerencie o acesso e a sincronização das contas que aparecem em Campanhas.</p>'+
    action(linkIcon+(active.length?' Conectar outro perfil Meta':' Conectar perfil Meta'),'campaign-link','','primary')+'</header>'+
    (note?'<p class="mt-connection-feedback'+(problem?' is-error':'')+'" role="status">'+esc(note)+'</p>':'')+
    (blocks||'<p class="mt-connection-empty">Assim que você conectar um perfil, suas contas de anúncios aparecerão aqui.</p>')+
-   (inactive.length?'<details class="mt-inactive-accounts"><summary>Contas desconectadas · '+inactive.length+'</summary><div class="mt-connection-accounts">'+inactive.map(accountCard).join('')+'</div></details>':'')+
    '<footer>'+support()+'</footer></div>');
  }
  function normalizeSearch(text){return text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');}
@@ -112,12 +139,31 @@
   form.querySelector('[data-account-count]').textContent=total+' de 20 selecionadas';
   form.querySelector('[type="submit"]').disabled=total<1||total>20;
  }
- async function accounts(grant,{addOnly=false}={}){
+ async function accounts(grant,{addOnly=false,fromOAuth=false}={}){
+  let reconnect;
+  if(fromOAuth){
+   try{reconnect=JSON.parse(sessionStorage.getItem(reconnectKey));sessionStorage.removeItem(reconnectKey);}catch{}
+  }
   const r=await edge({action:'oauth_accounts',grant});
   if(r.renewed){
    const note='Acesso renovado para '+r.renewed.name+'. Sincronização solicitada.';
    await c.render();
    return hub(note+(r.renewed.management_access===false?' '+accessHelp:''));
+  }
+  if(reconnect?.workspace===c.state.workspace){
+   const rows=adAccounts(await c.api('/integrations'));
+   const target=rows.find(a=>a.id===reconnect.id&&a.provider==='meta');
+   if(!target)throw new Error('O perfil não está mais disponível. Abra Conexões para conferir os perfis atuais.');
+   const linked=rows.filter(a=>!a.connected&&profileKey(a)===profileKey(target));
+   const allowed=r.accounts.filter(a=>!target.provider_profile_id||a.profile_id===target.provider_profile_id);
+   const restored=linked.filter(a=>allowed.some(option=>option.account_id===a.account_id)).slice(0,20);
+   if(!restored.length)throw new Error('A Meta não autorizou as contas deste perfil. Entre com o perfil certo e confirme o acesso às contas de anúncios.');
+   await edge({action:'oauth_select',grant,accounts:restored.map(a=>a.account_id)});
+   const remaining=linked.filter(a=>!restored.includes(a));
+   await c.render();
+   return hub('Perfil reconectado. '+(remaining.length
+    ?'Ainda falta acesso a '+remaining.map(accountName).join(', ')+'. Confira as permissões na Meta e reconecte o perfil novamente.'
+    :'As contas foram enviadas para sincronização.'),Boolean(remaining.length));
   }
   const items=r.accounts.filter(a=>!addOnly||!a.connected).sort((a,b)=>Number(b.needs_access)-Number(a.needs_access)||a.name.localeCompare(b.name,'pt-BR'));
   const choices=items.map((a,index)=>'<label class="mt-account-option" data-account-query="'+esc(normalizeSearch(a.name+' '+a.account_id+' '+a.currency))+'">'+
@@ -145,6 +191,106 @@
    form.querySelector('[data-empty-accounts]').hidden=options.some(item=>!item.hidden);
   });
  }
+ function connectionIssue(code){
+  if(code==='meta_manage_denied')return ['A conta pode ser lida, mas o perfil não pode gerenciar campanhas.',[
+   'Na Meta, peça ao administrador da conta permissão para gerenciar campanhas.','Em Conexões de anúncios, escolha Renovar acesso e teste de novo.']];
+  if(code==='meta_platform_readonly')return ['A Magemind está habilitada para leitura nesta plataforma.',['Fale com o suporte para revisar a permissão de gerenciamento.']];
+  if(code==='token_revoked')return ['A autorização do perfil expirou ou foi revogada.',[
+   'Abra Gerenciar e escolha Renovar acesso na conta indicada.','Entre na Meta com o perfil responsável e confirme as permissões.']];
+  if(code==='meta_confirmation_required')return ['A Meta pediu uma confirmação de segurança.',[
+   'Entre na Meta com o perfil indicado e conclua a confirmação.','Volte à Magemind e teste a conexão novamente.']];
+  if(code==='meta_read_denied'||/^provider_http_400_(200|10)$/.test(code||''))return ['O perfil perdeu acesso à conta de anúncios.',[
+   'Peça ao administrador da conta na Meta para liberar o acesso a esse perfil.','Em Gerenciar, renove o acesso e teste novamente.']];
+  if(code==='rate_limit')return ['A Meta limitou as consultas temporariamente.',['Aguarde alguns minutos e tente de novo.']];
+  return ['Não foi possível confirmar a atualização com a Meta.',[
+   'Confira se a conta de anúncios abre no Gerenciador de Anúncios.','Tente de novo na Magemind. Se continuar, fale com o suporte.']];
+ }
+ function issueMarkup(code){
+  const [reason,steps]=connectionIssue(code);
+  return '<p>'+esc(reason)+'</p><ol>'+steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>';
+ }
+ function connectionProgress(title){
+  const workspace=c.state.workspace;
+  c.modal(title,'<div class="mt-connections-panel"><p class="mt-connection-feedback" role="status"></p><div class="mt-connection-results"></div></div>');
+  const dialog=document.getElementById('tracking-dialog'), panel=dialog.querySelector('.mt-connections-panel');
+  return {
+   live:()=>dialog.open&&panel.isConnected&&c.state.workspace===workspace,
+   status:(text,problem=false)=>{
+    const message=panel.querySelector('[role="status"]');
+    message.textContent=text;message.classList.toggle('is-error',problem);
+   },
+   results:panel.querySelector('.mt-connection-results')
+  };
+ }
+ async function checkMetaConnections(){
+  const progress=connectionProgress('Testar conexão com a Meta');
+  progress.status('Localizando os perfis e suas contas de anúncios…');
+  try{
+   const accounts=adAccounts(await c.api('/integrations')).filter(a=>a.provider==='meta'&&a.connected);
+   let checked=0,issues=0;
+   for(const account of accounts){
+    if(!progress.live())return;
+    progress.status('Verificando '+(++checked)+' de '+accounts.length+' · '+profileName(account)+' / '+accountName(account));
+    let code=null;
+    try{
+     const result=await edge({action:'meta_test',integration:account.id});
+     if(!result?.ok)code='sync_failed';
+     else if(result.management_access===false)code='meta_manage_denied';
+    }catch(error){code=error.code||'sync_failed';}
+    if(!progress.live())return;
+    if(code)issues++;
+    progress.results.insertAdjacentHTML('beforeend','<article class="mt-meta-profile"><header><strong>'+esc(accountName(account))+
+     '</strong><small>'+esc(profileName(account))+' · '+esc(account.account_id)+'</small></header>'+
+     (code?issueMarkup(code):'<p>Autorização e acesso à conta confirmados.</p>')+'</article>');
+   }
+   const message=!accounts.length?'Nenhuma conta Meta está conectada.':issues
+    ?issues+' de '+accounts.length+(accounts.length===1?' conta precisa':' contas precisam')+' de atenção.'
+    :'Tudo certo. Todas as contas conectadas passaram na verificação.';
+   progress.status(message,Boolean(issues));
+   progress.results.insertAdjacentHTML('beforeend','<footer>'+action('Gerenciar','campaign-connections')+(issues?support():'')+'</footer>');
+   if(progress.live())await c.render();
+  }catch{
+   if(!progress.live())return;
+   progress.status('Não foi possível consultar os perfis. Tente novamente.',true);
+   progress.results.innerHTML='<footer>'+action('Tentar novamente','campaign-check')+support()+'</footer>';
+  }
+ }
+ async function syncAccount(id){
+  const progress=connectionProgress('Sincronizar conta de anúncios');
+  progress.status('Solicitando a atualização…');
+  let account;
+  try{
+   account=adAccounts(await c.api('/integrations')).find(a=>a.id===id&&a.connected);
+   if(!progress.live())return;
+   if(!account)throw new Error('Conta desconectada');
+   const result=await c.api('/integration/sync',{id});
+   if(result?.status==='rate_limit')throw Object.assign(new Error('Limite de consultas'),{code:'rate_limit'});
+   const deadline=Date.now()+125000;
+   progress.status('Sincronizando '+accountName(account)+' · aguardando os dados da plataforma…');
+   while(progress.live()&&Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,3000));
+    if(!progress.live())return;
+    const current=(await c.api('/integrations')).find(a=>a.id===id);
+    if(!progress.live())return;
+    if(!current?.connected||current.connection_generation!==account.connection_generation)throw new Error('Conta desconectada');
+    if(current.error_code&&current.error_code!=='sync_requested')throw Object.assign(new Error('Falha de sincronização'),{code:current.error_code});
+    if(!current.error_code&&current.last_sync_at&&current.last_sync_at!==account.last_sync_at){
+     await c.render();
+     if(progress.live())return hub(accountName(account)+' foi sincronizada. Os dados da conta estão atualizados.');
+     return;
+    }
+   }
+   if(progress.live()){
+    progress.status('A atualização ainda está na fila para '+accountName(account)+'. Você pode acompanhar o estado em Conexões.');
+    progress.results.innerHTML='<footer>'+action('Voltar para conexões','campaign-connections')+'</footer>';
+   }
+  }catch(error){
+   if(!progress.live())return;
+   progress.status(account?'Não foi possível sincronizar '+accountName(account)+'.':'A conta de anúncios não está mais conectada.',true);
+   progress.results.innerHTML=issueMarkup(error.code)+'<footer>'+action('Voltar para conexões','campaign-connections')+support()+'</footer>';
+   await c.render();
+  }
+ }
  async function campaignAction(name,id){
   if(name==='campaign-connections')return hub();
   if(name==='campaign-integrate'&&['google','tiktok'].includes(id)){
@@ -152,34 +298,22 @@
    return c.modal('Conectar '+platform,'<p>A conexão com '+esc(platform)+' ainda precisa ser habilitada pela Magemind. Fale com a equipe para solicitar a ativação.</p>'+
     '<div class="actions">'+support('Olá! Quero solicitar a conexão com '+platform+' no painel da Magemind.')+'</div>');
   }
-  if(name==='campaign-link'||name==='campaign-renew'){
-   try{return await meta(name==='campaign-renew'?id:null);}
+  if(['campaign-link','campaign-renew','campaign-profile-reconnect'].includes(name)){
+   try{return await meta(name==='campaign-renew'?id:null,name==='campaign-profile-reconnect'?id:null);}
    catch(error){return hub(error.message,true);}
   }
   if(name==='campaign-add'){
    try{const r=await edge({action:'meta_profile_add',integration:id});return await accounts(r.grant,{addOnly:true});}
    catch(error){await c.render();return hub(error.message,true);}
   }
-  if(name==='campaign-test'){
-   try{
-    const r=await edge({action:'meta_test',integration:id});
-    await c.render();
-    return await hub(r.management_access===false?'Leitura confirmada. '+accessHelp:'Conexão com a Meta testada com sucesso.');
-   }catch(error){await c.render();return hub(error.message,true);}
-  }
-  if(name==='campaign-sync'){
-   try{
-    const r=await c.api('/integration/sync',{id});
-    await c.render();
-    return hub(r?.status==='rate_limit'?'A Meta está limitando as consultas. A próxima tentativa será automática.':'Sincronização solicitada.');
-   }catch(error){return hub(error.message,true);}
-  }
-  if(name==='campaign-disconnect'||name==='campaign-profile-disconnect'){
-   const profile=name==='campaign-profile-disconnect';
+  if(name==='campaign-check')return checkMetaConnections();
+  if(name==='campaign-sync')return syncAccount(id);
+  if(['campaign-disconnect','campaign-profile-disconnect','campaign-legacy-disconnect'].includes(name)){
+   const profile=name!=='campaign-disconnect';
    return c.modal(profile?'Desconectar perfil Meta?':'Desconectar conta de anúncios?',
     '<p>'+(profile?'As contas deste perfil':'Esta conta')+' sairão da visualização atual. Você pode reconectar para voltar a sincronizar. O histórico permanece na Magemind.</p>'+
     '<div class="mt-fee-actions">'+action('Cancelar','campaign-connections')+
-    action('Desconectar',profile?'campaign-profile-confirm':'campaign-disconnect-confirm',id,'quiet mt-fee-danger')+'</div>');
+    action('Desconectar',name==='campaign-profile-disconnect'?'campaign-profile-confirm':'campaign-disconnect-confirm',id,'quiet mt-fee-danger')+'</div>');
   }
   if(name==='campaign-profile-confirm'||name==='campaign-disconnect-confirm'){
    await c.api(name==='campaign-profile-confirm'?'/meta/disconnect-profile':'/integration/disconnect',{id});
@@ -231,7 +365,7 @@
   return false;
  }
  window.MagemindTrackingConnections={
-  configure,webhook,showWebhook,meta,accounts,platform,submit,campaignControl,campaignAction,returnPage,hub,support,
+  configure,webhook,showWebhook,meta,accounts,platform,submit,metaIntegrationCard,campaignControl,campaignAction,returnPage,hub,support,
   custom(){c.modal('API de pedidos','<form data-form="api-create"><label>Nome da conexão<input name="name" required maxlength="120" placeholder="Ex.: Minha integração"></label><button class="primary">Gerar credencial privada</button><p class="small">Integração para desenvolvedores: envia pedidos no contrato padronizado da Magemind.</p></form>');},
   async details(id){const r=await edge({action:'webhook_details',integration:id});showWebhook(r.provider,r.webhook,id);},
   async copy(){await navigator.clipboard.writeText(document.getElementById('mt-webhook-url').value);c.toast('URL copiada.');}
