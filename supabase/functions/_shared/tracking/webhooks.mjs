@@ -1,4 +1,4 @@
-import {minor,SCALES,validateOrder,normalizeHotmart,sha256,constantEqual} from './contracts.mjs';
+import {minor,SCALES,validateOrder,normalizeHotmart,paymentMethod,sha256,constantEqual} from './contracts.mjs';
 import {connector,webhookEndpoint} from './connectors.mjs';
 export const canonicalJSON=value=>JSON.stringify(sort(value));
 function sort(v){return Array.isArray(v)?v.map(sort):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,sort(v[k])])):v;}
@@ -7,7 +7,20 @@ export async function verifyWebhook(provider,req,payload,secrets){
  if(!await constantEqual(token,secrets.ingressToken))return false;
  if(provider==='hotmart')return constantEqual(req.headers.get('x-hotmart-hottok'),secrets.hottok);
  if(provider==='perfectpay')return constantEqual(payload.token,secrets.token);
+ if(provider==='kirvano')return constantEqual(req.headers.get('security-token')||req.headers.get('authorization')?.replace(/^Bearer /i,''),secrets.token);
+ if(provider==='cakto'){
+  if(!await constantEqual(payload.secret,secrets.secret))return false;
+  const signature=req.headers.get('x-cakto-signature'),time=req.headers.get('x-cakto-timestamp');
+  if(signature||time){if(!/^\d+$/.test(time||'')||Math.abs(Date.now()/1000-Number(time))>300)return false;return constantEqual(signature,'v1='+await hmac(secrets.secret,time+'.'+await req.text(),'hex'));}
+ }
+ if(provider==='yampi')return constantEqual(req.headers.get('x-yampi-hmac-sha256'),await hmac(secrets.secret,await req.text(),'base64'));
  return true;
+}
+async function hmac(secret,raw,format){
+ if(!secret)throw new Error('Webhook secret required');
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(raw)));
+ return format==='base64'?btoa(String.fromCharCode(...bytes)):Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 }
 export {webhookEndpoint};
 export function providerTime(value,zone='America/Sao_Paulo'){
@@ -30,7 +43,7 @@ function chronology(p,c,created,approved,updated,status){
  if(!createdAt||!source)throw new Error('Provider timestamps required');
  return {created_at:createdAt,approved_at:approvedAt||(['paid','refunded','chargeback','disputed'].includes(status)?source:null),occurred_at:source,money_components:{timestamp_source:updated||status==='paid'&&approvedAt?'provider':'received_at'}};
 }
-function base(c,order,status,cur,gross){return {schema_version:'1',event_id:c.eventId,order_id:String(order),status,currency:cur,amount_scale:SCALES[cur],gross_amount_minor:gross,gateway_fee_minor:null,recipient_revenue_minor:null,refunded_amount_minor:0,recipient_refunded_minor:null,is_test:false};}
+function base(c,order,status,cur,gross){if(order==null||!String(order).trim())throw new Error('Order ID required');return {schema_version:'1',event_id:c.eventId,order_id:String(order),status,currency:cur,amount_scale:SCALES[cur],gross_amount_minor:gross,gateway_fee_minor:null,recipient_revenue_minor:null,refunded_amount_minor:0,recipient_refunded_minor:null,is_test:false};}
 function kiwifyChronology(p,c,status){
  const times=chronology(p,{...c,timezone:'UTC'},p.created_at,p.approved_date||p.approved_at,p.updated_at,status);
  if(!['paid','refunded','chargeback','disputed'].includes(status)||!times.approved_at)return times;
@@ -60,7 +73,7 @@ export function normalizeKiwifyWebhook(p,c){
  const times=kiwifyChronology(p,c,status);
  return validateOrder({...base(c,p.order_id||p.id,status,cur,gross),...times,gateway_fee_minor:fee,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund===gross?net:null,
   customer:customer(p.Customer?.id||p.order_id,p.Customer?.full_name,p.Customer?.email,p.Customer?.mobile,Boolean(p.Customer?.id)),
-  items:[{external_product_id:String(p.Product?.product_id||''),name:String(p.Product?.product_name||'Produto'),quantity:1,amount_minor:gross}],tracking:p.TrackingParameters||{},payment_method:p.payment_method?.toUpperCase(),renewal:Number(p.Subscription?.recurrence_number||p.subscription?.recurrence_number||1)>1,
+  items:[{external_product_id:String(p.Product?.product_id||''),name:String(p.Product?.product_name||'Produto'),quantity:1,amount_minor:gross}],tracking:p.TrackingParameters||{},payment_method:p.payment_method,installments:p.installments??p.card_installments,renewal:Number(p.Subscription?.recurrence_number||p.subscription?.recurrence_number||1)>1,
   money_components:{...times.money_components,recipient_native_minor:nativeNet,recipient_currency:settlementCurrency,recipient_scale:SCALES[settlementCurrency],fee_native_minor:asMinor(commission.kiwify_fee),fee_currency:feeCurrency,net_includes_gateway:true}});
 }
 export function normalizePerfectPay(p,c){
@@ -68,11 +81,15 @@ export function normalizePerfectPay(p,c){
  if(Number(p.currency_enum)!==1)throw new Error('Unsupported PerfectPay currency');
  const cur='BRL',gross=minor(p.sale_amount),commissions=p.commission||[],owner=commissions.filter(x=>x.affiliation_code===p.webhook_owner),role={PRODUCER:1,COPRODUCER:2,AFFILIATE:5}[c.recipientSource||'PRODUCER'],candidates=owner.length===1?owner:commissions.filter(x=>x.affiliation_type_enum===role);
  const net=candidates.length===1?netWithin(minor(candidates[0].commission_amount),gross):null;
+ const platform=commissions.find(x=>Number(x.affiliation_type_enum)===0&&x.commission_amount!=null);
+ const fee=platform?netWithin(minor(platform.commission_amount),gross):null;
+ const explicitMethod=paymentMethod(p.payment_type)||paymentMethod(p.payment_method);
+ const type=explicitMethod==='PIX'?'PIX':({1:'CREDIT_CARD',2:'BOLETO',3:'PAYPAL',4:'CREDIT_CARD',6:'CREDIT_CARD'})[p.payment_type_enum]||explicitMethod||'OTHER';
  const times=chronology(p,c,p.date_created,p.date_approved,p.date_updated||p.updated_at,status),refund=['refunded','chargeback'].includes(status)?gross:0;
  if(p.partial_refund===true)throw new Error('Partial refund requires cumulative refund amount');
- return validateOrder({...base(c,p.code,status,cur,gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,
+ return validateOrder({...base(c,p.code,status,cur,gross),...times,gateway_fee_minor:fee,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,
   customer:customer(p.code,p.customer?.full_name,p.customer?.email,[p.customer?.phone_area_code,p.customer?.phone_number].filter(Boolean).join('')),
-  items:[{external_product_id:String(p.product?.code||''),name:String(p.product?.name||'Produto'),quantity:Number(p.quantity||p.plan?.quantity||1),amount_minor:gross}],tracking:p.metadata||{},payment_method:({1:'CREDIT_CARD',2:'BOLETO',3:'PAYPAL',4:'CREDIT_CARD',6:'CREDIT_CARD'})[p.payment_type_enum]||'OTHER',renewal:p.payment_type_enum===4,money_components:{...times.money_components,net_includes_gateway:true}});
+  items:[{external_product_id:String(p.product?.code||''),name:String(p.product?.name||'Produto'),quantity:Number(p.quantity||p.plan?.quantity||1),amount_minor:gross}],tracking:p.metadata||{},payment_method:type,installments:p.installments,renewal:Number(p.payment_type_enum)===4,money_components:{...times.money_components,net_includes_gateway:true}});
 }
 export function normalizeCartpanda(payload,c){
  const p=payload.order||payload.data?.order||payload,cur=currency(p.currency),gross=asMinor(p.unformatted_total_price)??decimal(p.total_price,cur);
@@ -92,7 +109,59 @@ export function normalizeCartpanda(payload,c){
  let tracking={};try{tracking=Object.fromEntries(new URL(p.landing_site).searchParams);}catch{}
  for(const a of Array.isArray(p.note_attributes)?p.note_attributes:[])if(a?.name&&a.value!=null)tracking[a.name]=a.value;
  return validateOrder({...base(c,p.id,status,cur,gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,
-  customer:customer(p.customer?.id||p.customer_id||p.id,p.customer?.full_name||[p.customer?.first_name,p.customer?.last_name].filter(Boolean).join(' '),p.customer?.email||p.email,p.customer?.phone||p.phone,Boolean(p.customer?.id||p.customer_id)),items,tracking,payment_method:p.payment_type==='cc'?'CREDIT_CARD':p.payment_type==='boleto'?'BOLETO':p.payment_type?.toUpperCase(),money_components:{...times.money_components,net_includes_gateway:false,manual_fees:c.manual_fees===true,item_amounts_allocated:true}});
+  customer:customer(p.customer?.id||p.customer_id||p.id,p.customer?.full_name||[p.customer?.first_name,p.customer?.last_name].filter(Boolean).join(' '),p.customer?.email||p.email,p.customer?.phone||p.phone,Boolean(p.customer?.id||p.customer_id)),items,tracking,payment_method:p.payment_type,installments:p.installments??p.payment?.installments??p.payment_details?.installments,money_components:{...times.money_components,net_includes_gateway:false,manual_fees:c.manual_fees===true,item_amounts_allocated:true}});
+}
+function allocatedItems(rows,gross,read){
+ if(!Array.isArray(rows)||!rows.length||rows.length>100)throw new Error('Order items required');
+ const items=rows.map(read);for(const r of items)if(!r.external_product_id||!Number.isInteger(r.quantity)||r.quantity<1||!Number.isSafeInteger(r.weight)||r.weight<0)throw new Error('Invalid provider item');
+ const total=items.reduce((n,r)=>n+r.weight,0),units=items.reduce((n,r)=>n+r.quantity,0);let rest=gross;
+ return items.map((r,i)=>{const amount=i===items.length-1?rest:Math.floor(gross*(total?r.weight:r.quantity)/(total||units));rest-=amount;return {external_product_id:r.external_product_id,name:String(r.name||'Produto').slice(0,200),quantity:r.quantity,amount_minor:amount};});
+}
+const real=v=>decimal(String(v).replace(/^R\$\s*/,''),'BRL');
+const stamp=v=>v&&typeof v==='object'?String(v.date||'').replace(/\.\d+$/,''):v;
+const method=v=>({credit_card:'CREDIT_CARD',threeDs:'CREDIT_CARD',debit_card:'DEBIT_CARD',pix_auto:'PIX',bank_slip:'BOLETO'}[v]||String(v||'OTHER').toUpperCase());
+function manualNet(c,gross){return c.manual_fees===true?gross:null;}
+export function normalizeKirvano(p,c){
+ const status=({BANK_SLIP_GENERATED:'pending',PIX_GENERATED:'pending',SALE_APPROVED:'paid',SALE_REFUSED:'refused',SALE_CANCELED:'cancelled',SALE_CANCELLED:'cancelled',SALE_REFUNDED:'refunded',SALE_CHARGEBACK:'chargeback'})[p.event];if(!status)return null;
+ const gross=real(p.total_price),refund=['refunded','chargeback'].includes(status)?gross:0;
+ if(p.partial_refund===true)throw new Error('Partial refund requires cumulative refund amount');
+ const times=chronology(p,c,p.created_at,p.payment?.finished_at,p.updated_at||p.refunded_at||p.canceled_at,status),net=manualNet(c,gross);
+ const items=allocatedItems(p.products,gross,r=>({external_product_id:String(r.id||''),name:r.name,quantity:Number(r.quantity||1),weight:real(r.price)*Number(r.quantity||1)}));
+ return validateOrder({...base(c,p.sale_id,status,'BRL',gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,customer:customer(p.customer?.id||p.sale_id,p.customer?.name,p.customer?.email,p.customer?.phone_number,Boolean(p.customer?.id)),items,tracking:p.utm||{},payment_method:method(p.payment?.method||p.payment_method),installments:p.payment?.installments,renewal:Number(p.plan?.recurrence_number||p.recurrence_number||1)>1,money_components:{...times.money_components,manual_fees:c.manual_fees===true,net_includes_gateway:false,item_amounts_allocated:true}});
+}
+export function normalizeCakto(p,c){
+ const r=p.data;if(!r||Array.isArray(r))throw new Error('Cakto order required');
+ const status=({purchase_approved:'paid',purchase_refused:'refused',pix_generated:'pending',boleto_generated:'pending',purchase_canceled:'cancelled',purchase_cancelled:'cancelled',refund:'refunded',chargeback:r.status==='chargedback'?'chargeback':'disputed'})[p.event];if(!status)return null;
+ const cur=currency(r.currency||r.offer?.currency||'BRL'),gross=decimal(r.amount,cur),role={PRODUCER:'producer',AFFILIATE:'affiliate',COPRODUCER:'coproducer'}[c.recipientSource];
+ const commissions=(r.commissions||[]).filter(x=>String(x.user||'').toLowerCase()===String(c.recipient_email||'').toLowerCase()&&x.type===role);
+ const net=commissions.length===1?netWithin(decimal(commissions[0].totalAmount,cur),gross):null;
+ const fee=r.fees==null?null:netWithin(decimal(r.fees,cur),gross),refund=['refunded','chargeback'].includes(status)?gross:0;
+ if(r.partial_refund===true)throw new Error('Partial refund requires cumulative refund amount');
+ const times=chronology(r,c,r.createdAt,r.paidAt,r.updatedAt||r.refundedAt||r.chargedbackAt||r.canceledAt,status);
+ return validateOrder({...base(c,r.id,status,cur,gross),...times,gateway_fee_minor:fee,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,customer:customer(r.customer?.id||r.id,r.customer?.name,r.customer?.email,r.customer?.phone,Boolean(r.customer?.id)),items:[{external_product_id:String(r.product?.id||''),name:String(r.product?.name||'Produto').slice(0,200),quantity:1,amount_minor:gross}],tracking:r,payment_method:method(r.paymentMethod),installments:r.installments,renewal:Number(r.subscription_period||1)>1,money_components:{...times.money_components,net_includes_gateway:true}});
+}
+export function normalizeYampi(p,c){
+ if(!['order.created','order.updated','order.paid','order.status.updated'].includes(p.event))return null;
+ const r=p.resource;if(!r||!r.id)throw new Error('Yampi order required');
+ const tx=r.transactions?.data||[],alias=r.status?.data?.alias;
+ const states={waiting_payment:'pending',pending:'pending',authorized:'pending',paid:'paid',cancelled:'cancelled',canceled:'cancelled',refused:'refused',refunded:'refunded',chargeback:'chargeback'};
+ const status=p.event==='order.paid'?'paid':states[alias]||(['handling_products','invoiced','shipped','delivered'].includes(alias)&&tx.some(x=>x.captured||x.status==='paid')?'paid':null);if(!status)return null;
+ const gross=real(r.value_total),net=manualNet(c,gross),refund=['refunded','chargeback'].includes(status)?gross:0;
+ if(r.partial_refund===true)throw new Error('Partial refund requires cumulative refund amount');
+ const paid=tx.find(x=>x.captured||x.status==='paid'),times=chronology(r,c,stamp(r.created_at),stamp(r.paid_at)||stamp(paid?.created_at),stamp(r.updated_at)||p.time,status);
+ const items=allocatedItems(r.items?.data,gross,i=>({external_product_id:String(i.product_id||i.sku?.data?.product_id||i.sku_id||''),name:i.sku?.data?.title||i.name,quantity:Number(i.quantity),weight:real(i.price)*Number(i.quantity)}));
+ const buyer=r.customer?.data,payment=paid||tx[0];
+ return validateOrder({...base(c,r.id,status,'BRL',gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,customer:customer(buyer?.id||r.customer_id||r.id,buyer?.name,buyer?.email,buyer?.phone?.full_number,Boolean(buyer?.id||r.customer_id)),items,tracking:r.utm||r.tracking?.data||r.metadata?.data?.reduce((o,x)=>(o[x.key]=x.value,o),{})||{},payment_method:method(payment?.payment?.data?.alias||r.payments?.[0]?.alias),installments:payment?.installments??r.installments,money_components:{...times.money_components,manual_fees:c.manual_fees===true,net_includes_gateway:false,item_amounts_allocated:true}});
+}
+export function normalizeAppmax(p,c){
+ if(p.event_type&&p.event_type!=='order')return null;
+ const status=({order_approved:'paid',order_paid:'paid',order_paid_by_pix:'paid',order_pending_integration:'paid',order_integrated:'paid',order_authorized:'pending',order_billet_created:'pending',order_pix_created:'pending',order_refund:'refunded',order_pix_expired:'cancelled',order_billet_overdue:'cancelled',order_refused_by_risk:'refused',order_chargeback_in_treatment:'disputed'})[p.event];
+ if(p.event==='order_partial_refund')throw new Error('Partial refund requires cumulative refund amount');if(!status)return null;
+ const r=p.data;if(!r||!r.order_id)throw new Error('Appmax order required');
+ const gross=real(r.total),nativeNet=r.merchant_total==null?null:netWithin(real(r.merchant_total),gross),net=nativeNet??manualNet(c,gross),refund=status==='refunded'?gross:0;
+ const times=chronology(r,c,r.created_at,r.paid_at,r.updated_at||r.refund_at||r.paid_at,status);
+ const items=allocatedItems(r.products,gross,i=>({external_product_id:String(i.sku||i.id||''),name:i.name,quantity:Number(i.quantity),weight:real(i.price)*Number(i.quantity)}));
+ const buyer=r.customer;return validateOrder({...base(c,r.order_id,status,'BRL',gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,customer:customer(buyer?.id||r.order_id,buyer?.name,buyer?.email,buyer?.phone,Boolean(buyer?.id)),items,tracking:r.utm||{},payment_method:r.payment_info?.pix||p.event==='order_paid_by_pix'?'PIX':r.payment_info?.boleto?'BOLETO':r.payment_info?.credit_card?'CREDIT_CARD':'OTHER',installments:r.payment_info?.credit_card?.installments,money_components:{...times.money_components,manual_fees:nativeNet==null&&c.manual_fees===true,net_includes_gateway:nativeNet!=null,item_amounts_allocated:true}});
 }
 export async function normalizeWebhook(provider,payload,context){
  if([payload.is_test,payload.test,payload.order?.test,payload.is_cartx_test,payload.order?.is_cartx_test].some(x=>['1','true'].includes(String(x).toLowerCase())))throw new Error('Synthetic events are unavailable');
@@ -101,5 +170,12 @@ export async function normalizeWebhook(provider,payload,context){
  if(provider==='kiwify')return normalizeKiwifyWebhook(payload,c);
  if(provider==='perfectpay')return normalizePerfectPay(payload,c);
  if(provider==='cartpanda')return normalizeCartpanda(payload,c);
+ if(provider==='kirvano')return normalizeKirvano(payload,c);
+ if(provider==='cakto'){
+  if(Array.isArray(payload.data)){if(!payload.data.length||payload.data.length>100)throw new Error('Invalid Cakto batch');return (await Promise.all(payload.data.map(async data=>normalizeCakto({...payload,data},{...c,eventId:'cakto:'+await sha256(canonicalJSON({event:payload.event,data}))})))).filter(Boolean);}
+  return normalizeCakto(payload,{...c,eventId:'cakto:'+await sha256(canonicalJSON({event:payload.event,data:payload.data}))});
+ }
+ if(provider==='yampi')return normalizeYampi(payload,c);
+ if(provider==='appmax')return normalizeAppmax(payload,c);
  throw new Error('Provider unsupported');
 }

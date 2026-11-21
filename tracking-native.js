@@ -10,6 +10,7 @@
  const brand=window.MagemindTrackingBrands;
  const periods=window.MagemindTrackingPeriods;
  const connections=window.MagemindTrackingConnections;
+ const fees=window.MagemindTrackingFees;
  const checkoutProviders=Object.keys(window.MagemindWebhookConnectors);
 
  const statusLabel={pending:'Pendente',paid:'Aprovado',refunded:'Devolvido',chargeback:'Chargeback',refused:'Recusado',cancelled:'Cancelado',disputed:'Em disputa'};
@@ -23,16 +24,17 @@
  let setup=null,costRules=[],costProducts=[],costHistory=false,celebrating=false,welcomePending=null,sessionStarted=Date.now(),onboardingExpanded=false;
  const day=timestamp=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'}).format(new Date(timestamp));
  const state={workspace:null,tab:'overview',preset:'week',...periods.range('week'),currency:'BRL',page:1,status:'',provider:'',channel:'',payment:'',search:'',account_id:'',entity_id:'',level:'campaign',ad_sort:'spend_minor',ad_direction:'desc',ad_parent:''};
- connections.configure({modal,brand,state,render,toast});
+ let costFlow=null;
+ connections.configure({modal,brand,state,render,toast,api,configureFee});
  const workspace=()=>workspaces.find(w=>w.id===state.workspace);
  const observer=()=>window.trackingObserver?.()===true;
  const money=(n,currency=state.currency,amountScale=scale[currency])=>n==null?'Indisponível':new Intl.NumberFormat('pt-BR',{style:'currency',currency}).format(Number(n)/10**amountScale);
  window.MagemindDashboard.configure({api,toast,modal,money,brand,chart:chartHTML,demandsOpen:()=>goTo('demands'),refresh:render});
  const dt=value=>value?new Date(value).toLocaleString('pt-BR',{timeZone:workspace()?.timezone||'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'Ainda não recebida';
  const dateLabel=value=>String(value||'').slice(0,10).split('-').reverse().join('/');
- function toast(message){window.toast(message);}
+ function toast(message,type){window.toast(message,type);}
  function persist(){if(user){const {search,...safe}=state;localStorage.setItem('mm_tracking_state_'+user.user_id,JSON.stringify(safe));}}
- function clear(){requestVersion++;renderedScope='';pendingData=false;syncFingerprint='';closePeriod();window.MagemindDashboard.clear();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();notificationScope=null;$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
+ function clear(){requestVersion++;renderedScope='';pendingData=false;syncFingerprint='';closePeriod();window.MagemindDashboard.clear();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];costFlow=null;welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();notificationScope=null;$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
  async function api(route,data,params={}){
   if(window.MagemindTrackingBackend)return window.MagemindTrackingBackend.call(route,data,params,state);
   const u=new URL(cfg.apiBase+route,location.origin);
@@ -45,7 +47,15 @@
  }
  const button=(label,action,attrs='',primary=false)=>'<button type="button" class="'+(primary?'primary':'quiet')+'" data-action="'+action+'" '+attrs+'>'+label+'</button>';
  const pill=status=>'<span class="pill '+esc(status)+'">'+esc(statusLabel[status]||status)+'</span>';
- function modal(title,html){$('dialog-title').textContent=title;$('dialog-content').innerHTML=html;window.openAccessibleDialog($('tracking-dialog'));}
+ function modal(title,html){
+  const dialog=$('tracking-dialog');
+  $('dialog-title').textContent=title;
+  $('dialog-content').innerHTML=html;
+  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker')));
+  dialog.scrollTop=0;
+  if(dialog.open)window.focusDialogSurface(dialog);
+  else window.openAccessibleDialog(dialog);
+ }
  function metric(label,value,note='',cls=''){return '<article class="metric '+cls+'"><span class="metric-label">'+label+'</span><strong>'+esc(value)+'</strong><small>'+esc(note)+'</small></article>';}
  function empty(title,text,action=''){return '<div class="empty"><span class="eyebrow">COMECE PELA SUA OPERAÇÃO</span><h2>'+title+'</h2><p>'+text+'</p><div class="actions">'+action+'</div></div>';}
  function panel(title,html){return '<section class="panel"><div class="panel-head"><h2>'+title+'</h2></div><div class="panel-body">'+html+'</div></section>';}
@@ -59,11 +69,13 @@
  document.addEventListener('toggle',e=>{if(e.target.matches?.('.mt-compact-onboarding')&&e.target.isConnected)onboardingExpanded=e.target.open;},true);
  function quietLock(html,label,mini=false,action=null){return '<section class="mt-passive-lock'+(mini?' mt-mini-passive':'')+'"><div class="mt-data-preview" inert aria-hidden="true">'+html+'</div><div class="mt-lock-content"><span class="mt-lock-caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'+label+'</span>'+(action?button(action==='setup-costs'?'Configurar custos':action==='setup-journey'?'Configurar rastreamento':'Conectar integração',action):'')+'</div></section>';}
  async function maybeCelebrate(){
-  if(!isClient()||window.MagemindDashboard.isEditing()||celebrating||Date.now()-sessionStarted<1800||$('tracking-dialog').open||document.querySelector('.overlay.open'))return;
+  const canShow=()=>state.tab==='overview'&&$('pg-dashboard').classList.contains('active')&&
+   !window.MagemindDashboard.isEditing()&&!document.querySelector('dialog[open],.overlay.open');
+  if(!isClient()||celebrating||Date.now()-sessionStarted<1800||!canShow())return;
   const uid=user?.user_id;if(!uid)return;
   if(welcomePending===uid){welcomePending=null;showWelcome();return;}
   if(!setup?.celebration_pending)return;
-  celebrating=true;try{const r=await api('/onboarding/celebrate',{});if(DB.me?.id!==uid||!r.claimed)return;setup.celebration_pending=false;if($('tracking-dialog').open||document.querySelector('.overlay.open'))welcomePending=uid;else showWelcome();}catch{}finally{celebrating=false;}
+  celebrating=true;try{const r=await api('/onboarding/celebrate',{});if(DB.me?.id!==uid||!r.claimed)return;setup.celebration_pending=false;if(canShow())showWelcome();else welcomePending=uid;}catch{}finally{celebrating=false;}
  }
  function showWelcome(){modal('Tudo pronto','<div class="mt-welcome"><div class="mt-welcome-check" aria-hidden="true">✓</div><h2>Seu painel está pronto!</h2><p>Acompanhe pedidos, campanhas e resultados da sua operação em um só lugar.</p>'+button('Começar a acompanhar','welcome-close','',true)+'</div>');}
  function paginate(total,size=25){return '<div class="pagination"><span>'+total+' registros · Página '+state.page+' de '+Math.max(1,Math.ceil(total/size))+'</span><div class="actions">'+button('‹ Anterior','prev',''+(state.page===1?'disabled':''))+button('Próxima ›','next',state.page*size>=total?'disabled':'')+'</div></div>';}
@@ -123,15 +135,27 @@
   if(observer()){if(pendingData)markPending();else label.textContent='';return;}
   const rows=(await api('/integrations')).filter(i=>i.connected&&['meta','google','tiktok'].includes(i.provider)&&!i.account_id.startsWith('oauth:'));
   if(version!==requestVersion)return;
-  const fingerprint=JSON.stringify(rows.map(i=>[i.id,i.last_sync_at]).sort());if(syncFingerprint&&syncFingerprint!==fingerprint)markPending();syncFingerprint=fingerprint;
+  const fingerprint=JSON.stringify(rows.map(i=>[i.id,i.last_sync_at,i.error_code,i.management_access]).sort());
+  if(syncFingerprint&&syncFingerprint!==fingerprint){
+   const focused=document.activeElement?.matches('input,select,textarea,button,[contenteditable=true]');
+   if(state.tab==='ads'&&!document.hidden&&!focused&&!document.querySelector('#tracking-dialog[open],#tracking-period-popover:popover-open')&&
+      !$('tracking-content').querySelector('.mt-ad-filters')?.matches('.is-dirty')){
+    void render({quiet:true});
+    return;
+   }
+   markPending();
+  }
+  syncFingerprint=fingerprint;
   if(!rows.length){if(pendingData)markPending();else label.textContent='';label.classList.remove('is-stale');return;}
-  const blocked=rows.some(i=>i.error_code==='meta_confirmation_required'||/^provider_http_400_200/.test(i.error_code||'')),failed=rows.some(i=>i.error_code&&!['sync_requested'].includes(i.error_code)),queued=rows.some(i=>i.error_code==='sync_requested');
-  const oldest=Math.min(...rows.map(i=>i.last_sync_at?new Date(i.last_sync_at).getTime():0)),stale=!oldest||Date.now()-oldest>180000;
+  const issues=rows.map(i=>window.MagemindIntegrationHealth.integrationHealth(i)).filter(i=>['authorization','temporary','error'].includes(i.kind));
+  const blocked=issues.some(i=>i.kind==='authorization'),failed=issues.length>0,queued=rows.some(i=>i.error_code==='sync_requested');
+  const oldest=Math.min(...rows.map(i=>i.last_sync_at?new Date(i.last_sync_at).getTime():0));
+  const stale=rows.some(i=>!i.last_sync_at||Date.now()-new Date(i.last_sync_at).getTime()>Math.max(180,(i.sync_interval_seconds||600)*2)*1000);
   label.classList.toggle('is-stale',blocked||failed||stale);
   const updated=oldest?'Atualizado às '+new Date(oldest).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:workspace()?.timezone||'America/Sao_Paulo'}):'Aguardando sincronização';
-  label.textContent=blocked?'Meta Ads: confirmação de acesso necessária':failed?'Anúncios: conexão requer atenção':queued?'Atualização dos anúncios solicitada':stale?'Anúncios desatualizados · '+updated.toLowerCase():updated;
+  label.textContent=queued&&!failed?'Sincronização solicitada':failed&&state.tab!=='ads'?issues[0].label:stale?'Última sincronização · '+(oldest?dt(oldest):'aguardando dados'):updated;
   if(pendingData&&!blocked&&!failed&&!queued)markPending();
-  label.title=blocked?'A Meta bloqueou o acesso à API. Conclua a confirmação da conta de desenvolvedor na Meta.':updated;
+  label.title=failed?issues[0].action:updated;
  }
  let refreshingAds=false;
  async function refreshData(options={}){
@@ -151,7 +175,7 @@
   const points=rows.map((r,i)=>[20+i*(560/Math.max(1,rows.length-1)),160-Number(r.gross_minor)/max*135]);
   rows=rows.map(r=>({...r,date:String(r.date).slice(0,10)}));
   const line=points.map(([x,y])=>x+','+y).join(' ');
-  return '<svg class="chart" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Receita aprovada por dia"><defs><linearGradient id="tracking-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a47df4" stop-opacity=".25"/><stop offset="100%" stop-color="#a47df4" stop-opacity="0"/></linearGradient></defs><path d="M20 160H580 M20 115H580 M20 70H580 M20 25H580" stroke="#2c2c40" fill="none"/><polygon points="20,160 '+line+' 580,160" fill="url(#tracking-chart-fill)"/><polyline points="'+line+'" stroke="#ad8aff" stroke-width="2.5" fill="none"/>'+points.map(([x,y],i)=>'<circle cx="'+x+'" cy="'+y+'" r="4" fill="#ad8aff"><title>'+esc(rows[i].date+': '+money(rows[i].gross_minor))+'</title></circle>').join('')+'</svg><div class="legend"><span>'+esc(rows[0].date)+'</span><span>Receita bruta de pedidos · '+esc(state.currency)+'</span><span>'+esc(rows.at(-1).date)+'</span></div>';
+  return '<svg class="chart" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Receita aprovada por dia"><defs><linearGradient id="tracking-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".25"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path d="M20 160H580 M20 115H580 M20 70H580 M20 25H580" stroke="var(--border2)" fill="none"/><polygon points="20,160 '+line+' 580,160" fill="url(#tracking-chart-fill)"/><polyline points="'+line+'" stroke="var(--accent)" stroke-width="2.5" fill="none"/>'+points.map(([x,y],i)=>'<circle cx="'+x+'" cy="'+y+'" r="4" fill="var(--accent)"><title>'+esc(rows[i].date+': '+money(rows[i].gross_minor))+'</title></circle>').join('')+'</svg><div class="legend"><span>'+esc(rows[0].date)+'</span><span>Receita bruta de pedidos · '+esc(state.currency)+'</span><span>'+esc(rows.at(-1).date)+'</span></div>';
  }
  async function orders(){
   if(!setup.checkout_ready)return '<div class="mt-orders-lock">'+lockView('<div class="filters"><div class="mt-preview-line"></div></div>'+panel('Todos os pedidos',table(['Pedido','Comprador','Status','Pagamento','Valor'],[1,2,3,4].map(()=>'<tr>'+[1,2,3,4,5].map(()=>'<td><div class="mt-preview-line"></div></td>').join('')+'</tr>'))),'Conecte seu checkout para receber os pedidos','setup-checkouts',['kiwify','hotmart'])+'</div>';
@@ -161,16 +185,30 @@
 
  async function ads(){
   const [d,opts,integrations]=await Promise.all([api('/ad-management'),api('/ad-options'),api('/integrations')]);
-  const connected=integrations.filter(i=>['meta','google','tiktok'].includes(i.provider)&&i.connected);
+  const connected=integrations.filter(i=>['meta','google','tiktok'].includes(i.provider)&&i.connected&&!i.account_id.startsWith('oauth:'));
+  const canManage=!observer()&&['owner','admin'].includes(workspace()?.role);
+  const connectionBar=canManage?connections.campaignBar(connected):'';
   if(!connected.length){
    if(observer())return '<div class="mt-admin-empty"><div class="mt-connect-brands">'+['meta','google','tiktok'].map(p=>brand.logo(p)).join('')+'</div><h3>Esta operação ainda não tem contas de anúncios conectadas</h3><p>As campanhas aparecerão aqui quando o responsável conectar uma conta.</p></div>';
    const preview=['meta','google','tiktok'].map(p=>'<section class="mt-platform-group mt-platform-'+p+'"><div class="mt-platform-heading">'+brand.logo(p)+'<h2>'+brand.name(p)+'</h2></div><div class="mt-campaign-grid">'+[1,2].map(()=>'<article class="mt-campaign-card"><div class="mt-preview-line"></div><div class="mt-preview-line short"></div><div class="mt-preview-metrics">'+[1,2,3,4].map(()=>'<span></span>').join('')+'</div></article>').join('')+'</div></section>').join('');
-   return '<div class="mt-campaigns-lock"><div class="mt-campaigns-preview" inert aria-hidden="true">'+preview+'</div><div class="mt-connect-overlay"><div class="mt-connect-message"><div class="mt-connect-brands">'+['meta','google','tiktok'].map(p=>brand.logo(p)).join('')+'</div><h2>Conecte sua conta de anúncios</h2><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+button('Conectar conta de anúncios','ad-integrations','',true)+'</div></div></div>';
+   return connectionBar+'<div class="mt-campaigns-lock"><div class="mt-campaigns-preview" inert aria-hidden="true">'+preview+'</div><div class="mt-connect-overlay"><div class="mt-connect-message"><div class="mt-connect-brands">'+['meta','google','tiktok'].map(p=>brand.logo(p)).join('')+'</div><h2>Conecte sua conta de anúncios</h2><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+(canManage?button('Conectar conta de anúncios','campaign-connections','',true):'')+'</div></div></div>';
   }
   const levels={campaign:'Campanhas',group:'Conjuntos / grupos',ad:'Anúncios'};
   const parent=d.rows.find(r=>r.entity_id===state.ad_parent&&r.provider===state.provider&&r.account_id===state.account_id);
   const rows=d.rows.filter(r=>r.connected&&r.level===state.level&&(!state.provider||r.provider===state.provider)&&(!state.account_id||r.account_id===state.account_id)&&(!state.entity_id||r.entity_id===state.entity_id||r.parent_id===state.entity_id||d.rows.find(p=>p.provider===r.provider&&p.account_id===r.account_id&&p.entity_id===r.parent_id)?.parent_id===state.entity_id)&&(!parent||r.parent_id===parent.entity_id)&&(!state.status||(state.status==='ACTIVE'?r.effective_active:!r.effective_active))&&(!state.search||r.name.toLocaleLowerCase('pt-BR').includes(state.search.toLocaleLowerCase('pt-BR'))));
-  const toggle=r=>observer()?'<span class="pill '+(r.status==='ACTIVE'?'paid':'pending')+'">'+(r.status==='ACTIVE'?'Ativo':'Pausado')+'</span>':'<button class="status-switch" role="switch" aria-label="'+(r.status==='ACTIVE'?'Desativar ':'Ativar ')+esc(r.name)+'" aria-checked="'+(r.status==='ACTIVE')+'" data-action="ad-status" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-status="'+(r.status==='ACTIVE'?'PAUSED':'ACTIVE')+'" data-revision="'+r.revision+'" '+(!r.connected||(r.mode!=='simulated'&&!(pilot&&r.provider==='meta'))||!['owner','admin'].includes(workspace()?.role)?'disabled':'')+'><span aria-hidden="true"></span>'+(r.status==='ACTIVE'?'Ativo':'Pausado')+'</button>';
+  const accountsByKey=new Map(connected.map(i=>[i.provider+':'+i.account_id,i]));
+  const toggle=r=>{
+   const account=accountsByKey.get(r.provider+':'+r.account_id);
+   const health=window.MagemindIntegrationHealth.integrationHealth(account);
+   const active=r.status==='ACTIVE',label=active?'Ativo':'Pausado';
+   const unavailable=r.provider_status&&!['ACTIVE','PAUSED'].includes(r.provider_status);
+   if(unavailable)return '<span class="pill">'+(r.provider_status==='ARCHIVED'?'Arquivado':r.provider_status==='DELETED'?'Excluído':'Indisponível')+'</span>';
+   if(observer())return '<span class="pill '+(active?'paid':'pending')+'">'+label+'</span>';
+   const disabled=!canManage||!r.connected||health.kind==='authorization'||account?.management_access===false||
+    (r.mode!=='simulated'&&!(pilot&&r.provider==='meta'));
+   const title=health.kind==='authorization'?health.action:account?.management_access===false?'Somente leitura. Confira as permissões em Conexões.':'';
+   return '<button type="button" class="status-switch" role="switch" aria-label="'+(active?'Desativar ':'Ativar ')+esc(r.name)+'" aria-checked="'+active+'" data-action="ad-status" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-status="'+(active?'PAUSED':'ACTIVE')+'" data-revision="'+r.revision+'" '+(disabled?'disabled ':'')+(title?' title="'+esc(title)+'"':'')+'><span aria-hidden="true"></span>'+label+'</button>';
+  };
   const number=n=>n==null?'—':Number(n).toLocaleString('pt-BR');
   const cols=[['name',state.level==='campaign'?'Campanha':state.level==='group'?'Conjunto / grupo':'Anúncio'],['spend_minor','Valor gasto'],['checkout_purchases','Vendas'],['cpa','CPA'],['impressions','Impressões'],['clicks','Cliques'],['ctr','CTR'],['network_purchases','Conversões da rede']];
   const value=(r,k)=>k==='cpa'?(r.checkout_purchases&&r.spend_minor!=null?r.spend_minor/r.checkout_purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
@@ -180,10 +218,29 @@
    const entries=rows.filter(r=>r.provider===p).sort(compare);if(!entries.length)return '';
    const totals={};for(const k of ['spend_minor','checkout_purchases','impressions','clicks','network_purchases'])totals[k]=entries.every(r=>r[k]==null)?null:entries.reduce((n,r)=>n+Number(r[k]??0),0);
    const account=r=>opts.accounts.find(a=>a.provider===r.provider&&a.account_id===r.account_id)?.name||r.account_id;
-   return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'"><div class="mt-platform-heading">'+brand.logo(p)+'<h2>'+brand.name(p)+'</h2><span>'+entries.length+' '+levels[state.level].toLowerCase()+'</span></div><p class="mt-ad-scroll-hint">Deslize para ver as métricas <span aria-hidden="true">→</span></p><div class="mt-ad-table-scroll" tabindex="0" role="region" aria-label="'+levels[state.level]+' — '+brand.name(p)+'"><table class="mt-ad-table" data-mobile-table="scroll"><thead><tr><th scope="col">Veiculação</th>'+cols.map(([k,label])=>'<th scope="col" aria-sort="'+(state.ad_sort===k?(state.ad_direction==='asc'?'ascending':'descending'):'none')+'"><button data-action="ad-sort" data-sort="'+k+'">'+label+' <span aria-hidden="true">'+(state.ad_sort===k?(state.ad_direction==='asc'?'↑':'↓'):'↕')+'</span></button></th>').join('')+'</tr></thead><tbody>'+entries.map(r=>'<tr class="mt-ad-row"><td>'+toggle(r)+(r.status==='ACTIVE'&&!r.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td><td class="mt-ad-name">'+(state.level!=='ad'?'<button data-action="ad-drill" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-level="'+r.level+'" title="Ver '+(state.level==='campaign'?'conjuntos / grupos':'anúncios')+'">'+esc(r.name)+'<span aria-hidden="true"> ›</span></button>':'<strong>'+esc(r.name)+'</strong>')+'<small>'+esc(account(r))+'</small></td>'+cols.slice(1).map(([k])=>'<td>'+esc(format(r,k))+'</td>').join('')+'</tr>').join('')+'</tbody><tfoot><tr><td></td><th scope="row" title="Soma das linhas filtradas com dados disponíveis. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+cols.slice(1).map(([k])=>'<td>'+esc(format(totals,k))+'</td>').join('')+'</tr></tfoot></table></div></section>';
+   const metricCells=r=>cols.slice(1).map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+esc(format(r,key))+'</td>').join('');
+   return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'">'+
+    '<div class="mt-platform-heading">'+brand.logo(p)+'<h2>'+brand.name(p)+'</h2><span>'+entries.length+' '+levels[state.level].toLowerCase()+'</span></div>'+
+    '<div class="mt-ad-table-scroll" tabindex="0" role="region" aria-label="'+levels[state.level]+' · '+brand.name(p)+'">'+
+    '<table class="mt-ad-table" role="table" data-mobile-table="scroll"><thead role="rowgroup"><tr role="row"><th scope="col">Veiculação</th>'+
+     cols.map(([key,label])=>'<th scope="col" aria-sort="'+(state.ad_sort===key?(state.ad_direction==='asc'?'ascending':'descending'):'none')+'">'+
+      '<button type="button" data-action="ad-sort" data-sort="'+key+'">'+label+' <span aria-hidden="true">'+(state.ad_sort===key?(state.ad_direction==='asc'?'↑':'↓'):'↕')+'</span></button></th>').join('')+
+    '</tr></thead><tbody role="rowgroup">'+entries.map(r=>'<tr role="row" class="mt-ad-row"><td role="cell" class="mt-ad-state">'+toggle(r)+
+      (r.status==='ACTIVE'&&!r.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td>'+
+      '<td role="cell" class="mt-ad-name">'+(state.level!=='ad'?'<button type="button" data-action="ad-drill" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-level="'+r.level+'" title="Ver '+(state.level==='campaign'?'conjuntos / grupos':'anúncios')+'">'+esc(r.name)+'<span aria-hidden="true"> ›</span></button>':'<strong>'+esc(r.name)+'</strong>')+
+      '<small>'+esc(account(r))+'</small></td>'+metricCells(r)+'</tr>').join('')+
+    '</tbody><tfoot role="rowgroup"><tr role="row"><td role="cell"></td><th scope="row" title="Soma das linhas filtradas. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+
+      metricCells(totals)+'</tr></tfoot></table></div></section>';
   }).join('');
-  return '<div class="mt-level-tabs mt-manager-tabs">'+Object.entries(levels).map(([k,v])=>'<button class="quiet" data-action="ad-level" data-level="'+k+'" aria-pressed="'+(state.level===k)+'">'+v+'</button>').join('')+'</div>'+(parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'')+'<div class="filters mt-ad-filters"><label class="search">Buscar por nome<input id="tracking-search" value="'+esc(state.search)+'" placeholder="Pesquisar '+levels[state.level].toLowerCase()+'"></label>'+select('filter-provider','Plataforma',[['','Todas'],...['meta','google','tiktok'].filter(p=>connected.some(i=>i.provider===p)).map(p=>[p,brand.name(p)])],state.provider)+select('filter-account_id','Conta',[['','Todas'],...opts.accounts.map(a=>[a.account_id,brand.name(a.provider)+' / '+a.name])],state.account_id)+select('filter-status','Veiculação',[['','Todas'],['ACTIVE','Ativa'],['PAUSED','Pausada']],state.status)+button('Aplicar','filter')+'</div>'+groups+(!rows.length?'<div class="empty"><h2>Nenhum resultado encontrado</h2><p>Ajuste os filtros ou selecione outro nível.</p>'+button('Limpar filtros','ad-clear')+'</div>':'');
-
+  const tabs='<div class="mt-level-tabs mt-manager-tabs">'+Object.entries(levels).map(([key,label])=>'<button class="quiet" type="button" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(state.level===key)+'">'+label+'</button>').join('')+'</div>';
+  const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
+  const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort','<span class="sr-only">Ordenar campanhas por</span>',sortOptions,state.ad_sort+':'+state.ad_direction)+'</div>';
+  return connectionBar+tabs+(parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'')+
+    '<div class="filters mt-ad-filters"><label class="search">Buscar por nome<input id="tracking-search" value="'+esc(state.search)+'" placeholder="Pesquisar '+levels[state.level].toLowerCase()+'"></label>'+
+    select('filter-provider','Plataforma',[['','Todas'],...['meta','google','tiktok'].filter(p=>connected.some(i=>i.provider===p)).map(p=>[p,brand.name(p)])],state.provider)+
+    select('filter-account_id','Conta',[['','Todas'],...opts.accounts.map(a=>[a.account_id,brand.name(a.provider)+' / '+a.name])],state.account_id)+
+    select('filter-status','Veiculação',[['','Todas'],['ACTIVE','Ativa'],['PAUSED','Pausada']],state.status)+button('Aplicar','filter')+
+    mobileSort+'</div>'+groups+(!rows.length?'<div class="empty"><h2>Nenhum resultado encontrado</h2><p>Ajuste os filtros ou selecione outro nível.</p>'+button('Limpar filtros','ad-clear')+'</div>':'');
  }
  async function integrations(){
   const data=await api('/integrations');
@@ -201,7 +258,7 @@
  async function costs(){
   costRules=await api('/costs');const rows=costRules.filter(r=>costHistory||!r.archived_at);
   const labels={product:'Custo do produto',tax:'Imposto',fee:'Taxa de pagamento',expense:'Custo adicional'};
-  const calculation=r=>r.calculation==='percentage'?Number(r.rate_bps)/100+'% sobre vendas aprovadas':r.calculation==='fixed_per_item'?money(r.amount_minor,r.currency)+' por unidade':r.calculation==='fixed_per_sale'?money(r.amount_minor,r.currency)+' por venda':r.calculation==='fixed_once'?money(r.amount_minor,r.currency)+' · despesa registrada':(r.amount_minor!=null?money(r.amount_minor,r.currency):'')+(r.rate_bps?' + '+Number(r.rate_bps)/100+'%':'');
+  const calculation=r=>r.fee_schedule?fees.description(r,money):r.calculation==='percentage'?Number(r.rate_bps)/100+'% sobre vendas aprovadas':r.calculation==='fixed_per_item'?money(r.amount_minor,r.currency)+' por unidade':r.calculation==='fixed_per_sale'?money(r.amount_minor,r.currency)+' por venda':r.calculation==='fixed_once'?money(r.amount_minor,r.currency)+' · despesa registrada':(r.amount_minor!=null?money(r.amount_minor,r.currency):'')+(r.rate_bps?' + '+Number(r.rate_bps)/100+'%':'');
   return '<div class="panel-head"><p class="small">As alterações valem para as próximas aprovações. Os custos das vendas anteriores ficam preservados.</p>'+button('Adicionar custo','cost-form','',true)+'</div><div class="actions mt-cost-tabs">'+button(costHistory?'Mostrar apenas ativos':'Ver histórico','cost-history','aria-pressed="'+costHistory+'"')+'</div>'+panel(costHistory?'Histórico de custos':'Custos ativos',rows.length?table(['Custo','Tipo','Cálculo','Aplicado a','Status',''],rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(labels[r.category])+'</td><td>'+esc(calculation(r))+'</td><td>'+esc(r.product_id||'Todos os produtos')+'<small>'+esc(r.provider?brand.name(r.provider):'Todos os checkouts')+' · '+esc(r.currency)+'</small></td><td>'+pill(r.archived_at?'Encerrado':'Ativo')+'</td><td>'+(r.archived_at?'<small>Histórico preservado</small>':'<div class="actions">'+button('Editar','cost-edit','data-id="'+esc(r.id)+'"')+button('Remover','cost-remove','data-id="'+esc(r.id)+'"')+'</div>')+'</td></tr>')):'<p>Adicione o custo do produto, impostos e outras taxas para acompanhar seu lucro.</p>');
  }
 
@@ -215,7 +272,7 @@
   const d=await api(observer()?'/admin/order':'/order',null,{id,workspace_id:workspaceId}),o=d.order,a=d.attribution||{};
   const dt=value=>value?new Date(value).toLocaleString('pt-BR',{timeZone:workspaces.find(w=>w.id===o.workspace_id)?.timezone||'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'Ainda não recebida';
   const money=n=>n==null?'Indisponível':new Intl.NumberFormat('pt-BR',{style:'currency',currency:o.currency}).format(Number(n)/10**o.amount_scale);
-  modal('Pedido '+o.external_id,pill(o.status)+'<dl class="detail-grid">'+Object.entries({'Checkout':o.provider,'Pagamento':o.payment_method||'Indisponível','Bruto':money(o.gross_minor),'Receita do usuário':money(o.recipient_minor),'Devolvido':money(o.refund_minor),'Comprador':o.buyer_name||'Indisponível','E-mail':o.buyer_email||'Indisponível','Telefone':o.buyer_phone||'Indisponível','Criado':dt(o.created_at),'Aprovado':dt(o.approved_at),'Origem':a.channel||'Não atribuído','Evidência':a.evidence||'Indisponível','Anúncio':a.ad_id||'Sem anúncio validado','Confiança':a.confidence||'Baixa'}).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'+(o.money_components?.manual_fees?'<p class="mt-cost-explanation">A loja informou o valor bruto. O resultado é estimado com as taxas e os custos cadastrados na sua conta.</p>':'')+'<h3>Itens</h3>'+table(['Produto','Quantidade','Total da linha'],d.items.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.quantity+'</td><td>'+money(i.amount_minor)+'</td></tr>'))+'<h3>Origem da venda</h3><p>'+esc(a.channel==='unattributed'?'Não atribuído':a.channel||'Não informado')+' · '+esc(a.utm_campaign||'Sem campanha informada')+'</p><h3>Histórico auditável</h3><ul class="timeline">'+d.history.map(e=>'<li>'+dt(e.occurred_at)+'<strong>'+esc(statusLabel[e.status])+' · '+esc(e.processing)+'</strong><small>'+esc(e.reason||e.event_key)+'</small></li>').join('')+'</ul>');
+  modal('Pedido '+o.external_id,pill(o.status)+'<dl class="detail-grid">'+Object.entries({'Checkout':o.provider,'Pagamento':o.payment_method==='CREDIT_CARD'?'Cartão'+(o.installments?' · '+o.installments+'×':''):o.payment_method==='PIX'?'Pix':o.payment_method||'Indisponível','Bruto':money(o.gross_minor),'Receita do usuário':money(o.recipient_minor),'Devolvido':money(o.refund_minor),'Comprador':o.buyer_name||'Indisponível','E-mail':o.buyer_email||'Indisponível','Telefone':o.buyer_phone||'Indisponível','Criado':dt(o.created_at),'Aprovado':dt(o.approved_at),'Origem':a.channel||'Não atribuído','Evidência':a.evidence||'Indisponível','Anúncio':a.ad_id||'Sem anúncio validado','Confiança':a.confidence||'Baixa'}).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'+(o.money_components?.manual_fees?'<p class="mt-cost-explanation">A loja informou o valor bruto. O resultado é estimado com as taxas e os custos cadastrados na sua conta.</p>':'')+'<h3>Itens</h3>'+table(['Produto','Quantidade','Total da linha'],d.items.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.quantity+'</td><td>'+money(i.amount_minor)+'</td></tr>'))+'<h3>Origem da venda</h3><p>'+esc(a.channel==='unattributed'?'Não atribuído':a.channel||'Não informado')+' · '+esc(a.utm_campaign||'Sem campanha informada')+'</p><h3>Histórico auditável</h3><ul class="timeline">'+d.history.map(e=>'<li>'+dt(e.occurred_at)+'<strong>'+esc(statusLabel[e.status])+' · '+esc(e.processing)+'</strong><small>'+esc(e.reason||e.event_key)+'</small></li>').join('')+'</ul>');
  }
  async function customerDetail(id){
   const d=await api('/customer',null,{id});modal(d.customer.name||'Comprador','<p>'+esc(d.customer.email||'E-mail não informado')+' · '+esc(d.customer.phone||'Telefone não informado')+'</p>'+table(['Pedido','Status','Moeda','Total',''],d.orders.map(o=>'<tr><td>'+esc(o.external_id)+'</td><td>'+pill(o.status)+'</td><td>'+esc(o.currency)+'</td><td>'+esc(Number(o.gross_minor)/10**o.amount_scale)+'</td><td>'+button('Abrir','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+'<p class="small">Até 25 compras recentes. Identidade canônica '+esc(d.customer.provider)+' / '+esc(d.customer.external_id)+'.</p>');
@@ -224,37 +281,99 @@
   const sites=await api('/sites');
   modal('Script próprio e UTMs','<form data-form="site" class="form-grid"><label>Domínio do seu site<input name="domain" value="'+esc(location.hostname)+'" required></label><label>Domínios dos checkouts (vírgula)<input name="checkout_domains" value="pay.kiwify.com.br,pay.hotmart.com"></label><button class="primary wide">Cadastrar domínio</button></form>'+sites.map(s=>'<h3>'+esc(s.domain)+'</h3><pre class="code">'+esc('<script src="'+location.origin+'/magemind-collect-v1.js" data-endpoint="'+location.origin+cfg.apiBase+'/collect" data-site="'+s.public_key+'" data-checkouts="'+s.checkout_domains.join(',')+'" data-consent="denied"></script>')+'</pre><p class="small">Conceda consentimento pela API MagemindCollect.consent(true). Sem consentimento, nenhuma persistência ou envio ocorre.</p>').join('')+'<h3>Meta Ads</h3><pre class="code">utm_source=meta&amp;utm_medium=paid_social&amp;utm_campaign={{campaign.id}}&amp;utm_term={{adset.id}}&amp;utm_content={{ad.id}}</pre><h3>Google Ads</h3><pre class="code">utm_source=google&amp;utm_medium=cpc&amp;utm_campaign={campaignid}&amp;utm_term={adgroupid}&amp;utm_content={creative}</pre><p class="small">A ponte de click_id usa sck apenas se vazio e preserva valores legados. Confirme a devolução desse campo pelo checkout. Macros indisponíveis em um formato não são inventadas.</p>');
  }
- async function costForm(row=null){
-  costProducts=await api('/cost-products');const category=row?.category||'product';
+ async function configureFee(integration,finish){
+  const rules=await api('/costs');
+  const row=rules.find(r=>r.integration_id===integration.id&&!r.archived_at);
+  return costForm(row,{integration,finish});
+ }
+ function finishCostFlow(){
+  const finish=costFlow?.finish;
+  costFlow=null;
+  $('tracking-dialog').close();
+  return finish?.();
+ }
+ async function costForm(row=null,flow=null){
+  costFlow=flow;
+  costProducts=flow?[]:await api('/cost-products');
+  const integration=flow?.integration;
+  const category=row?.category||(integration?'fee':'product');
+  const legacyFee=category==='fee'&&row&&!row.fee_schedule;
   const mode=row?.calculation==='legacy'?(category==='tax'?'percentage':category==='product'?'fixed_per_item':row.rate_bps?'percentage':'fixed_per_sale'):row?.calculation||'fixed_per_item';
   const known=costProducts.findIndex(p=>p.product_id===row?.product_id&&p.provider===row?.provider&&p.currency===row?.currency);
-  modal(row?'Editar custo':'Adicionar custo','<form data-form="cost" class="form-grid"><input type="hidden" name="id" value="'+esc(row?.id||'')+'"><label>Nome do custo<input name="name" required maxlength="120" value="'+esc(row?.name||'')+'" placeholder="Ex.: Produto, imposto ou embalagem"></label>'+select('cost-category','Tipo de custo',[['product','Custo do produto'],['tax','Imposto'],['fee','Taxa de pagamento'],['expense','Custo adicional']],category)+select('cost-calculation','Como calcular',[['fixed_per_item','Valor fixo por unidade'],['fixed_per_sale','Valor fixo por venda aprovada'],['percentage','Porcentagem sobre vendas aprovadas']],mode)+'<input type="hidden" id="cost-currency" value="'+esc(row?.currency||'BRL')+'">'+'<label><span id="cost-amount-label">Valor em '+esc(row?.currency||state.currency)+'</span><input name="amount" inputmode="decimal" value="'+esc(row?.amount_minor!=null?(Number(row.amount_minor)/10**scale[row.currency]).toFixed(scale[row.currency]).replace('.',','):'')+'" placeholder="0,00"></label><label>Percentual (%)<input name="rate" inputmode="decimal" value="'+esc(row?.rate_bps!=null?(row.rate_bps/100).toFixed(2).replace('.',','):'')+'" placeholder="0,00"></label>'+select('cost-product','Produto',[['','Todos os produtos'],...costProducts.map((p,i)=>[String(i),p.name+' · '+brand.name(p.provider)+' · '+p.currency]),['manual','Informar ID do produto']],known>=0?String(known):row?.product_id?'manual':'')+'<label id="cost-product-id-label">ID do produto<input name="product_id" value="'+esc(row?.product_id||'')+'" maxlength="200" placeholder="ID recebido pelo checkout"></label>'+select('cost-provider','Checkout',[['','Todos os checkouts'],...checkoutProviders.map(p=>[p,brand.name(p)]),['custom','API própria']],row?.provider||'')+'<div class="mt-cost-explanation wide" id="cost-explanation" role="status"></div><button class="primary wide">'+(row?'Salvar alteração':'Adicionar custo')+'</button><p class="small wide">A configuração começa a valer agora, nas próximas aprovações. Editar ou remover não recalcula vendas anteriores.</p></form>');
-  updateCostForm();
+  const currency=row?.currency||(integration?'BRL':workspace()?.currency||state.currency);
+  const provider=integration?.provider||row?.provider||'';
+  const decimal=(value,digits)=>value==null?'':(Number(value)/10**digits).toFixed(digits).replace('.',',');
+  const header=integration?'<div class="mt-fee-integration wide">'+brand.logo(provider)+'<div><strong>'+esc(integration.name)+'</strong><p>Revise as tarifas antes de receber pedidos.</p></div></div>':'';
+  modal(integration?'Configurar taxa de pagamento':row?'Editar custo':'Adicionar custo',
+   '<form data-form="cost" class="form-grid" data-linked-fee="'+Boolean(integration||row?.integration_id)+'">'+
+   '<input type="hidden" name="id" value="'+esc(row?.id||'')+'"><input type="hidden" name="integration_id" value="'+esc(integration?.id||row?.integration_id||'')+'">'+header+
+   '<label '+(integration?'hidden':'')+'>Nome do custo<input name="name" required maxlength="120" value="'+esc(integration?.name||row?.name||'')+'" placeholder="Ex.: Produto, imposto ou embalagem" '+(integration||row?.integration_id?'readonly':'')+'></label>'+
+   (integration?'<input id="cost-category" type="hidden" value="fee">':select('cost-category','Tipo de custo',[['product','Custo do produto'],['tax','Imposto'],['fee','Taxa de pagamento'],['expense','Custo adicional']],category))+
+   (legacyFee?select('fee-mode','Tipo de tarifa',[['general','Mesma tarifa para todos'],['schedule','Pix e cartão']], 'general'):'')+
+   select('cost-calculation','Como calcular',[['fixed_per_item','Valor fixo por unidade'],['fixed_per_sale','Valor fixo por venda aprovada'],['percentage','Porcentagem sobre vendas aprovadas'],['fixed_once','Valor fixo único']],mode)+
+   '<input type="hidden" id="cost-currency" value="'+esc(currency)+'">'+
+   '<label><span id="cost-amount-label">Valor em '+esc(currency)+'</span><input name="amount" inputmode="decimal" value="'+decimal(row?.amount_minor,scale[currency])+'" placeholder="0,00"></label>'+
+   '<label>Percentual (%)<input name="rate" inputmode="decimal" value="'+decimal(row?.rate_bps,2)+'" placeholder="0,00"></label>'+
+   select('cost-product','Produto',[['','Todos os produtos'],...costProducts.map((p,i)=>[String(i),p.name+' · '+brand.name(p.provider)+' · '+p.currency]),['manual','Informar ID do produto']],known>=0?String(known):row?.product_id?'manual':'')+
+   '<label id="cost-product-id-label">ID do produto<input name="product_id" value="'+esc(row?.product_id||'')+'" maxlength="200" placeholder="ID recebido pelo checkout"></label>'+
+   select('cost-provider','Checkout',[['','Todos os checkouts'],...checkoutProviders.map(p=>[p,brand.name(p)]),['custom','API própria']],provider)+
+   '<section class="mt-payment-fee wide" id="cost-payment-schedule" hidden></section>'+
+   '<div class="mt-cost-explanation wide" id="cost-explanation" role="status"></div>'+
+   '<p class="small wide">As alterações valem para as próximas aprovações.</p>'+
+   '<div class="mt-fee-actions wide">'+(flow?'<button type="button" class="quiet mt-fee-danger" data-action="cost-skip">Não configurar agora</button>':'')+
+   '<button type="submit" class="primary">'+(integration?'Salvar taxa':row?'Salvar alteração':'Adicionar custo')+'</button></div>'+
+   '<p class="mt-form-error wide" role="alert" hidden></p></form>');
+  const form=$('dialog-content').querySelector('[data-form="cost"]');
+  if(row?.integration_id&&!integration)$('cost-category').disabled=true;
+  fees.fill($('cost-payment-schedule'),provider,currency,row?.fee_schedule,Boolean(integration&&!row));
+  updateCostForm(form);
  }
- function updateCostForm(){
-  const f=$('dialog-content').querySelector('[data-form="cost"]');if(!f)return;
+ function updateCostForm(form){
   const cat=$('cost-category').value,c=$('cost-calculation'),product=cat==='product',tax=cat==='tax';
-  for(const option of c.options)option.hidden=product?option.value!=='fixed_per_item':tax?option.value!=='percentage':option.value==='fixed_per_item';
-  if(product)c.value='fixed_per_item';else if(tax)c.value='percentage';else if(c.value==='fixed_per_item')c.value='fixed_per_sale';
-  c.disabled=product||tax;const percentage=c.value==='percentage';
-  f.elements.amount.disabled=percentage;f.elements.amount.required=!percentage;f.elements.rate.disabled=!percentage;f.elements.rate.required=percentage;
-  if(percentage)f.elements.amount.value='';else f.elements.rate.value='';
+  const schedule=cat==='fee'&&$('fee-mode')?.value!=='general';
+  const legacyMode=$('fee-mode');
+  if(legacyMode)legacyMode.closest('label').hidden=cat!=='fee';
+  $('cost-payment-schedule').hidden=!schedule;
+  c.closest('label').hidden=schedule;
+  for(const option of c.options)option.hidden=product?option.value!=='fixed_per_item':tax?option.value!=='percentage':
+   option.value==='fixed_per_item'||(option.value==='fixed_once'&&cat!=='expense');
+  if(product)c.value='fixed_per_item';
+  else if(tax)c.value='percentage';
+  else if(!c.value||c.value==='fixed_per_item'||(c.value==='fixed_once'&&cat!=='expense'))c.value='fixed_per_sale';
+  c.disabled=product||tax||schedule;
+  const percentage=c.value==='percentage';
+  form.elements.amount.closest('label').hidden=schedule;
+  form.elements.rate.closest('label').hidden=schedule;
+  form.elements.amount.disabled=schedule||percentage;form.elements.amount.required=!schedule&&!percentage;
+  form.elements.rate.disabled=schedule||!percentage;form.elements.rate.required=!schedule&&percentage;
   $('cost-product').closest('label').hidden=!product;$('cost-product').disabled=!product;
   const value=$('cost-product').value,known=product&&/^\d+$/.test(value)?costProducts[Number(value)]:null,manual=product&&value==='manual';
-  $('cost-product-id-label').hidden=!manual;f.elements.product_id.disabled=!manual;f.elements.product_id.required=manual;
-  $('cost-provider').disabled=Boolean(known);if(known){$('cost-provider').value=known.provider;$('cost-currency').value=known.currency;}
-  $('cost-currency').disabled=Boolean(known);const cur=$('cost-currency').value;
+  $('cost-product-id-label').hidden=!manual;form.elements.product_id.disabled=!manual;form.elements.product_id.required=manual;
+  const linked=form.dataset.linkedFee==='true';
+  $('cost-provider').closest('label').hidden=Boolean(costFlow?.integration);
+  $('cost-provider').disabled=Boolean(known||linked);
+  if(known){$('cost-provider').value=known.provider;$('cost-currency').value=known.currency;}
+  const cur=$('cost-currency').value;
   $('cost-amount-label').textContent='Valor em '+cur+(product?' por unidade':' por venda');
-  $('cost-explanation').innerHTML='<strong>'+esc(tax?'Imposto sobre o faturamento aprovado':product?'Custo por unidade vendida':percentage?'Percentual sobre as vendas aprovadas':'Valor aplicado a cada venda aprovada')+'</strong><p>'+esc(cat==='fee'?'A taxa é usada apenas quando o checkout não informa a receita líquida nem a taxa real, evitando desconto em duplicidade.':product?'O custo é multiplicado pela quantidade do produto no pedido. Produtos com uma configuração específica usam essa configuração.':percentage?'O percentual será aplicado sobre o valor bruto do pedido aprovado.':'O valor será descontado uma vez por pedido aprovado.')+'</p>';
+  $('cost-explanation').hidden=schedule;
+  $('cost-explanation').innerHTML='<strong>'+esc(tax?'Imposto sobre o faturamento aprovado':product?'Custo por unidade vendida':percentage?'Percentual sobre as vendas aprovadas':'Valor aplicado a cada venda aprovada')+'</strong><p>'+esc(cat==='fee'?'O valor informado pelo checkout tem prioridade.':product?'O custo é multiplicado pela quantidade do produto no pedido. Produtos com uma configuração específica usam essa configuração.':percentage?'O percentual será aplicado sobre o valor bruto do pedido aprovado.':'O valor fixo será descontado uma vez.')+'</p>';
  }
- document.addEventListener('change',e=>{if(e.target.closest('[data-form="cost"]'))updateCostForm();});
+ document.addEventListener('change',e=>{
+  const form=e.target.closest('[data-form="cost"]');
+  if(!form||!['cost-category','fee-mode','cost-calculation','cost-product'].includes(e.target.id))return;
+  updateCostForm(form);
+ });
  function minorInput(value,s){if(!value)return null;const parts=value.replace(',','.').split('.');if(parts.length>2||!/^\d+$/.test(parts[0])||!/^[0-9]*$/.test(parts[1]||'')||(parts[1]||'').length>s)throw new Error('Precisão do valor inválida');const n=Number(BigInt(parts[0])*10n**BigInt(s)+BigInt((parts[1]||'').padEnd(s,'0')||'0'));if(!Number.isSafeInteger(n))throw new Error('Valor acima do limite permitido');return n;}
  async function action(name,el){
   if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
+  if(name.startsWith('campaign-')){
+   if(!['owner','admin'].includes(workspace()?.role))throw new Error('Somente os responsáveis pela operação podem gerenciar as conexões.');
+   return connections.campaignAction(name,el.dataset.id);
+  }
   if(name==='webhook-details')return connections.details(el.dataset.id);
   if(name==='connection-copy')return connections.copy();
   if(name==='meta-platform')return connections.platform();
-  if(name==='connect'&&pilot){const p=el.dataset.provider;if(p==='meta')return connections.meta();if(checkoutProviders.includes(p))return connections.webhook(p);if(p==='custom')return connections.custom();throw new Error('Plataforma indisponível');}
+  if(name==='connect'&&window.MagemindTrackingBackend?.edge){const p=el.dataset.provider;if(p==='meta')return connections.hub();if(checkoutProviders.includes(p))return connections.webhook(p);if(p==='custom')return connections.custom();throw new Error('Plataforma indisponível');}
   if(name==='welcome-close')return $('tracking-dialog').close();
   if(name==='setup-checkouts'||name==='setup-ads'||name==='ad-integrations'){goTo('integrations');await render();const heading=$(name==='setup-checkouts'?'integration-checkouts':'integration-ad-managers')?.querySelector('h2');heading?.scrollIntoView({block:'start',behavior:'smooth'});heading?.focus({preventScroll:true});return;}
   if(name==='setup-costs'){goTo('settings');selectSettingsTab('tracking');return;}
@@ -262,6 +381,12 @@
   if(name==='setup-journey'){goTo('integrations');await render();return sitesForm();}
   if(name==='setup-zero-cost'){await api('/costs',{name:'Sem custos',category:'product',calculation:'fixed_per_item',currency:state.currency,amount_minor:0,rate_bps:null,product_id:null,provider:null});toast('Operação sem custos configurada.');return render();}
   if(name==='cost-history'){costHistory=!costHistory;return render();}
+  if(name==='cost-skip')return finishCostFlow();
+  if(name==='cost-integration'){
+   const integration=(await api('/integrations')).find(i=>i.id===el.dataset.id);
+   if(!integration)throw new Error('Integração indisponível.');
+   return configureFee(integration);
+  }
   if(name==='cost-edit')return costForm(costRules.find(r=>r.id===el.dataset.id));
   if(name==='cost-remove')return modal('Remover custo','<p>O custo deixará de ser aplicado às próximas aprovações. As vendas anteriores e o histórico dos custos serão mantidos.</p><div class="actions">'+button('Cancelar','welcome-close')+button('Remover custo','cost-archive-confirm','data-id="'+esc(el.dataset.id)+'"',true)+'</div>');
   if(name==='cost-archive-confirm'){await api('/costs/archive',{id:el.dataset.id});$('tracking-dialog').close();toast('Custo removido. Histórico preservado.');return render();}
@@ -298,7 +423,20 @@
   if(name==='ad-sort'){state.ad_direction=state.ad_sort===el.dataset.sort&&state.ad_direction==='desc'?'asc':'desc';state.ad_sort=el.dataset.sort;return render();}
   if(name==='ad-drill'){state.provider=el.dataset.provider;state.account_id=el.dataset.account;state.ad_parent=el.dataset.entity;state.entity_id='';state.level=el.dataset.level==='campaign'?'group':'ad';state.search='';state.status='';return render();}
   if(name==='ad-clear'){state.ad_parent='';state.entity_id='';state.provider='';state.account_id='';state.search='';state.status='';return render();}
-  if(name==='ad-status'){await api('/ad-status',{provider:el.dataset.provider,account_id:el.dataset.account,entity_id:el.dataset.entity,status:el.dataset.status,revision:Number(el.dataset.revision)});toast(el.dataset.status==='ACTIVE'?'Veiculação ativada.':'Veiculação pausada.');return render();}
+  if(name==='ad-status'){
+   const w=state.workspace;
+   try{
+    await api('/ad-status',{provider:el.dataset.provider,account_id:el.dataset.account,entity_id:el.dataset.entity,status:el.dataset.status,revision:Number(el.dataset.revision)});
+    toast(el.dataset.status==='ACTIVE'?'Veiculação ativada.':'Veiculação pausada.');
+    return render();
+   }catch(error){
+    if(state.tab==='ads'&&state.workspace===w){
+     await render();
+     if(error.code&&error.code!=='ad_status_conflict')return connections.hub(error.message,true);
+    }
+    throw error;
+   }
+  }
   if(name==='sites')return sitesForm();
   if(name==='cost-form')return costForm();
   if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada da API','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado da API">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(pilot?cfg.supabaseUrl+'/functions/v1/tracking-webhook?provider=custom':location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
@@ -320,7 +458,7 @@
   const tab=e.target.closest('[data-tab]');if(tab){state.tab=tab.dataset.tab;state.page=1;return render();}
   const target=e.target.closest('[data-action]');if(!target)return;
   if(!await ready())return;
-  target.disabled=true;try{await action(target.dataset.action,target);}catch(err){toast(err.message);}finally{if(target.isConnected)target.disabled=false;}
+  target.disabled=true;try{await action(target.dataset.action,target);}catch(err){toast(err.message,'err');}finally{if(target.isConnected)target.disabled=false;}
  });
  document.addEventListener('submit',async e=>{
   const form=e.target.closest('.mt-root [data-form]');if(!form)return;e.preventDefault();const btn=form.querySelector('button[type=submit],button.primary');btn.disabled=true;
@@ -336,9 +474,15 @@
    if(type==='site'){await api('/sites',data);await sitesForm();return;}
    if(type==='cost'){
     const category=$('cost-category').value,calculation=$('cost-calculation').value,currency=$('cost-currency').value,known=category==='product'&&/^\d+$/.test($('cost-product').value)?costProducts[Number($('cost-product').value)]:null;
-    const payload={name:data.name,category,calculation,currency,product_id:category==='product'?(known?.product_id||data.product_id||null):null,provider:$('cost-provider').value||null,amount_minor:calculation==='percentage'?null:minorInput(data.amount,scale[currency]),rate_bps:calculation==='percentage'?minorInput(data.rate,2):null};
+    const scheduled=category==='fee'&&$('fee-mode')?.value!=='general';
+    const payload={name:data.name,category,calculation:scheduled?'fee_schedule':calculation,currency,product_id:category==='product'?(known?.product_id||data.product_id||null):null,provider:$('cost-provider').value||null,amount_minor:scheduled||calculation==='percentage'?null:minorInput(data.amount,scale[currency]),rate_bps:!scheduled&&calculation==='percentage'?minorInput(data.rate,2):null};
+    if(scheduled){
+     payload.fee_schedule=fees.read(form,currency,minorInput);
+     if(data.integration_id)payload.integration_id=data.integration_id;
+    }
     if(payload.rate_bps>10000)throw new Error('O percentual deve estar entre 0 e 100%.');
     await api(data.id?'/costs/edit':'/costs',data.id?{id:data.id,...payload}:payload);
+    if(costFlow){await finishCostFlow();toast('Taxa salva em Configurações → Custos.');return;}
    }
    if(type==='settings'){await api('/settings',{...data,attribution_days:Number(data.attribution_days),retention_days:Number(data.retention_days)});await loadWorkspaces();}
    if(type==='preferences'){const prefs={};for(const [k] of notificationPreferences)prefs[k]=form.elements[k].checked;await api('/preferences',prefs);}
@@ -348,7 +492,11 @@
     modal('Webhook do checkout', '<p>Cadastre este endereço na sua integração. Na Kiwify a chave de ingresso identifica o endpoint; a aprovação continua dependendo da API de vendas.</p><textarea readonly>'+esc(r.webhook)+'</textarea><p class="small">A URL Kiwify é privada; não a compartilhe nem a inclua no script público.</p>');return;
    }
    $('tracking-dialog').close();toast('Alteração salva.');await render();
-  }catch(err){toast(err.message);}finally{if(btn.isConnected)btn.disabled=false;}
+  }catch(err){
+   const status=form.querySelector('.mt-form-error');
+   if(status){status.hidden=false;status.textContent=err.message;status.scrollIntoView({block:'nearest'});}
+   else toast(err.message,'err');
+  }finally{if(btn.isConnected)btn.disabled=false;}
  });
 
  async function pollNotifications(){
@@ -412,9 +560,49 @@
  });
  window.addEventListener('resize',positionPeriod);
  document.addEventListener('scroll',e=>{if(!$('tracking-period-popover').contains(e.target))positionPeriod();},true);
- $('close-dialog').addEventListener('click',()=>$('tracking-dialog').close());
- $('tracking-dialog').addEventListener('close',()=>$('dialog-content').replaceChildren());
- document.addEventListener('magemind:session-ready',async()=>{if(!window.trackingEnabled())return;route('dashboard');const callback=new URLSearchParams(location.search),grant=callback.get('tracking_oauth'),failed=callback.has('tracking_oauth_error');if(grant||failed){history.replaceState(null,'',location.pathname);try{await ready();if(grant&&callback.get('tracking_workspace')===state.workspace&&!observer()){goTo('integrations');await render();await connections.accounts(grant);}else toast('A autorização da Meta não foi concluída. Tente conectar novamente.');}catch(e){toast(e.message);}} pollNotifications().catch(()=>{});const qs=new URLSearchParams(location.search);if(qs.get('order')){await ready();if(qs.get('workspace')&&workspaces.some(w=>w.id===qs.get('workspace')))state.workspace=qs.get('workspace');goTo('orders');await render();detail(qs.get('order'),qs.get('workspace')||state.workspace).catch(e=>toast(e.message));}});
+ $('close-dialog').addEventListener('click',()=>finishCostFlow());
+ $('tracking-dialog').addEventListener('cancel',event=>{
+  if(!costFlow?.finish)return;
+  event.preventDefault();
+  finishCostFlow();
+ });
+ $('tracking-dialog').addEventListener('close',()=>{
+  if(!$('tracking-dialog').open){$('dialog-content').replaceChildren();costFlow=null;}
+ });
+ document.addEventListener('input',event=>event.target.closest('.mt-ad-filters')?.classList.add('is-dirty'));
+ document.addEventListener('change',event=>{
+  if(event.target.id!=='ad-mobile-sort')return;
+  [state.ad_sort,state.ad_direction]=event.target.value.split(':');
+  void render();
+ });
+ document.addEventListener('magemind:session-ready',async()=>{
+  if(!window.trackingEnabled())return;
+  route('dashboard');
+  const url=new URL(location.href),callback=url.searchParams;
+  const grant=callback.get('tracking_oauth'),failed=callback.get('tracking_oauth_error'),w=callback.get('tracking_workspace');
+  if(grant||failed){
+   for(const key of ['tracking_oauth','tracking_oauth_error','tracking_workspace'])callback.delete(key);
+   history.replaceState(null,'',url.pathname+url.search+url.hash);
+   const returnPage=connections.returnPage();
+   try{
+    if(await ready()&&!observer()){
+     if(grant&&workspaces.some(row=>row.id===w))state.workspace=w;
+     goTo(returnPage);
+     await render();
+     if(grant&&w===state.workspace)await connections.accounts(grant);
+     else await connections.hub('A autorização da Meta não foi concluída. Tente renovar o acesso. Se persistir, fale com o suporte.',true);
+    }
+   }catch(error){toast(error.message,'err');}
+  }
+  pollNotifications().catch(()=>{});
+  if(callback.get('order')){
+   await ready();
+   if(callback.get('workspace')&&workspaces.some(row=>row.id===callback.get('workspace')))state.workspace=callback.get('workspace');
+   goTo('orders');
+   await render();
+   detail(callback.get('order'),callback.get('workspace')||state.workspace).catch(error=>toast(error.message,'err'));
+  }
+ });
  document.addEventListener('magemind:tracking-signed-out',clear);
  navigator.serviceWorker?.addEventListener('message',async e=>{if(e.data?.type!=='OPEN_TRACKING_ORDER'||!await ready())return;await loadWorkspaces();if(!workspaces.some(w=>w.id===e.data.workspaceId))return;state.workspace=e.data.workspaceId;goTo(e.data.orderId?'orders':'integrations');await render();if(e.data.orderId)detail(e.data.orderId,e.data.workspaceId).catch(err=>toast(err.message));});
  setInterval(()=>{if(DB.me)pollNotifications().catch(()=>{});},5000);

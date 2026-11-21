@@ -20,7 +20,7 @@ function setupSettingsTabs() {
     tabs.className = 'settings-tabs';
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Setores das configurações');
-    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['company','Empresa']];
+    const sections = [['profile','Perfil'], ['security','Segurança'], ['notifications','Notificações'], ['appearance','Aparência'], ['company','Empresa']];
     sections.forEach(([id, label]) => {
       const panel = id === 'profile' ? mount : document.createElement('div');
       if (id !== 'profile') { panel.id = `settings-panel-${id}`; host.appendChild(panel); }
@@ -76,6 +76,7 @@ function selectSettingsTab(section) {
     tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
     document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
   });
+  if (section === 'appearance') window.MagemindAppearance?.render();
 }
 
 function openClientPreview(id) {

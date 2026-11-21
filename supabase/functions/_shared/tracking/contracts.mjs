@@ -27,6 +27,14 @@ export function bridgeClick(t) {
  if(!copy.utm_source&&['whatsapp','email','organic','organico','orgânico'].includes(String(copy.src||'').toLowerCase()))copy.utm_source=String(copy.src).toLowerCase();
  return copy;
 }
+export function paymentMethod(value) {
+ if(typeof value!=='string')return null;
+ const method=value.trim().toUpperCase().replace(/[\s-]+/g,'_');
+ if(!/^[A-Z][A-Z0-9_]{0,39}$/.test(method))return null;
+ if(['CC','CARD','CREDIT','CREDITCARD','CREDIT_CARD_RECURRENT','CREDIT_CARD_UPSELL','THREEDS'].includes(method))return 'CREDIT_CARD';
+ if(['BANK_SLIP','BILLET','TICKET'].includes(method))return 'BOLETO';
+ return method;
+}
 export function validateOrder(e) {
  if(e?.schema_version!=='1'||typeof e.event_id!=='string'||!e.event_id||e.event_id.length>200||typeof e.order_id!=='string'||!e.order_id||e.order_id.length>200) throw new Error('Invalid event/order identity');
  if(!CHECKOUTS.custom.states.includes(e.status)||SCALES[e.currency]!==e.amount_scale||typeof e.is_test!=='boolean') throw new Error('Invalid status/currency/test marker');
@@ -43,9 +51,19 @@ export function validateOrder(e) {
  if(e.items.reduce((s,i)=>s+i.amount_minor,0)!==e.gross_amount_minor) throw new Error('Item totals must match order gross (line totals include bumps)');
  const customer=e.customer?{external_id:text(e.customer.external_id),identity_reliable:e.customer.identity_reliable!==false,name:text(e.customer.name),email:text(e.customer.email,254),phone:text(e.customer.phone,30)}:null;
  if(customer&&!customer.external_id) throw new Error('Customer requires provider identity; email is not a global ID');
- const safe=Object.fromEntries(['schema_version','event_id','order_id','status','currency','amount_scale','gross_amount_minor','gateway_fee_minor','recipient_revenue_minor','refunded_amount_minor','recipient_refunded_minor','renewal','root_order_id','payment_method','is_test','money_components'].filter(k=>e[k]!==undefined).map(k=>[k,e[k]]));
+ const safe=Object.fromEntries(['schema_version','event_id','order_id','status','currency','amount_scale','gross_amount_minor','gateway_fee_minor','recipient_revenue_minor','refunded_amount_minor','recipient_refunded_minor','renewal','root_order_id','is_test','money_components'].filter(k=>e[k]!==undefined).map(k=>[k,e[k]]));
  safe.items=e.items.map(i=>({external_product_id:i.external_product_id,name:i.name,quantity:i.quantity,amount_minor:i.amount_minor}));
  if(safe.money_components)safe.money_components=Object.fromEntries(['recipient_native_minor','recipient_currency','recipient_scale','fee_native_minor','fee_currency','net_includes_gateway','timestamp_source','provider_approved_at','provider_updated_at','timestamp_reason','item_amounts_allocated','manual_fees'].filter(k=>['string','number','boolean'].includes(typeof safe.money_components[k])).map(k=>[k,safe.money_components[k]]));
+ const method=paymentMethod(e.payment_method);
+ const installments=e.installments??e.money_components?.installments;
+ if(method){
+  safe.payment_method=method;
+  safe.money_components={...safe.money_components,payment_method:method};
+  if(method==='CREDIT_CARD'&&(typeof installments==='string'||typeof installments==='number')&&/^(?:[1-9]|[1-5][0-9]|60)$/.test(String(installments))){
+   safe.installments=Number(installments);
+   safe.money_components.installments=safe.installments;
+  }
+ }
  return {...safe,customer,tracking:bridgeClick(e.tracking),created_at:timestamp(e.created_at),occurred_at:timestamp(e.occurred_at),approved_at:timestamp(e.approved_at)};
 }
 export async function sha256(value) {
@@ -74,7 +92,7 @@ export function normalizeHotmart(p,context) {
  refunded_amount_minor:isRefund?gross:0,recipient_refunded_minor:isRefund?net:null,
  customer:buyer?.ucode||buyer?.email?{external_id:String(buyer.ucode||purchase.transaction),identity_reliable:Boolean(buyer.ucode),name:buyer.name,email:buyer.email,phone:buyer.checkout_phone||null}:null,
  items:[{external_product_id:String(product.id),name:product.name,quantity:1,amount_minor:gross}],
- tracking:purchase.origin||{},payment_method:purchase.payment?.type,renewal:Number(purchase.recurrence_number||1)>1,
+ tracking:purchase.origin||{},payment_method:purchase.payment?.type,installments:purchase.payment?.installments_number,renewal:Number(purchase.recurrence_number||1)>1,
  root_order_id:purchase.parent_transaction||null,is_test:context.isTest??true});
 }
 export function normalizeKiwify(p,context) {
@@ -96,7 +114,7 @@ export function normalizeKiwify(p,context) {
  recipient_refunded_minor:p.recipient_refunded_amount??(refund===gross?net:null),
  customer:p.customer?.id?{external_id:String(p.customer.id),identity_reliable:true,name:p.customer.name,email:p.customer.email,phone:p.customer.mobile||null}:p.Customer?.email?{external_id:String(p.order_id),identity_reliable:false,name:p.Customer.full_name,email:p.Customer.email,phone:p.Customer.mobile}:null,
  items:[{external_product_id:String(p.product?.id||p.Product?.product_id),name:p.product?.name||p.Product?.product_name,quantity:1,amount_minor:gross}],
- tracking:p.tracking||p.TrackingParameters||{},payment_method:p.payment_method?.toUpperCase(),renewal:Number(p.subscription?.recurrence_number||1)>1,
+ tracking:p.tracking||p.TrackingParameters||{},payment_method:p.payment?.method||p.payment_method,installments:p.payment?.installments??p.installments,renewal:Number(p.subscription?.recurrence_number||1)>1,
  money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],fee_native_minor:p.payment?.fee??fee,fee_currency:p.payment?.fee_currency||currency,net_includes_gateway:true},is_test:context.isTest??true});
 }
 export function normalizeCustom(p) { return validateOrder(p); }
@@ -117,7 +135,7 @@ export function normalizeHotmartHistory(row,context,commissions=[]) {
  refunded_amount_minor:fullRefund?gross:0,recipient_refunded_minor:fullRefund?net:null,
  customer:row.buyer?.ucode?{external_id:row.buyer.ucode,name:row.buyer.name,email:row.buyer.email,phone:null}:null,
  items:[{external_product_id:String(row.product.id),name:row.product.name,quantity:1,amount_minor:gross}],
- tracking:{src:p.tracking?.source,sck:p.tracking?.source_sck,xcod:p.tracking?.external_code},payment_method:p.payment?.method,
+ tracking:{src:p.tracking?.source,sck:p.tracking?.source_sck,xcod:p.tracking?.external_code},payment_method:p.payment?.method,installments:p.payment?.installments_number??p.payment?.installments,
  renewal:Number(p.recurrency_number||1)>1,money_components:{recipient_native_minor:nativeNet,recipient_currency:nativeCurrency,recipient_scale:SCALES[nativeCurrency],net_includes_gateway:true,timestamp_source:'reconciliation_received_at'},is_test:context.isTest??true});
 }
 export async function reconciliationIdentity(e) {

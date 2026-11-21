@@ -8,7 +8,13 @@ export async function providerFetch(url,options={},fetcher=fetch) {
  if(method!=='GET'&&u.hostname==='public-api.kiwify.com'&&u.pathname!=='/v1/oauth/token')throw new Error('Kiwify integration is read only');
  if(method!=='GET'&&u.hostname==='developers.hotmart.com')throw new Error('Hotmart integration is read only');
  const response=await fetcher(u,{...options,redirect:'error',signal:AbortSignal.timeout(20000)});
- if(!response.ok){const err=new Error([401,403].includes(response.status)?'token_revoked':response.status===429?'rate_limit':'provider_http_'+response.status);err.retryAfter=Number(response.headers.get('retry-after')||60);throw err;}
+ if(!response.ok){
+  const failure=await response.json().catch(()=>({})),code=Number(failure.error?.code||0),limited=response.status===429||u.hostname==='graph.facebook.com'&&[4,17,32,613,80000,80004].includes(code);
+  const err=new Error(limited?'rate_limit':[401,403].includes(response.status)||code===190?'token_revoked':'provider_http_'+response.status);
+  const token=String(options.headers?.Authorization||'').replace(/^Bearer /,'');
+  err.providerDetail=String(failure.error?.message||'').replaceAll(token||'__no_token__','[redacted]').replace(/access_token=[^\s&]+/gi,'access_token=[redacted]').slice(0,240);
+  err.providerCode=code;err.providerSubcode=Number(failure.error?.error_subcode||0);err.retryAfter=Number(response.headers.get('retry-after')||60);throw err;
+ }
  return response.json();
 }
 export const checkoutAdapters={
@@ -35,14 +41,62 @@ export async function refreshKiwify(c,fetcher=fetch){
 }
 export async function metaEntities(c,account,fetcher=fetch){
  const out=[];for(const [endpoint,level,fields,parent] of [['campaigns','campaign','id,name,status',null],['adsets','group','id,name,status,campaign_id','campaign_id'],['ads','ad','id,name,status,adset_id','adset_id']]){
-  let after;do{const qs=new URLSearchParams({fields,limit:'100'});if(after)qs.set('after',after);const r=await providerFetch('https://graph.facebook.com/'+c.version+'/'+account+'/'+endpoint+'?'+qs,{headers:{Authorization:'Bearer '+c.access_token}},fetcher);out.push(...(r.data||[]).map(e=>({entity_id:e.id,level,name:e.name,parent_id:parent?e[parent]:null,status:e.status==='ACTIVE'?'ACTIVE':'PAUSED'})));after=r.paging?.next?r.paging?.cursors?.after:null;}while(after);
+  let after;do{const qs=new URLSearchParams({fields,limit:'100'});if(after)qs.set('after',after);const r=await providerFetch('https://graph.facebook.com/'+c.version+'/'+account+'/'+endpoint+'?'+qs,{headers:{Authorization:'Bearer '+c.access_token}},fetcher);out.push(...(r.data||[]).map(e=>({entity_id:e.id,level,name:e.name,parent_id:parent?e[parent]:null,status:e.status==='ACTIVE'?'ACTIVE':'PAUSED',provider_status:String(e.status||'UNKNOWN')})));after=r.paging?.next?r.paging?.cursors?.after:null;}while(after);
  }return out;
 }
+export function metaFailure(error, operation = 'read'){
+ const code=Number(error?.providerCode),detail=String(error?.providerDetail||'');
+ if(code===200&&/API access blocked/i.test(detail)||code===190&&Number(error?.providerSubcode)===459)return 'meta_confirmation_required';
+ if(code===10||code===200)return operation==='write'?'meta_manage_denied':'meta_read_denied';
+ if(error?.message==='token_revoked'||error?.message==='Credential revoked'||code===190)return 'token_revoked';
+ if(error?.message==='rate_limit')return 'rate_limit';
+ return operation==='write'?'meta_update_unconfirmed':'sync_failed';
+}
+function metaRead(c,path,params,fetcher){
+ if(!/^v\d+\.\d+$/.test(c.version)||!c.access_token)throw new Error('token_revoked');
+ return providerFetch('https://graph.facebook.com/'+c.version+'/'+path+'?'+new URLSearchParams(params),
+  {headers:{Authorization:'Bearer '+c.access_token}},fetcher);
+}
+export async function metaProfile(c,fetcher=fetch){
+ const me=await metaRead(c,'me',{fields:'id,name'},fetcher);
+ if(!/^\d{1,40}$/.test(me.id))throw new Error('token_revoked');
+ let canManage=null;
+ if(c.allowManagement===false)canManage=false;
+ else{
+  try{
+   const permissions=await metaRead(c,'me/permissions',{limit:'100'},fetcher);
+   if(Array.isArray(permissions.data))canManage=permissions.data.some(item=>item.permission==='ads_management'&&item.status==='granted');
+  }catch(error){
+   if(['token_revoked','meta_confirmation_required'].includes(metaFailure(error)))throw error;
+  }
+ }
+ return {id:me.id,name:String(me.name||'Perfil Meta').slice(0,120),canManage};
+}
+export function metaAccountManagement(profile,account){
+ if(profile.canManage===false)return false;
+ if(Array.isArray(account.user_tasks)){
+  if(!account.user_tasks.some(task=>['MANAGE','ADVERTISE'].includes(task)))return false;
+ }
+ return profile.canManage;
+}
+export async function verifyMetaRead(c,id,fetcher=fetch){
+ if(!/^act_\d+$/.test(id))throw new Error('Meta account unavailable');
+ await metaRead(c,id+'/campaigns',{fields:'id',limit:'1'},fetcher);
+}
 export async function setMetaStatus(c,entity,status,fetcher=fetch){
- if(!/^\d+$/.test(entity)||!['ACTIVE','PAUSED'].includes(status))throw new Error('Estado de anúncio inválido');
+ if(!/^\d+$/.test(entity)||!['ACTIVE','PAUSED'].includes(status)||!/^v\d+\.\d+$/.test(c.version))throw new Error('Estado de anúncio inválido');
  // Deliberately narrow mutation: caller verifies workspace/account ownership first.
  const response=await fetcher('https://graph.facebook.com/'+c.version+'/'+entity,{method:'POST',headers:{Authorization:'Bearer '+c.access_token,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({status}),redirect:'error',signal:AbortSignal.timeout(20000)});
- const result=await response.json();if(!response.ok||result.success!==true)throw new Error('A Meta recusou a alteração. Verifique a permissão ads_management da credencial.');return result;
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||result.success!==true){
+  const code=Number(result.error?.code),limited=response.status===429||[4,17,32,613,80000,80004].includes(code);
+  const error=new Error(limited?'rate_limit':code===190||response.status===401?'token_revoked':'meta_update_failed');
+  error.providerCode=code;
+  error.providerSubcode=Number(result.error?.error_subcode);
+  error.providerDetail=String(result.error?.message||'').slice(0,200);
+  throw error;
+ }
+ return result;
 }
 // Hotmart official read-only Sales History API. Transaction lookup uses the documented transaction filter.
 checkoutAdapters.hotmart.fetchOrder=async(id,c,fetcher=fetch)=>{
@@ -56,10 +110,11 @@ checkoutAdapters.hotmart.listOrdersForReconciliation=async(c,from,to,page,fetche
 // Require official API base configured server-side; the documented host is developers.hotmart.com.
 HOSTS.add('developers.hotmart.com');
 checkoutAdapters.hotmart.fetchCommissions=async(id,status,c,fetcher=fetch)=>providerFetch('https://developers.hotmart.com/payments/api/v1/sales/commissions?'+new URLSearchParams({transaction:id,transaction_status:status,commission_as:c.recipientSource}),{headers:{Authorization:'Bearer '+c.access_token}},fetcher);
-export async function oauthStart(provider,{clientId,redirectUri,state,version='v25.0',configId,allowManagement=false}) {
+export async function oauthStart(provider,{clientId,redirectUri,state,version='v25.0',configId,allowManagement=false,reconnect=false}) {
  const url=new URL(provider==='google'?'https://accounts.google.com/o/oauth2/v2/auth':'https://www.facebook.com/'+version+'/dialog/oauth');
  const args={client_id:clientId,redirect_uri:redirectUri,state,response_type:'code',scope:provider==='google'?'https://www.googleapis.com/auth/adwords':allowManagement?'ads_read,ads_management':'ads_read'};
  if(provider==='meta'&&configId){delete args.scope;args.config_id=configId;args.override_default_response_type='true';}
+ if(provider==='meta'&&reconnect)args.auth_type='rerequest';
  if(provider==='google')Object.assign(args,{access_type:'offline',prompt:'consent'});
  url.search=new URLSearchParams(args);return url.href;
 }
@@ -81,7 +136,7 @@ export async function listAccounts(provider,c,fetcher=fetch) {
  }
  const accounts=[];let after;
  do{
-  const qs=new URLSearchParams({fields:'id,name,currency,timezone_name',limit:'100'});if(after)qs.set('after',after);
+  const qs=new URLSearchParams({fields:'id,name,currency,timezone_name,user_tasks',limit:'100'});if(after)qs.set('after',after);
   const r=await providerFetch('https://graph.facebook.com/'+c.version+'/me/adaccounts?'+qs,{headers:{Authorization:'Bearer '+c.access_token}},fetcher);
   accounts.push(...(r.data||[]).map(x=>({...x,account_id:x.id})));after=r.paging?.next?r.paging.cursors?.after:null;
  }while(after);

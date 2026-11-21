@@ -9,8 +9,8 @@
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#08080f",
-  "theme_color": "#0f0f1a",
+  "background_color": "#101010",
+  "theme_color": "#101010",
   "categories": ["business", "productivity"],
   "icons": [
     {

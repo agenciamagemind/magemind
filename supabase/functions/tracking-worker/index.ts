@@ -1,9 +1,36 @@
 import {service,checkDatabase,guard,json,credential,decrypt,env,allowReads} from '../_shared/tracking-runtime.ts';
-import {syncMeta,syncGoogle,refreshGoogle,checkoutAdapters,capiPayload,providerFetch,metaEntities} from '../_shared/tracking/adapters.mjs';
+import {syncMeta,syncGoogle,refreshGoogle,checkoutAdapters,capiPayload,providerFetch,metaEntities,metaFailure} from '../_shared/tracking/adapters.mjs';
 import {normalizeKiwify,normalizeHotmartHistory,reconciliationIdentity,sha256,constantEqual} from '../_shared/tracking/contracts.mjs';
 import webpush from 'npm:web-push@3.6.7';
 import {notificationPush} from '../_shared/tracking/notifications.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data;};
+async function syncMetaAccount(db:any,integration:any,date:Date){
+ const i=integration.id,g=integration.connection_generation;
+ const claim=await rpc(db,'tracking_claim_meta_sync',{i,g});
+ if(!claim)return;
+ const publish=(stats:any[],entities:any[],failure:string|null,retry_seconds:number)=>
+  rpc(db,'tracking_publish_meta_sync',{i,g,claim,stats,entities,failure,retry_seconds});
+ try{
+  const {secrets}=await credential(db,i);
+  if(secrets.token_expires_at&&secrets.token_expires_at<=Date.now())throw new Error('token_revoked');
+  const config={...secrets,version:secrets.version||env('TRACKING_META_VERSION')||'v25.0'};
+  const {data:account,error}=await db.from('tracking_ad_accounts').select('*')
+   .eq('workspace_id',integration.workspace_id).eq('provider','meta').eq('account_id',integration.account_id).eq('selected',true).maybeSingle();
+  if(error||!account)throw new Error('sync_failed');
+  const to=new Intl.DateTimeFormat('sv-SE',{timeZone:account.timezone||'America/Sao_Paulo'}).format(date);
+  const previous=integration.last_sync_at ? new Date(integration.last_sync_at).getTime() : 0;
+  const days=previous?Math.min(89,Math.max(6,Math.ceil((+date-previous)/86400000)+2)):89;
+  const from=new Date(new Date(to+'T12:00:00Z').getTime()-days*86400000).toISOString().slice(0,10);
+  const stats=await syncMeta(config,account,from,to);
+  const entities=await metaEntities(config,integration.account_id);
+  await publish(stats,entities,null,0);
+ }catch(error:any){
+  const code=metaFailure(error);
+  const delay=Math.max(Number(error.retryAfter)||60,Math.min(3600,2**Math.min(8,integration.error_count||0)*30));
+  console.error('tracking-sync:', 'meta', code);
+  await publish([],[],code,delay+Math.floor(Math.random()*5));
+ }
+}
 Deno.serve(async(req)=>{
  try{
   guard();if(req.method!=='POST')return json(req,{error:'Unauthorized worker'},401);
@@ -42,20 +69,26 @@ Deno.serve(async(req)=>{
    for(const i of integrations||[]){
     const from=new Date(+date-(i.last_sync_at?6:89)*86400000).toISOString().slice(0,10);
     if(i.account_id.startsWith('oauth:'))continue;
+    if(i.provider==='meta'){
+     try{await syncMetaAccount(db,i,date);}
+     catch(error:any){console.error('tracking-meta-sync:',error?.code||'failure');}
+     continue;
+    }
     if(i.retry_after_at&&new Date(i.retry_after_at)>date)continue;
-    if(i.last_sync_at&&+date-new Date(i.last_sync_at).getTime()<600000&&i.error_code!=='sync_requested')continue;
+    if(i.last_sync_at&&+date-new Date(i.last_sync_at).getTime()<45000&&!i.error_code)continue;
     try{
      const {secrets}=await credential(db,i.id);
-     if(['meta','google'].includes(i.provider)){
-      let config={...secrets,version:secrets.version||env('TRACKING_'+i.provider.toUpperCase()+'_VERSION')};
-      if(i.provider==='google'&&config.refresh_token)config={...config,...await refreshGoogle({...config,clientId:env('TRACKING_GOOGLE_CLIENT_ID'),clientSecret:env('TRACKING_GOOGLE_CLIENT_SECRET')})};
-      const {data:account}=await db.from('tracking_ad_accounts').select('*').eq('workspace_id',i.workspace_id).eq('provider',i.provider).eq('account_id',i.account_id).eq('selected',true).maybeSingle();
-      if(!account)continue;const rows=i.provider==='meta'?await syncMeta(config,account,from,to):await syncGoogle(config,account,from,to);
+     if(i.provider==='google'){
+      let config={...secrets,version:secrets.version||env('TRACKING_GOOGLE_VERSION')};
+      if(config.refresh_token)config={...config,...await refreshGoogle({...config,clientId:env('TRACKING_GOOGLE_CLIENT_ID'),clientSecret:env('TRACKING_GOOGLE_CLIENT_SECRET')})};
+      const {data:account}=await db.from('tracking_ad_accounts').select('*').eq('workspace_id',i.workspace_id).eq('provider','google').eq('account_id',i.account_id).eq('selected',true).maybeSingle();
+      if(!account)continue;
+      const localTo=new Intl.DateTimeFormat('sv-SE',{timeZone:account.timezone||'America/Sao_Paulo'}).format(date);
+      const localFrom=new Date(new Date(localTo+'T12:00:00Z').getTime()-(i.last_sync_at?6:89)*86400000).toISOString().slice(0,10);
+      const rows=await syncGoogle(config,account,localFrom,localTo);
       await rpc(db,'tracking_internal_ad_snapshot',{i:i.id,p:rows});
-      if(i.provider==='meta')for(const e of await metaEntities(config,i.account_id)){
-       const prior=await db.from('tracking_ad_entities').select('revision,status').eq('workspace_id',i.workspace_id).eq('provider','meta').eq('account_id',i.account_id).eq('entity_id',e.entity_id).maybeSingle();
-       const saved=await db.from('tracking_ad_entities').upsert({...e,workspace_id:i.workspace_id,provider:'meta',account_id:i.account_id,revision:(prior.data?.revision||0)+(prior.data&&prior.data.status!==e.status?1:0)},{onConflict:'workspace_id,provider,account_id,entity_id'});if(saved.error)throw saved.error;
-      }
+      await rpc(db,'tracking_internal_status',{i:i.id,p_code:null});
+      await db.from('tracking_integrations').update({error_count:0,retry_after_at:null}).eq('id',i.id);
      }else if(i.provider==='kiwify'&&!secrets.webhook_only){
       const cursor=i.sync_cursor||{},page=Number(cursor.page||1),offset=Number(cursor.offset||0);
       const response=await checkoutAdapters.kiwify.listOrdersForReconciliation(secrets,cursor.from||from,cursor.to||to,page);
@@ -67,6 +100,7 @@ Deno.serve(async(req)=>{
       }
       const next=offset+20<rows.length?{page,offset:offset+20,from:cursor.from||from,to:cursor.to||to}:rows.length===100||response.pagination?.has_more||response.has_more?{page:page+1,offset:0,from:cursor.from||from,to:cursor.to||to}:{};
       await db.from('tracking_integrations').update({sync_cursor:next,...(Object.keys(next).length?{}:{last_sync_at:date.toISOString()}),error_code:null,error_count:0,retry_after_at:null}).eq('id',i.id);
+      await rpc(db,'tracking_internal_status',{i:i.id,p_code:null});
      }else if(i.provider==='hotmart'&&!secrets.webhook_only){
       const statuses=['APPROVED','COMPLETE','WAITING_PAYMENT','PRINTED_BILLET','REFUNDED','CHARGEBACK','CANCELLED','PROTESTED'];
       const cursor=i.sync_cursor||{},index=Number(cursor.status_index||0);
@@ -83,10 +117,13 @@ Deno.serve(async(req)=>{
       else if(index+1<statuses.length)next={status_index:index+1,offset:0,from:cursor.from||from,to:cursor.to||to};
       else next={};
       await db.from('tracking_integrations').update({sync_cursor:next,...(Object.keys(next).length?{}:{last_sync_at:date.toISOString()}),error_code:null,error_count:0,retry_after_at:null}).eq('id',i.id);
+      await rpc(db,'tracking_internal_status',{i:i.id,p_code:null});
      }
     }catch(error){
-     await rpc(db,'tracking_internal_status',{i:i.id,p_code:error.message==='token_revoked'?'token_revoked':error.message==='rate_limit'?'rate_limit':'sync_failed'});
-     const delay=Math.max(error.retryAfter||60,Math.min(3600,2**Math.min(8,i.error_count||0)*30))+Math.floor(Math.random()*5);
+     const code=error.providerCode===200&&/API access blocked/i.test(error.providerDetail||'')?'meta_confirmation_required':['token_revoked','rate_limit'].includes(error.message)?error.message:/^provider_http_\d+$/.test(error.message)?error.message+(error.providerCode?'_'+error.providerCode:''):'sync_failed';
+     console.error('tracking-sync:',i.provider,code,error.providerDetail||error.code||'');
+     await rpc(db,'tracking_internal_status',{i:i.id,p_code:code});
+     const delay=Math.max(error.retryAfter||60,Math.min(code==='meta_confirmation_required'?300:3600,2**Math.min(8,i.error_count||0)*30))+Math.floor(Math.random()*5);
      await db.from('tracking_integrations').update({error_count:(i.error_count||0)+1,retry_after_at:new Date(Date.now()+delay*1000).toISOString()}).eq('id',i.id);
     }
    }

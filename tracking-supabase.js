@@ -4,7 +4,15 @@
  const client=supa;
  const checked=r=>{if(r.error)throw new Error(r.error.message);return r.data;};
  const rpc=async(name,args)=>checked(await client.rpc(name,args));
- const edge=async(data)=>{const r=await client.functions.invoke('tracking-api',{body:data});if(r.error){let message;try{message=(await r.error.context.json()).error;}catch{}throw new Error(message||'Não foi possível concluir a conexão. Tente novamente.');}return r.data;};
+ const edge=async(data)=>{
+  const r=await client.functions.invoke('tracking-api',{body:data});
+  if(r.error){
+   let detail;
+   try{detail=await r.error.context.json();}catch{}
+   throw Object.assign(new Error(detail?.error||'Não foi possível concluir a conexão. Tente novamente.'),{code:detail?.code});
+  }
+  return r.data;
+ };
  window.MagemindTrackingBackend={
   client,
   edge,
@@ -40,6 +48,7 @@
    if(['/integrations','/sites','/costs'].includes(route)&&!data)return checked(await client.from({integrations:'tracking_integrations',sites:'tracking_sites',costs:'tracking_cost_rules'}[route.slice(1)]).select('*').eq('workspace_id',w).order(route==='/sites'?'id':'created_at'));
    if(route==='/integration/token')return edge({workspace:w,integration:data.id,action:'api_token'});
    if(route==='/integration/disconnect')return rpc('tracking_disconnect',{w,i:data.id});
+   if(route==='/meta/disconnect-profile')return rpc('tracking_disconnect_meta_profile',{w,p:data.id});
    if(route==='/integration/products')return rpc('tracking_select_products',{w,i:data.id,ids:data.ids});
    if(route==='/integration/sync')return edge({workspace:w,integration:data.id,action:'queue_sync'});
    if(route==='/sites')return {id:await rpc('tracking_save_site',{w,p_domain:data.domain,p_checkout_domains:data.checkout_domains.split(',').map(x=>x.trim()).filter(Boolean)})};

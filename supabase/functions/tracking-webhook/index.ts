@@ -14,7 +14,7 @@ Deno.serve(async(req)=>{
   }
   if(req.method==='OPTIONS')return json(req,{},204);
   if(req.method!=='POST')return json(req,{error:'POST required'},405);
-  const db=service();await checkDatabase(db);const url=new URL(req.url),payload=await body(req),provider=url.searchParams.get('provider');
+  const signedRequest=req.clone(),db=service();await checkDatabase(db);const url=new URL(req.url),payload=await body(req),provider=url.searchParams.get('provider');
   const limit=await db.rpc('consume_security_rate_limit',{p_bucket_key:'tracking-webhook:'+String(url.searchParams.get('integration')||'custom').slice(0,100),p_limit:100,p_window_seconds:60});
   if(limit.error||limit.data?.[0]?.allowed!==true)return json(req,{error:'rate_limit'},429);
   if(provider==='collector'){
@@ -32,7 +32,7 @@ Deno.serve(async(req)=>{
    if(!id||!checkoutProviders.includes(provider||''))return json(req,{error:'Invalid integration'},400);
    const {row,secrets}=await credential(db,id);if(row.integration.provider!==provider)return json(req,{error:'Provider mismatch'},403);
    if(secrets.webhook_only===true){
-    if(!await verifyWebhook(provider,req,payload,secrets))return json(req,{error:'Invalid webhook credential'},401);
+    if(!await verifyWebhook(provider,signedRequest,payload,secrets))return json(req,{error:'Invalid webhook credential'},401);
     // Private delivery verification never creates a receipt, buyer or order.
     if(url.searchParams.get('verification')==='1'){
      let validation='valid';try{const sample=provider==='kiwify'?{...payload,is_test:false,test:false}:payload;const event=await normalizeWebhook(provider,sample,{...secrets,receivedAt:new Date().toISOString()});if(!event)validation='non_financial';}catch(error){validation=String(error?.message||'invalid').slice(0,100);}
@@ -57,10 +57,17 @@ Deno.serve(async(req)=>{
     event=normalizeKiwify(verified,{...secrets,authoritative:true,eventId,isTest:false});
    }
   }
-  const {data,error}=await db.rpc('tracking_ingest',{i:id,e:event,h:await sha256(JSON.stringify(event)),p_historical:false});if(error)throw error;
+  const events=Array.isArray(event)?event:[event];
+  if(!events.length)return json(req,{accepted:true,processing:'ignored'},200);
+  // Persist the complete delivery atomically before acknowledging it. The
+  // existing durable jobs retry processing if this worker is interrupted.
+  const batch=await Promise.all(events.map(async e=>({event:e,hash:await sha256(JSON.stringify(e))})));
+  const ingested=await db.rpc('tracking_ingest_batch',{i:id,events:batch});if(ingested.error)throw ingested.error;
+  const receipts=ingested.data;
+  const process=async()=>{for(const r of receipts){const result=await db.rpc('tracking_process_receipt',{r});if(result.error)console.error('tracking-webhook processing queued:',result.error.code||'retry');}};
+  const background=(globalThis as any).EdgeRuntime;
+  if(background?.waitUntil)background.waitUntil(process().catch(()=>console.error('tracking-webhook processing queued')));else await process();
   await db.from('tracking_integrations').update({error_code:null}).eq('id',id).eq('error_code','payload_incomplete');
-  // Process immediately; the durable job remains retryable if processing fails.
-  const processed=await db.rpc('tracking_process_receipt',{r:data});
-  return json(req,{receipt_id:data,processing:processed.error?'queued':'processed'},202);
+  return json(req,{receipt_id:receipts[0],...(receipts.length>1?{receipt_ids:receipts}:{}),processing:'queued'},202);
  }catch(error){console.error('tracking-webhook rejected:',error?.code||'validation');return json(req,{error:'Event rejected; validate authentication and connector diagnostics'},400);}
 });
