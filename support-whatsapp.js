@@ -8,7 +8,7 @@
  function schedule(delay=75000+Math.random()*45000){clearTimeout(timer);if(shown<4)timer=setTimeout(show,delay);}
  function show(){
   if(!sync())return;
-  if(document.visibilityState!=='visible'||document.querySelector('.overlay.open,.install-guide.open,.sidebar.mobile-open')||document.getElementById('notif-panel')?.style.display==='block'){schedule(30000);return;}
+  if(document.visibilityState!=='visible'||document.querySelector('.overlay.open,.install-guide.open,.sidebar.mobile-open')||window.isNotifPanelOpen?.()){schedule(30000);return;}
   const options=messages.map((_,i)=>i).filter(i=>i!==lastMessage);lastMessage=options[Math.floor(Math.random()*options.length)];
   document.getElementById('support-message-text').textContent=greeting()+'! '+messages[lastMessage];bubble.hidden=false;shown++;
   hideTimer=setTimeout(hide,8000);schedule();

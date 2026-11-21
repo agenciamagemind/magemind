@@ -35,6 +35,7 @@
  const icon=(name)=>({move:'<path d="M12 3v18M3 12h18m-9-9L9 6m3-3 3 3m6 6-3-3m3 3-3 3m-6 6-3-3m3 3 3-3M3 12l3-3m-3 3 3 3"/>',resize:'<path d="M21 14v7h-7m7-7-7 7M3 10V3h7M3 10l7-7"/>',edit:'<path d="m14 5 5 5M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>'}[name]||'');
  const svg=name=>'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">'+icon(name)+'</svg>';
  function minimum(id){return catalog[id]?.[2]==='metric'?2:(device==='mobile'?4:3);}
+ const minimumHeight=id=>catalog[id][2]==='metric'?1:2;
  function overlaps(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
  function vacant(items,w,h,startY=0,preferredX=0){
   for(let y=Math.max(0,startY);y<=95;y++)for(const x of [preferredX,...Array.from({length:cols()-w+1},(_,i)=>i)].filter((x,i,a)=>x>=0&&x+w<=cols()&&a.indexOf(x)===i)){const r={x,y,w,h};if(items.every(it=>!overlaps(it,r)))return r;}
@@ -42,7 +43,7 @@
  }
  function normalize(items){
   const result=[];
-  for(const r of Array.isArray(items)?items:[]){if(!catalog[r?.id]||result.some(it=>it.id===r.id))continue;const w=Math.max(minimum(r.id),Math.min(cols(),Number(r.w)||3)),h=Math.max(catalog[r.id][2]==='metric'?1:2,Math.min(4,Number(r.h)||1));let item={id:r.id,x:Math.max(0,Math.min(cols()-w,Number(r.x)||0)),y:Math.max(0,Math.min(95,Number(r.y)||0)),w,h};if(result.some(it=>overlaps(it,item)))item={...item,...vacant(result,w,h,item.y,item.x)};result.push(item);}
+  for(const r of Array.isArray(items)?items:[]){if(!catalog[r?.id]||result.some(it=>it.id===r.id))continue;const w=Math.max(minimum(r.id),Math.min(cols(),Number(r.w)||3)),h=Math.max(minimumHeight(r.id),Math.min(4,Number(r.h)||1));let item={id:r.id,x:Math.max(0,Math.min(cols()-w,Number(r.x)||0)),y:Math.max(0,Math.min(95,Number(r.y)||0)),w,h};if(result.some(it=>overlaps(it,item)))item={...item,...vacant(result,w,h,item.y,item.x)};result.push(item);}
   return result;
  }
  function defaults(){
@@ -57,12 +58,12 @@
  const layout=()=>editing?draft:saved[device]?.layout||defaults();
  function move(id,change){
   const item=draft.find(i=>i.id===id);if(!item)return;
-  const moved={...item,...change};moved.w=Math.max(minimum(id),Math.min(cols(),moved.w));moved.h=Math.max(catalog[id][2]==='metric'?1:2,Math.min(4,moved.h));moved.x=Math.max(0,Math.min(cols()-moved.w,moved.x));moved.y=Math.max(0,Math.min(95,moved.y));
+  const moved={...item,...change};moved.w=Math.max(minimum(id),Math.min(cols(),moved.w));moved.h=Math.max(minimumHeight(id),Math.min(4,moved.h));moved.x=Math.max(0,Math.min(cols()-moved.w,moved.x));moved.y=Math.max(0,Math.min(95,moved.y));
   const rest=draft.filter(i=>i.id!==id),placed=[moved];
   for(const r of rest){placed.push(placed.some(p=>overlaps(p,r))?{...r,...vacant(placed,r.w,r.h,r.y,r.x)}:r);}
   draft=placed;
  }
- const paymentName=v=>({PIX:'Pix',CREDIT_CARD:'Cartão',CREDIT:'Cartão',BOLETO:'Boleto',BANK_SLIP:'Boleto',OTHER:'Outros',credit_card:'Cartão',pix:'Pix',boleto:'Boleto'}[v]||v||'Outros');
+ const paymentName=v=>({PIX:'Pix',CREDIT_CARD:'Cartão',CREDIT:'Cartão',DEBIT_CARD:'Débito',BOLETO:'Boleto',BANK_SLIP:'Boleto',WALLET:'Carteira digital',PAYPAL:'PayPal',OTHER:'Outros'}[String(v).toUpperCase()]||v||'Outros');
  const sourceName=v=>({meta:'Meta Ads',google:'Google Ads',tiktok:'TikTok Ads',unattributed:'Não atribuída',organic:'Orgânico'}[v]||v);
  const ratio=(n,d)=>Number(d)>0?Number(n)/Number(d)*100:null;
  const pct=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
@@ -78,28 +79,48 @@
  function ranking(rows,kind){
   if(!rows?.length)return '<div class="md-empty">Nenhuma venda no período</div>';
   const max=Math.max(1,...rows.map(r=>Number(r.amount_minor||0)));
-  return '<div class="md-ranking">'+rows.map(r=>'<div><div class="md-rank-label"><span title="'+esc(r.label)+'">'+esc(kind==='sources'?sourceName(r.label):r.label)+'</span><strong>'+esc(ctx.money(r.amount_minor))+'</strong></div><div class="md-rank-track"><i style="width:'+Math.max(1,Number(r.amount_minor)/max*100)+'%"></i></div><small>'+number(r.count)+' '+(kind==='products'?'unidades':'vendas')+'</small></div>').join('')+'</div>';
+  return '<div class="md-widget-list md-ranking">'+rows.map(r=>'<div data-widget-row><div class="md-rank-label"><span>'+esc(kind==='sources'?sourceName(r.label):r.label)+'</span><strong>'+esc(ctx.money(r.amount_minor))+'</strong></div><div class="md-rank-track"><i style="width:'+Math.max(1,Number(r.amount_minor)/max*100)+'%"></i></div><small>'+number(r.count)+' '+(kind==='products'?'unidades':'vendas')+'</small></div>').join('')+'</div>';
  }
- function payments(){
-  const rows=data.payments||[],total=rows.reduce((n,r)=>n+Number(r.amount_minor),0),colors=['var(--accent)','#34d399','#60a5fa','#fbbf24','#fb7185'];let angle=0;
-  const stops=rows.map((r,i)=>{const from=angle;angle+=Number(r.amount_minor)/Math.max(1,total)*100;return colors[i%5]+' '+from+'% '+angle+'%';});
-  return '<div class="md-payments"><div class="md-donut" role="img" aria-label="'+esc('Vendas por pagamento: '+rows.map(r=>paymentName(r.label)+' '+number(r.count)).join(', '))+'" style="--md-donut:'+(!total?'var(--bg4)':stops.join(','))+'"><span><small>Total</small><strong>'+number(rows.reduce((n,r)=>n+Number(r.count),0))+'</strong></span></div><div class="md-payment-legend">'+(rows.length?rows.map((r,i)=>'<div><i style="background:'+colors[i%5]+'"></i><span>'+esc(paymentName(r.label))+'</span><strong>'+esc(ctx.money(r.amount_minor))+'</strong></div>').join(''):'<span class="md-empty">Sem vendas no período</span>')+'</div></div>';
+ function payments(details=false){
+  const rows=data.payments||[];
+  const total=rows.reduce((sum,row)=>sum+Number(row.amount_minor),0);
+  const count=number(rows.reduce((sum,row)=>sum+Number(row.count),0));
+  const colors=['var(--accent)','#34d399','#60a5fa','#fbbf24','#fb7185'];
+  const color=i=>colors[i%colors.length];
+  let angle=0;
+  const stops=rows.map((row,i)=>{
+   const from=angle;
+   angle+=Number(row.amount_minor)/Math.max(1,total)*100;
+   return color(i)+' '+from+'% '+angle+'%';
+  });
+  const legend=rows.length?'<div class="md-widget-list md-payment-legend">'+rows.map((row,i)=>
+   '<div data-widget-row><i style="background:'+color(i)+'"></i><span>'+esc(paymentName(row.label))+
+   (details?'<small>'+number(row.count)+' vendas</small>':'')+'</span><strong>'+esc(ctx.money(row.amount_minor))+'</strong></div>').join('')+'</div>':
+   '<span class="md-empty">Sem vendas no período</span>';
+  if(details)return '<p><strong>'+esc(count)+' vendas</strong></p>'+legend;
+  return '<div class="md-payments'+(rows.length?'':' md-payments-empty')+'"><div class="md-donut" role="img" aria-label="'+esc(count+' vendas no total')+
+   '" style="--md-donut:'+(!total?'var(--bg5)':stops.join(','))+'"><span aria-hidden="true"><small>Total</small><strong>'+esc(count)+'</strong></span></div>'+legend+'</div>';
  }
- function body(id){
+ function body(id,details=false){
   const kind=catalog[id][2];if(kind==='metric')return metric(id);
   if(kind==='ranking')return ranking(data[id],id);
-  if(kind==='payments')return payments();
+  if(kind==='payments')return payments(details);
   if(kind==='chart')return window.MagemindRevenueChart.render(data.revenue_series);
-  if(kind==='approval')return '<div class="md-approval">'+(data.approval?.length?data.approval.map(r=>'<div><span>'+esc(paymentName(r.label))+'</span><strong>'+pct(ratio(r.approved,r.total))+'</strong><small>'+number(r.approved)+' de '+number(r.total)+'</small></div>').join(''):'<div class="md-empty">Sem pedidos no período</div>')+'</div>';
+  if(kind==='approval')return data.approval?.length?'<div class="md-widget-list md-approval">'+data.approval.map(r=>
+   '<div data-widget-row><span>'+esc(paymentName(r.label))+'</span><strong>'+pct(ratio(r.approved,r.total))+'</strong><small>'+number(r.approved)+' de '+number(r.total)+'</small></div>').join('')+'</div>':
+   '<div class="md-empty">Sem pedidos no período</div>';
   const demands=ctx.demands||[],states=[['Concluído','Concluídas','md-positive'],['Em andamento','Em produção','md-progress'],['Não iniciado','Pendentes','']];
   if(kind==='demands')return '<div class="md-demands">'+states.map(([s,label,color])=>'<div><span>'+label+'</span><strong class="'+color+'">'+number(demands.filter(d=>d.status===s).length)+'</strong></div>').join('')+'</div>'+b('Minhas demandas →','demands','class="md-link"');
-  return '<div class="md-demand-list">'+(demands.length?demands.slice().sort((a,b)=>String(b.createdAt||b.created_at||'').localeCompare(String(a.createdAt||a.created_at||''))).slice(0,8).map(d=>'<div><strong>'+esc(d.title||d.name||'Demanda')+'</strong><small>'+esc(d.status)+'</small></div>').join(''):'<div class="md-empty">Nenhuma demanda por aqui</div>')+'</div>'+b('Ver demandas →','demands','class="md-link"');
+  return (demands.length?'<div class="md-widget-list md-demand-list">'+demands.slice().sort((a,b)=>String(b.createdAt||b.created_at||'').localeCompare(String(a.createdAt||a.created_at||''))).slice(0,8).map(d=>
+   '<div data-widget-row><strong>'+esc(d.title||d.name||'Demanda')+'</strong><small>'+esc(d.status)+'</small></div>').join('')+'</div>':
+   '<div class="md-empty">Nenhuma demanda por aqui</div>')+b('Ver demandas →','demands','class="md-link"');
  }
  function tile(item){
   const [title,,kind,info]=catalog[item.id];
-  return '<article class="md-tile md-type-'+kind+'" data-widget="'+item.id+'" style="grid-column:'+(item.x+1)+' / span '+item.w+';grid-row:'+(item.y+1)+' / span '+item.h+'" aria-label="'+title+'">'+
+  return '<article class="md-tile mm-glass md-type-'+kind+'" data-widget="'+item.id+'" style="grid-column:'+(item.x+1)+' / span '+item.w+';grid-row:'+(item.y+1)+' / span '+item.h+'" aria-label="'+title+'">'+
    (editing?'<div class="md-tile-tools"><button type="button" class="md-drag" data-dashboard-drag="'+item.id+'" title="Arraste para mover" aria-label="Mover '+title+'">'+svg('move')+'</button><div class="md-size-controls">'+b('−','shrink','data-id="'+item.id+'" aria-label="Diminuir largura de '+title+'"')+b('+','grow','data-id="'+item.id+'" aria-label="Aumentar largura de '+title+'"')+b('↕','height','data-id="'+item.id+'" aria-label="Alterar altura de '+title+'"')+'</div>'+b('×','remove','data-id="'+item.id+'" aria-label="Remover '+title+'"')+'</div>':'')+
-   '<div class="md-tile-heading"><h3>'+title+'</h3>'+(matchMedia('(min-width:901px) and (hover:hover)').matches?'<span class="md-info" tabindex="0" role="img" aria-label="Sobre '+title+'" data-tooltip="'+esc(info)+'">ⓘ</span>':'<button class="md-info" type="button" data-dashboard-action="info" data-id="'+item.id+'" aria-label="Sobre '+title+'">ⓘ</button>')+'</div><div class="md-tile-body">'+body(item.id)+'</div>'+
+   '<div class="md-tile-heading"><h3>'+title+'</h3><button class="md-info" type="button" data-dashboard-action="info" data-id="'+item.id+
+   '" aria-label="Detalhes de '+title+'" data-tooltip="'+esc(info)+'">ⓘ</button></div><div class="md-tile-body">'+body(item.id)+'</div>'+
    (editing?'<button type="button" class="md-resize" data-dashboard-resize="'+item.id+'" title="Arraste para redimensionar" aria-label="Redimensionar '+title+'">'+svg('resize')+'</button>':'')+'</article>';
  }
  function library(){
@@ -128,6 +149,25 @@
   gridObserver?.disconnect();
   gridObserver=null;
  }
+ function fitWidgets(grid){
+  for(const list of grid.querySelectorAll('.md-widget-list')){
+   const rowHeight=parseFloat(getComputedStyle(list).getPropertyValue('--md-list-row'));
+   const visible=Math.min(list.children.length,Math.max(0,Math.floor(list.clientHeight/rowHeight)));
+   const hidden=list.children.length-visible;
+   const toggle=list.closest('[data-widget]').querySelector('.md-info');
+   toggle.textContent=hidden?'+'+hidden:'ⓘ';
+   toggle.setAttribute('aria-label','Detalhes de '+catalog[toggle.dataset.id][0]+(hidden?' · '+hidden+' a mais':''));
+   [...list.children].forEach((row,index)=>{row.hidden=index>=visible;});
+  }
+  const chart=grid.querySelector('.md-type-chart .md-tile-body');
+  if(!chart||!data.revenue_series?.rows?.length)return;
+  const width=chart.clientWidth,height=chart.clientHeight;
+  const size=width+'x'+height;
+  if(width&&height&&chart.dataset.size!==size){
+   chart.dataset.size=size;
+   chart.innerHTML=window.MagemindRevenueChart.render(data.revenue_series,{width,height});
+  }
+ }
  function observe(){
   stopObserving();
   $('tracking-toolbar')?.toggleAttribute('inert',editing);
@@ -146,20 +186,26 @@
   edit.hidden=editing||!data||document.querySelector('.page.active')?.id!=='pg-dashboard';
   const grid=$('md-grid');
   if(!grid)return;
+  function fitGrid(){
+   if(!grid.clientWidth)return;
+   const base=editing?132:device==='mobile'?104:grid.clientWidth<700?108:98;
+   const height=metricRowHeight(grid,base)+'px';
+   if(grid.style.getPropertyValue('--md-row')!==height)grid.style.setProperty('--md-row',height);
+   fitWidgets(grid);
+  }
+  fitGrid();
   let frame=0;
   const observer=new ResizeObserver(()=>{
    if(frame)return;
    frame=requestAnimationFrame(()=>{
     frame=0;
     if(gridObserver!==observer||!grid.isConnected)return;
-    const base=device==='mobile'?96:grid.clientWidth<700?104:94;
-    const height=(editing?132:metricRowHeight(grid,base))+'px';
-    if(grid.style.getPropertyValue('--md-row')!==height)grid.style.setProperty('--md-row',height);
+    fitGrid();
    });
   });
   gridObserver=observer;
   observer.observe(grid);
-  for(const text of grid.querySelectorAll('.md-type-metric .md-tile-heading,.md-type-metric small'))observer.observe(text);
+  for(const node of grid.querySelectorAll('.md-tile-body,.md-type-metric .md-tile-heading,.md-type-metric .md-value,.md-type-metric small'))observer.observe(node);
  }
  async function readDevice(d,force=false,passive=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey||passive&&editing)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
@@ -177,7 +223,12 @@
   if(name==='remove'){if(draft.length===1){ctx.toast('Mantenha pelo menos um bloco no Menu.');return;}draft=draft.filter(r=>r.id!==el.dataset.id);paint();return;}
   if(['grow','shrink','height'].includes(name)){const r=draft.find(r=>r.id===el.dataset.id);move(r.id,name==='height'?{h:r.h%4+1}:{w:r.w+(name==='grow'?1:-1)});paint();return;}
   if(name==='demands'){ctx.demandsOpen();return;}
-  if(name==='info'){if(matchMedia('(min-width:901px) and (hover:hover)').matches)return;const c=catalog[el.dataset.id];ctx.modal(c[0],'<p>'+esc(c[3])+'</p>');return;}
+  if(name==='info'){
+   const id=el.dataset.id,[title,,kind,info]=catalog[id];
+   const details=['payments','ranking','approval','demand_list'].includes(kind)?'<div class="md-widget-detail">'+body(id,true)+'</div>':'';
+   ctx.modal(title,'<p>'+esc(info)+'</p>'+details);
+   return;
+  }
   if(name==='close-info'){$('tracking-dialog').close();return;}
   if(name==='explain-profit'){ctx.modal('Como o lucro é calculado','<p>Receita líquida − anúncios − custos de produto − impostos − taxas adicionais − despesas.</p><p>Taxas que o checkout já descontou da receita líquida são mostradas para consulta e não são cobradas novamente.</p><p>Quando uma venda antiga não tinha custos registrados, usamos a primeira configuração disponível após sua aprovação. A estimativa aparece identificada e não altera os pedidos nem os lançamentos originais.</p><div class="md-profit-formula"><strong>Receita líquida</strong><span>'+esc(ctx.money(data.net_minor))+'</span><strong>Anúncios</strong><span>− '+esc(ctx.money(data.spend_minor))+'</span><strong>Custos e despesas adicionais</strong><span>− '+esc(ctx.money(data.costs_minor==null?null:Number(data.costs_minor)+Number(data.expense_minor||0)))+'</span><strong>Lucro estimado</strong><span>'+esc(ctx.money(data.profit_minor))+'</span></div>'+b('Fechar','close-info'));}
  }
@@ -191,7 +242,7 @@
   handle.setPointerCapture(e.pointerId);tile.classList.add('md-moving');e.preventDefault();
  });
  function updateDrag(){if(!drag)return;const dx=drag.pointerX-drag.x,dy=drag.pointerY-drag.y+drag.main.scrollTop-drag.scroll;
-  drag.next={...drag.start,...(drag.resize?{w:Math.max(minimum(drag.id),Math.min(cols()-drag.start.x,drag.start.w+Math.round(dx/drag.px))),h:Math.max(1,Math.min(4,drag.start.h+Math.round(dy/drag.py)))}:{x:Math.max(0,Math.min(cols()-drag.start.w,drag.start.x+Math.round(dx/drag.px))),y:Math.max(0,Math.min(95,drag.start.y+Math.round(dy/drag.py)))})};
+  drag.next={...drag.start,...(drag.resize?{w:Math.max(minimum(drag.id),Math.min(cols()-drag.start.x,drag.start.w+Math.round(dx/drag.px))),h:Math.max(minimumHeight(drag.id),Math.min(4,drag.start.h+Math.round(dy/drag.py)))}:{x:Math.max(0,Math.min(cols()-drag.start.w,drag.start.x+Math.round(dx/drag.px))),y:Math.max(0,Math.min(95,drag.start.y+Math.round(dy/drag.py)))})};
   if(drag.resize){drag.tile.style.gridColumn=(drag.next.x+1)+' / span '+drag.next.w;drag.tile.style.gridRow=(drag.next.y+1)+' / span '+drag.next.h;}else drag.tile.style.transform='translate('+((drag.next.x-drag.start.x)*drag.px)+'px,'+((drag.next.y-drag.start.y)*drag.py)+'px)';
  }
  function autoScroll(){if(!drag)return;const r=drag.main.getBoundingClientRect(),y=drag.pointerY;let delta=y>r.bottom-55?12:y<r.top+100?-12:0;if(delta){drag.main.scrollTop+=delta;updateDrag();}dragFrame=requestAnimationFrame(autoScroll);}

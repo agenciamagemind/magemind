@@ -72,8 +72,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .topbar-right{gap:7px;min-width:0}
   #saved-ind{display:none}
   #tb-cta{height:38px;padding:0 11px;font-size:11px;box-shadow:none}
-  #notif-panel{position:fixed!important;top:62px!important;left:12px!important;right:12px!important;width:auto!important;max-height:calc(100dvh - 150px);border-radius:14px!important}
-  #notif-list{max-height:calc(100dvh - 230px)!important}
 
   .mobile-bottom-nav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;z-index:300;left:0;right:0;bottom:0;height:calc(var(--mobile-nav-h) + var(--safe-bottom));padding:7px max(8px,var(--safe-right)) var(--safe-bottom) max(8px,var(--safe-left));background:rgba(12,12,22,.96);border-top:1px solid var(--border2);backdrop-filter:blur(20px);box-shadow:0 -12px 30px rgba(0,0,0,.2)}
   .mobile-tab{position:relative;min-width:0;border:0;background:transparent;color:var(--text3);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:600 9px 'Poppins',sans-serif;cursor:pointer}
@@ -171,8 +169,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .ph-actions>div:first-child{flex-shrink:0}
   #mine-filter-wrap{min-height:36px;white-space:nowrap}
   #client-filter-dd{min-width:180px}
-  #sales-period-filter>div{width:100%;margin-left:0!important;padding-left:0!important;border-left:0!important;flex-wrap:wrap}
-  #sales-period-filter input[type=date]{flex:1;min-width:125px}
   .docs-grid{grid-template-columns:1fr}
   .solution-grid{grid-template-columns:1fr}
   .solution-section-head{align-items:flex-start}
@@ -225,7 +221,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .topbar-right{gap:8px}
   #btn-notif,#tb-cta{width:40px;height:40px;min-width:40px;padding:0;border-radius:10px}
   #tb-cta-label{display:none}
-  #notif-panel{top:68px!important;left:12px!important;right:12px!important;max-height:calc(100dvh - var(--mobile-nav-h) - 94px);border-radius:8px!important}
 
   .mobile-bottom-nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-flow:initial;grid-auto-columns:auto;height:calc(var(--mobile-nav-h) + var(--safe-bottom));padding:6px max(8px,var(--safe-right)) var(--safe-bottom) max(8px,var(--safe-left));background:rgba(11,11,20,.97);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -10px 28px rgba(0,0,0,.3);pointer-events:auto}
   .mobile-tab{min-width:0;min-height:58px;border-radius:8px;gap:3px;font:600 9px/1.1 'Poppins',sans-serif;transition:color .16s,background .16s,transform .12s;touch-action:manipulation}
@@ -324,9 +319,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .wallet-shell .btn{grid-column:1/-1;min-height:42px}
   #sales-period-filter{display:flex!important;gap:6px!important;align-items:stretch!important;padding:12px 0!important;margin:0 16px!important;overflow:visible;flex-wrap:wrap!important}
   #sales-period-filter>button{flex:1 1 calc(33% - 6px);min-height:36px}
-  #sales-period-filter>div{width:100%;display:grid!important;grid-template-columns:auto 1fr auto 1fr;gap:6px!important;margin:4px 0 0!important;padding:12px!important;border:1px solid var(--border)!important;border-radius:8px;background:var(--bg2)}
-  #sales-period-filter input[type=date]{width:100%!important;min-width:0!important}
-  #sales-period-filter>div>.btn{grid-column:span 2;min-height:38px}
 
   .payout-section{margin:12px 16px 0;border-radius:8px;overflow:hidden}
   .payout-section-head{padding:14px;gap:10px;align-items:flex-start;flex-wrap:wrap}
@@ -419,8 +411,6 @@ body:not(.app-ready) .mobile-bottom-nav{display:none!important}
   .stat-val{font-size:17px}
   .mobile-tab{font-size:8px}
   .sb-nav{grid-template-columns:1fr}
-  #sales-period-filter>div{grid-template-columns:auto 1fr}
-  #sales-period-filter>div>.btn{grid-column:span 2}
 }
 
 /* Navegação mobile: perfil no topo, menu enxuto e alvos de toque integrais */

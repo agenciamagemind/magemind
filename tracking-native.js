@@ -110,7 +110,7 @@
  }
  async function render(options={}){
   if(state.tab==='overview'&&window.MagemindDashboard.isEditing())return;
-  if(options.quiet&&(document.hidden||document.querySelector('#tracking-dialog[open],#tracking-period-popover:popover-open')||document.activeElement?.matches('input,select,textarea,[contenteditable=true]')))return;
+  if(options.quiet&&(document.hidden||$('tracking-dialog').open||periodPopover.isOpen()||document.activeElement?.matches('input,select,textarea,[contenteditable=true]')))return;
   const version=++requestVersion;if(!await ready()||version!==requestVersion)return;syncInputs();persist();
   const nativePage=routes[state.tab],activePage=document.querySelector('.page.active')?.id;
   const subtitles=observer()?{campaigns:'Resultados e campanhas das operações dos clientes',orders:'Pedidos de todos os clientes e responsáveis',integrations:'Cobertura e situação das conexões dos clientes'}:{campaigns:'Desempenho e otimização dos seus anúncios',orders:'Vendas, pagamentos e informações dos compradores',integrations:'Contas de anúncios, checkouts e origem das vendas'};
@@ -138,7 +138,7 @@
   const fingerprint=JSON.stringify(rows.map(i=>[i.id,i.last_sync_at,i.error_code,i.management_access]).sort());
   if(syncFingerprint&&syncFingerprint!==fingerprint){
    const focused=document.activeElement?.matches('input,select,textarea,button,[contenteditable=true]');
-   if(state.tab==='ads'&&!document.hidden&&!focused&&!document.querySelector('#tracking-dialog[open],#tracking-period-popover:popover-open')&&
+   if(state.tab==='ads'&&!document.hidden&&!focused&&!$('tracking-dialog').open&&!periodPopover.isOpen()&&
       !$('tracking-content').querySelector('.mt-ad-filters')?.matches('.is-dirty')){
     void render({quiet:true});
     return;
@@ -509,7 +509,7 @@
   const read=new Set(JSON.parse(localStorage.getItem('mm_tracking_read_'+uid)||'[]'));
   DB.notifications=DB.notifications.filter(n=>!n.trackingWorkspaceId);
   for(const n of items){DB.notifications.push({id:'tracking-'+n.id,to:uid,icon:n.category==='pending'?'◷':['refund','chargeback'].includes(n.category)?'↩':['refused','cancelled','failure'].includes(n.category)?'!':'↗',iconBg:n.category==='pending'?'var(--amberbg)':['refused','cancelled','chargeback','failure'].includes(n.category)?'var(--rosebg)':'var(--emeraldbg)',title:notificationTitle(n),body:notificationBody(n),date:'',time:n.created_at||n.delivered_at||n.next_attempt_at?dt(n.created_at||n.delivered_at||n.next_attempt_at):'',read:read.has('tracking-'+n.id),createdAt:n.created_at||n.delivered_at||n.next_attempt_at,trackingOrderId:n.order_id,trackingWorkspaceId:state.workspace});}
-  updateNotifBadge();if($('notif-panel')?.style.display==='block')renderNotifPanel();
+  updateNotifBadge();if(window.isNotifPanelOpen())renderNotifPanel();
   if(warmed&&fresh.length)toast(fresh.length===1?[notificationTitle(fresh[0]),notificationBody(fresh[0])].filter(Boolean).join(' · '):fresh.length+' novas atualizações de pedidos');
   const status=await api('/onboarding');if(DB.me?.id!==uid)return;const changed=JSON.stringify(status)!==JSON.stringify(setup);setup=status;
   if(changed&&state.tab==='overview')markPending();else maybeCelebrate();
@@ -527,39 +527,30 @@
  $('tracking-refresh').addEventListener('click',refreshData);
  document.addEventListener('keydown',e=>{if(e.target.id==='tracking-search'&&e.key==='Enter'){e.preventDefault();action('filter',e.target).catch(err=>toast(err.message));}});
  $('tracking-currency').addEventListener('change',()=>{state.currency=$('tracking-currency').value;state.page=1;render();});
- function closePeriod(){const p=$('tracking-period-popover');if(p?.matches(':popover-open'))p.hidePopover();}
- function positionPeriod(){
-  const p=$('tracking-period-popover');if(!p.matches(':popover-open'))return;
-  const r=$('tracking-period-toggle').getBoundingClientRect(),box=p.getBoundingClientRect();
-  p.style.left=Math.max(16,Math.min(r.right-box.width,innerWidth-box.width-16))+'px';
-  p.style.top=Math.max(16,Math.min(r.bottom+8,innerHeight-box.height-16))+'px';
- }
+ const periodPopover=bindAnchoredPopover($('tracking-period-popover'),$('tracking-period-toggle'));
+ function closePeriod(){periodPopover.close();}
  function periodOptions(selected=state.preset){$('tracking-period-options').innerHTML=periods.presets.map(p=>'<button type="button" class="mt-period-option" data-period="'+p.id+'" aria-pressed="'+(p.id===selected)+'"><span>'+p.label+(p.hint?'<small>'+p.hint+'</small>':'')+'</span><span class="mt-period-check" aria-hidden="true">✓</span></button>').join('');}
  function showPeriod(){
-  const p=$('tracking-period-popover');if(p.matches(':popover-open'))return closePeriod();
-  periodOptions();$('tracking-custom-period').hidden=true;$('tracking-period-error').hidden=true;p.showPopover();positionPeriod();
+  const p=$('tracking-period-popover');if(periodPopover.isOpen())return periodPopover.close(true);
+  periodOptions();$('tracking-custom-period').hidden=true;$('tracking-period-error').hidden=true;periodPopover.open();
   p.querySelector('[aria-pressed=true]')?.focus({preventScroll:true});
  }
  $('tracking-period-toggle').addEventListener('click',showPeriod);
- $('tracking-period-popover').addEventListener('toggle',e=>{$('tracking-period-toggle').setAttribute('aria-expanded',String(e.newState==='open'));});
  $('tracking-period-options').addEventListener('click',async e=>{
   const target=e.target.closest('[data-period]');if(!target)return;
-  if(target.dataset.period==='custom'){periodOptions('custom');$('tracking-from').value=state.from;$('tracking-to').value=state.to;$('tracking-custom-period').hidden=false;$('tracking-period-error').hidden=true;positionPeriod();$('tracking-from').focus({preventScroll:true});return;}
+  if(target.dataset.period==='custom'){periodOptions('custom');$('tracking-from').value=state.from;$('tracking-to').value=state.to;$('tracking-custom-period').hidden=false;$('tracking-period-error').hidden=true;periodPopover.position();$('tracking-from').focus();return;}
   state.preset=target.dataset.period;state.page=1;closePeriod();syncInputs();persist();await render();$('tracking-period-toggle').focus({preventScroll:true});
  });
  $('tracking-custom-period').addEventListener('submit',async e=>{
   e.preventDefault();const from=$('tracking-from').value,to=$('tracking-to').value;
-  if(!periods.validRange(from,to)){$('tracking-period-error').textContent='A data final deve ser igual ou posterior à data inicial.';$('tracking-period-error').hidden=false;positionPeriod();return;}
+  if(!periods.validRange(from,to)){$('tracking-period-error').textContent='A data final deve ser igual ou posterior à data inicial.';$('tracking-period-error').hidden=false;periodPopover.position();$('tracking-period-error').scrollIntoView({block:'nearest'});return;}
   Object.assign(state,{from,to,preset:'custom',page:1});closePeriod();syncInputs();persist();await render();$('tracking-period-toggle').focus({preventScroll:true});
  });
- $('tracking-period-cancel').addEventListener('click',()=>{closePeriod();$('tracking-period-toggle').focus({preventScroll:true});});
- $('tracking-period-popover').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closePeriod();$('tracking-period-toggle').focus({preventScroll:true});}});
+ $('tracking-period-cancel').addEventListener('click',()=>periodPopover.close(true));
  $('tracking-period-options').addEventListener('keydown',e=>{
   const buttons=[...e.currentTarget.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
   e.preventDefault();buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowDown'?1:buttons.length-1))%buttons.length].focus();
  });
- window.addEventListener('resize',positionPeriod);
- document.addEventListener('scroll',e=>{if(!$('tracking-period-popover').contains(e.target))positionPeriod();},true);
  $('close-dialog').addEventListener('click',()=>finishCostFlow());
  $('tracking-dialog').addEventListener('cancel',event=>{
   if(!costFlow?.finish)return;
@@ -577,7 +568,6 @@
  });
  document.addEventListener('magemind:session-ready',async()=>{
   if(!window.trackingEnabled())return;
-  route('dashboard');
   const url=new URL(location.href),callback=url.searchParams;
   const grant=callback.get('tracking_oauth'),failed=callback.get('tracking_oauth_error'),w=callback.get('tracking_workspace');
   if(grant||failed){
@@ -588,12 +578,21 @@
     if(await ready()&&!observer()){
      if(grant&&workspaces.some(row=>row.id===w))state.workspace=w;
      goTo(returnPage);
-     await render();
-     if(grant&&w===state.workspace)await connections.accounts(grant);
-     else await connections.hub('A autorização da Meta não foi concluída. Tente renovar o acesso. Se persistir, fale com o suporte.',true);
+     try{
+      if(grant&&w===state.workspace)await connections.accounts(grant);
+      else{
+       const messages={
+        token_revoked:'A Meta devolveu uma autorização inválida. Renove o acesso com o perfil responsável pela conta de anúncios.',
+        meta_confirmation_required:'Abra sua conta na Meta e conclua a verificação de segurança. Depois, renove o acesso em Conexões.',
+        meta_read_denied:'Confira o acesso do seu perfil à conta de anúncios na Meta e tente conectar novamente.',
+        rate_limit:'A Meta limitou as consultas temporariamente. Aguarde alguns minutos e tente renovar o acesso.'
+       };
+       await connections.hub(messages[failed]||'A autorização da Meta não foi concluída. Tente novamente em Conexões.',true);
+      }
+     }catch(error){await connections.hub(error.message,true);}
     }
    }catch(error){toast(error.message,'err');}
-  }
+  }else route('dashboard');
   pollNotifications().catch(()=>{});
   if(callback.get('order')){
    await ready();

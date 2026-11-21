@@ -1,4 +1,105 @@
 /* Selective presentation improvements; existing forms and permissions are retained. */
+let activeAnchoredPopover = null;
+let popoverPositionFrame = 0;
+let anchoredPopoverListeners = false;
+
+function bindAnchoredPopover(panel, trigger, {align = 'start'} = {}) {
+  if (!anchoredPopoverListeners) {
+    anchoredPopoverListeners = true;
+    listenForAnchoredPopovers();
+  }
+  const native = typeof panel.showPopover === 'function';
+  const isOpen = () => native ? panel.matches(':popover-open') : !panel.hidden;
+  if (native) {
+    trigger.setAttribute('popovertarget', panel.id);
+    trigger.addEventListener('click', event => event.preventDefault());
+  } else {
+    panel.hidden = true;
+    document.body.append(panel);
+  }
+
+  function position() {
+    if (!isOpen()) return;
+    const anchor = trigger.getBoundingClientRect();
+    if (!anchor.width || !anchor.height) return close();
+    const viewport = window.visualViewport;
+    const inset = 12, gap = 8;
+    const left = (viewport?.offsetLeft || 0) + inset;
+    const top = (viewport?.offsetTop || 0) + inset;
+    const right = left + (viewport?.width || innerWidth) - 2 * inset;
+    const bottom = top + (viewport?.height || innerHeight) - 2 * inset;
+    if (anchor.bottom < top || anchor.top > bottom) return close();
+
+    panel.style.setProperty('--popover-width', Math.max(0, right - left) + 'px');
+    panel.style.setProperty('--popover-space', Math.max(0, bottom - top) + 'px');
+    const size = panel.getBoundingClientRect();
+    const below = bottom - anchor.bottom - gap;
+    const above = anchor.top - top - gap;
+    const placeAbove = below < size.height && above > below;
+    const available = Math.max(0, placeAbove ? above : below);
+    const x = align === 'end' ? anchor.right - size.width : anchor.left;
+    panel.style.setProperty('--popover-space', available + 'px');
+    panel.style.left = Math.max(left, Math.min(x, right - size.width)) + 'px';
+    panel.style.top = (placeAbove ? anchor.top - gap - Math.min(size.height, available) : Math.max(top, anchor.bottom + gap)) + 'px';
+  }
+
+  function sync() {
+    trigger.setAttribute('aria-expanded', String(isOpen()));
+    if (!isOpen() && activeAnchoredPopover === controller) activeAnchoredPopover = null;
+  }
+
+  function close(restoreFocus = false) {
+    if (!isOpen()) return;
+    if (native) panel.hidePopover();
+    else panel.hidden = true;
+    sync();
+    if (restoreFocus) trigger.focus({preventScroll: true});
+  }
+
+  function open() {
+    activeAnchoredPopover?.close();
+    if (native) panel.showPopover({source: trigger});
+    else panel.hidden = false;
+    activeAnchoredPopover = controller;
+    sync();
+    position();
+  }
+
+  const controller = {open, close, position, isOpen, panel, trigger, native};
+  panel.addEventListener('toggle', sync);
+  return controller;
+}
+
+function closeAnchoredPopover() {
+  activeAnchoredPopover?.close();
+}
+
+function scheduleAnchoredPopoverPosition(event) {
+  if (!activeAnchoredPopover || popoverPositionFrame) return;
+  if (event.target instanceof Node && activeAnchoredPopover.panel.contains(event.target)) return;
+  popoverPositionFrame = requestAnimationFrame(() => {
+    popoverPositionFrame = 0;
+    activeAnchoredPopover?.position();
+  });
+}
+
+function listenForAnchoredPopovers() {
+  addEventListener('resize', scheduleAnchoredPopoverPosition);
+  document.addEventListener('magemind:tracking-signed-out', closeAnchoredPopover);
+  document.addEventListener('scroll', scheduleAnchoredPopoverPosition, true);
+  window.visualViewport?.addEventListener('resize', scheduleAnchoredPopoverPosition);
+  window.visualViewport?.addEventListener('scroll', scheduleAnchoredPopoverPosition);
+  document.addEventListener('pointerdown', event => {
+    const popover = activeAnchoredPopover;
+    if (popover && !popover.native && !popover.panel.contains(event.target) && !popover.trigger.contains(event.target)) popover.close();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.defaultPrevented || !activeAnchoredPopover?.isOpen()) return;
+    event.preventDefault();
+    activeAnchoredPopover.close(true);
+  });
+}
+
 function groupSidebarNavigation(items, renderItem) {
   const groups = [
     ['trabalho', 'Trabalho', ['dashboard', 'demands', 'docs', 'oraculo']],

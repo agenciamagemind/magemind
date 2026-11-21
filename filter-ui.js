@@ -2,6 +2,7 @@
  'use strict';
  const mobile=()=>matchMedia('(max-width:900px)').matches;
  const filterIcon='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"/></svg>';
+ const calendarIcon='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>';
  function enhance(root=document){
   root.querySelectorAll('.mt-root .filters').forEach(bar=>{
    if(!bar.querySelector('select'))return;
@@ -12,16 +13,77 @@
   });
  }
  document.addEventListener('click',e=>{const toggle=e.target.closest('[data-filter-disclosure]');if(!toggle)return;const bar=toggle.closest('.filters'),open=bar.classList.toggle('app-filter-expanded');bar.classList.toggle('app-filter-collapsed',!open);toggle.setAttribute('aria-expanded',String(open));});
+ function periodFilter(anchor,id,label,choices,selected,choose){
+  const trigger=document.createElement('button');
+  trigger.type='button';
+  trigger.className='btn btn-ghost mm-period-toggle';
+  trigger.setAttribute('aria-haspopup','dialog');
+  trigger.setAttribute('aria-controls',id);
+  trigger.setAttribute('aria-expanded','false');
+  trigger.innerHTML=calendarIcon+'<span></span><i class="mm-chevron" aria-hidden="true"></i>';
+  const panel=document.createElement('div');
+  panel.id=id;
+  panel.className='mm-glass mm-anchored-popover mm-period-popover';
+  panel.setAttribute('popover','auto');
+  panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-label',label);
+  const heading=document.createElement('p');
+  heading.className='mt-period-head';
+  heading.textContent=label;
+  panel.append(heading);
+  anchor.before(trigger,panel);
+  const popup=bindAnchoredPopover(panel,trigger);
+  const options=choices.map((choice,index)=>{
+   const button=document.createElement('button');
+   button.type='button';button.className='mt-period-option';
+   const text=document.createElement('span'),check=document.createElement('span');
+   text.textContent=choice;check.textContent='✓';check.className='mt-period-check';check.setAttribute('aria-hidden','true');
+   button.append(text,check);
+   button.addEventListener('click',()=>{popup.close(true);choose(index);sync();});
+   panel.append(button);
+   return button;
+  });
+  function sync(){
+   const index=selected(),text=choices[index]||choices[0];
+   trigger.querySelector('span').textContent=text;
+   trigger.setAttribute('aria-label',label+' · '+text);
+   options.forEach((option,i)=>option.setAttribute('aria-pressed',String(i===index)));
+  }
+  trigger.addEventListener('click',()=>{
+   if(popup.isOpen())return popup.close(true);
+   sync();popup.open();(options[selected()]||options[0]).focus({preventScroll:true});
+  });
+  panel.addEventListener('keydown',event=>{
+   if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+   event.preventDefault();
+   const index=options.indexOf(document.activeElement),step=event.key==='ArrowUp'?-1:1;
+   options[event.key==='Home'?0:event.key==='End'?options.length-1:(index+step+options.length)%options.length].focus();
+  });
+  sync();
+  return sync;
+ }
+ function buttonPeriods(buttons,id,label){
+  if(!buttons.length)return;
+  const sync=periodFilter(buttons[0],id,label,buttons.map(button=>button.textContent),
+   ()=>buttons.findIndex(button=>button.classList.contains('active')),i=>buttons[i].click());
+  const observer=new MutationObserver(sync);
+  for(const button of buttons){
+   button.hidden=true;
+   observer.observe(button,{attributes:true,attributeFilter:['class']});
+  }
+ }
  function init(){
   initDemandClientPicker();
   enhance();
   const content=document.getElementById('tracking-content');if(content)new MutationObserver(()=>enhance(content)).observe(content,{childList:true});
-  const sales=document.getElementById('sales-period-filter');
-  if(sales){
-   const label=document.createElement('label');label.className='app-sales-period';label.innerHTML='<span class="sr-only">Período das vendas</span><select id="sales-period-select" aria-label="Período das vendas">'+[['today','Hoje'],['yesterday','Ontem'],['7d','Última semana'],['14d','Últimos 14 dias'],['month','Este mês'],['all','Todo o período'],['custom','Período personalizado']].map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select>';sales.prepend(label);
-   const select=label.querySelector('select'),sync=()=>{const active=sales.querySelector('button.active');if(active)select.value=active.id.replace('spf-','');};
-   select.addEventListener('change',()=>{const choice=select.value;if(choice==='custom'){window.openModal('modal-sales-period');sync();}else window.setSalesPeriod(choice);});
-   new MutationObserver(sync).observe(sales,{subtree:true,attributes:true,attributeFilter:['class']});sync();
+  buttonPeriods([...document.querySelectorAll('#sales-period-filter > button')],'sales-period-popover','Período das vendas');
+  buttonPeriods([...document.querySelectorAll('.rev-period-btn')],'revenue-period-popover','Período da receita');
+  const firewall=document.getElementById('firewall-period');
+  if(firewall){
+   const sync=periodFilter(firewall,'firewall-period-popover','Período do histórico',[...firewall.options].map(option=>option.textContent),
+    ()=>firewall.selectedIndex,i=>{firewall.selectedIndex=i;firewall.dispatchEvent(new Event('change',{bubbles:true}));});
+   firewall.hidden=true;
+   firewall.addEventListener('change',sync);
   }
  }
  function initDemandClientPicker(){

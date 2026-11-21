@@ -9,6 +9,9 @@ const metaMessages:Record<string,string>={
  token_revoked:'A autorização da Meta expirou ou foi revogada. Renove o acesso em Conexões.',
  meta_confirmation_required:'A Meta solicitou uma confirmação. Abra sua conta Meta, conclua a verificação e teste a conexão.',
  meta_read_denied:'A Meta não liberou a leitura da conta de anúncios. Peça acesso ao administrador da conta e renove a conexão.',
+ meta_account_not_authorized:'A conta que você tentou renovar ficou de fora da autorização. Tente novamente com o perfil que tem acesso à conta e selecione-a quando a Meta pedir.',
+ meta_grant_expired:'Esta autorização não está disponível para esta sessão. Inicie a conexão novamente e conclua o acesso na mesma aba do painel.',
+ meta_connection_changed:'A conta foi alterada enquanto você autorizava o acesso. Confira o estado atual em Conexões.',
  meta_manage_denied:'A conexão está em modo somente leitura. Peça acesso para gerenciar campanhas na Meta e renove a conexão.',
  meta_platform_readonly:'O aplicativo da Magemind está habilitado somente para leitura. Fale com o suporte para liberar o gerenciamento.',
  rate_limit:'A Meta limitou as consultas por alguns instantes. Tente novamente em breve.',
@@ -22,6 +25,14 @@ class MetaError extends Error{
 }
 const metaSecrets=(secrets:any)=>({...secrets,version:secrets.version||env('TRACKING_META_VERSION')||'v25.0'});
 const isRateLimited=(i:any)=>i.error_code==='rate_limit'&&i.retry_after_at&&new Date(i.retry_after_at)>new Date();
+async function installMetaAccounts(db:any,grant:string,userId:string,sid:string,accounts:any[]){
+ try{return await rpc(db,'tracking_install_oauth_accounts',{g:grant,u:userId,s:sid,accounts});}
+ catch(error){
+  if(error?.code==='P0002')throw new MetaError('meta_grant_expired');
+  if(error?.code==='40001')throw new MetaError('meta_connection_changed');
+  throw error;
+ }
+}
 Deno.serve(async(req)=>{
  try{
   guard();if(req.method==='OPTIONS')return json(req,{},204);
@@ -60,10 +71,21 @@ Deno.serve(async(req)=>{
   if(input.action==='oauth_start'){
    allowReads();if(input.provider!=='meta')throw new Error('Plataforma indisponível');
    const config=await metaConfig(db),state=crypto.randomUUID()+crypto.randomUUID();
-   await rpc(db,'tracking_oauth_begin',{h:await sha256(state),w,u:user.id,p:'meta',s:sid});return json(req,{url:await oauthStart('meta',{...config,state,reconnect:input.reconnect===true})});
+   const args={h:await sha256(state),w,u:user.id,s:sid};
+   if(input.integration){
+    try{await rpc(db,'tracking_begin_meta_renewal',{...args,i:input.integration});}
+    catch(error){if(error?.code==='P0002')throw new MetaError('meta_connection_changed');throw error;}
+   }else await rpc(db,'tracking_oauth_begin',{...args,p:'meta'});
+   return json(req,{url:await oauthStart('meta',{...config,state,reconnect:!!input.integration||input.reconnect===true})});
   }
   if(['oauth_accounts','oauth_select'].includes(input.action)){
-   allowReads();const grant=await rpc(db,'tracking_oauth_grant',{g:input.grant,u:user.id,s:sid});if(grant.workspace_id!==w)throw new Error('Forbidden');
+   allowReads();
+   let grant;
+   try{grant=await rpc(db,'tracking_oauth_grant',{g:input.grant,u:user.id,s:sid});}
+   catch(error){if(error?.code==='P0002')throw new MetaError('meta_grant_expired');throw error;}
+   if(grant.workspace_id!==w)throw new Error('Forbidden');
+   const renewalId=grant.renewal_integration_id;
+   if(renewalId&&input.action!=='oauth_accounts')throw new MetaError('meta_connection_changed');
    const secrets=metaSecrets(await decrypt(grant.cipher));
    let accounts,profile;
    try{
@@ -73,6 +95,18 @@ Deno.serve(async(req)=>{
      profile_id:profile.id,profile_name:profile.name,management_access:metaAccountManagement(profile,a)
     }));
    }catch(error){throw new MetaError(metaFailure(error));}
+   if(renewalId){
+    const {data:target,error}=await client.from('tracking_integrations').select('account_id')
+      .eq('workspace_id',w).eq('provider','meta').eq('id',renewalId).maybeSingle();
+    if(error)throw error;
+    if(!target)throw new MetaError('meta_connection_changed');
+    const selected=accounts.find((a:any)=>a.account_id===target.account_id);
+    if(!selected)throw new MetaError('meta_account_not_authorized');
+    try{await verifyMetaRead(secrets,selected.account_id);}
+    catch(error){throw new MetaError(metaFailure(error));}
+    await installMetaAccounts(db,input.grant,user.id,sid,[selected]);
+    return json(req,{renewed:{name:selected.name,management_access:selected.management_access}});
+   }
    if(input.action==='oauth_accounts'){
     const linked=await client.from('tracking_integrations').select('account_id,provider_profile_id,error_code')
      .eq('workspace_id',w).eq('provider','meta').eq('connected',true);
@@ -84,7 +118,7 @@ Deno.serve(async(req)=>{
     })});
    }
    const ids=input.accounts;if(!Array.isArray(ids)||ids.length<1||ids.length>20||new Set(ids).size!==ids.length||ids.some((id:string)=>!accounts.some((a:any)=>a.account_id===id)))throw new Error('Selecione as contas autorizadas');
-   const count=await rpc(db,'tracking_install_oauth_accounts',{g:input.grant,u:user.id,s:sid,accounts:accounts.filter((a:any)=>ids.includes(a.account_id))});return json(req,{connected:count});
+   const count=await installMetaAccounts(db,input.grant,user.id,sid,accounts.filter((a:any)=>ids.includes(a.account_id)));return json(req,{connected:count});
   }
   if(input.action==='create_api'){
    const name=String(input.name||'').trim();if(!name||name.length>120)throw new Error('Informe o nome da conexão');

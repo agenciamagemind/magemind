@@ -15,8 +15,6 @@
  #app .topbar #notif-wrapper{position:relative!important;inset:auto!important;flex:none;z-index:auto}
  #app .topbar #btn-notif{width:40px;height:40px;min-width:40px;margin:0;box-shadow:none;background:transparent;border:0}
  #app .topbar-profile{width:40px;height:40px;margin:0}
- #notif-panel{top:calc(var(--mobile-header-height) + var(--safe-top) + 8px)!important;bottom:auto!important;left:max(12px,var(--safe-left))!important;right:max(12px,var(--safe-right))!important;max-height:calc(var(--app-viewport-height) - var(--mobile-header-height) - var(--safe-top) - var(--mobile-nav-h) - var(--safe-bottom) - 24px)!important;border-radius:16px!important;box-shadow:0 16px 40px #0005}
- #notif-list{max-height:calc(var(--app-viewport-height) - var(--mobile-header-height) - var(--safe-top) - var(--mobile-nav-h) - var(--safe-bottom) - 78px)!important;overscroll-behavior:contain}
  .mobile-bottom-nav{position:absolute;top:auto;bottom:var(--mobile-nav-bottom);left:max(12px,var(--safe-left));right:max(12px,var(--safe-right));width:auto;max-width:520px;height:var(--mobile-nav-h);margin:0 auto;padding:5px;gap:2px;border:1px solid #ffffff26;border-radius:40px;background:linear-gradient(160deg,#ffffff0d,transparent 55%),rgba(24,23,34,.72);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);box-shadow:inset 0 1px 0 #ffffff0d,0 8px 28px #0004}
  .mobile-tab{min-height:0;border-radius:30px;gap:3px;color:#c0bdce}
  .mobile-tab.active{color:#f0e9ff;background:linear-gradient(160deg,#d7c2ff33,#b798ef1a);box-shadow:inset 0 1px 0 #ffffff1a}

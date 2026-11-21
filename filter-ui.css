@@ -1,14 +1,14 @@
 /* Shared filter controls: same rhythm, with room for each screen's fields. */
-:root{--filter-h:40px;--filter-radius:10px}
+:root{--filter-h:40px;--filter-radius:14px}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
 #tracking-toolbar{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin:12px 0 18px;padding:0}
 #tracking-toolbar .period-label{display:none}
 #tracking-toolbar .mt-period-control{flex:0 1 auto;min-width:0;max-width:100%}
-#tracking-toolbar #tracking-period-toggle{min-height:var(--filter-h);height:var(--filter-h);padding:5px 11px;border-radius:var(--filter-radius);gap:8px;min-width:164px;width:auto}
+#tracking-toolbar #tracking-period-toggle{min-height:var(--filter-h);height:var(--filter-h);padding:5px 13px;border-radius:999px;gap:8px;min-width:164px;width:auto}
 #tracking-period-toggle strong{font-size:11px;line-height:1.25}#tracking-period-toggle small{font-size:9px;line-height:1.2;margin-top:2px}
 #tracking-toolbar>label:not(#tracking-workspace-label){flex:0 0 76px;max-width:76px;min-width:0}
 #tracking-toolbar select{height:var(--filter-h);padding:7px 9px;border:1px solid var(--border2);border-radius:var(--filter-radius);font-size:11px}
-#tracking-refresh{width:var(--filter-h);height:var(--filter-h);min-height:var(--filter-h);padding:0;border-radius:var(--filter-radius);flex:none}
+#tracking-refresh{width:var(--filter-h);height:var(--filter-h);min-height:var(--filter-h);padding:0;border-radius:50%;flex:none}
 #tracking-refresh svg{width:17px;height:17px}#tracking-refresh[aria-busy=true] svg{animation:filter-spin 1s linear infinite}
 .filter-sync{margin-left:auto;max-width:320px;color:var(--text3);font-size:10px;line-height:1.5}.filter-sync.is-stale{color:var(--amber)}
 .mt-root .filters,.mt-root .mt-admin-filters{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:0;margin:0 0 16px;border:0;background:transparent;border-radius:0}
@@ -57,8 +57,10 @@
 .mt-root .md-dashboard-footer{display:none}
 @media(max-width:900px){#app #pg-dashboard:has(>.dash-grid-empty){padding-bottom:0}#app #pg-dashboard>.dash-grid-empty{display:none}.mt-root .md-dashboard-footer{display:flex;justify-content:flex-start;margin-top:18px;padding:4px 0 10px}.mt-root .md-dashboard-footer .md-customize{padding:10px 14px;min-height:40px;border-radius:10px}.demand-client-picker{max-width:100%}.demand-client-trigger{width:100%;min-width:160px}}
 #sales-period-filter.sales-period-bar{display:flex!important;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px!important}
-#sales-period-filter>button{display:none!important}#sales-period-filter .app-sales-period{display:block;margin:0}
-.app-sales-period select{height:var(--filter-h);min-width:210px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--filter-radius);color:var(--text);padding:8px 12px;font:12px inherit}
+.mm-period-toggle{min-height:var(--filter-h);gap:9px;min-width:0;justify-content:flex-start;text-align:left;white-space:normal}
+.mm-period-toggle svg,.mm-period-toggle .mm-chevron{flex:none}
+.mm-period-toggle .mm-chevron{margin-left:auto}
+#app :is(#firewall-period,.rev-period-btn,#sales-period-filter>button)[hidden]{display:none!important}
 #sales-period-caption{flex-basis:auto;padding:0;font-size:11px}
 #notif-wrapper{display:flex;align-items:center;gap:8px}#dashboard-customize{width:38px;height:38px;border-radius:12px;background:var(--bg2);box-shadow:0 8px 24px #0004}#dashboard-customize svg{width:17px;height:17px}
 .app-metric-tooltip{position:fixed;z-index:900;width:max-content;max-width:min(300px,calc(100vw - 24px));padding:12px 14px;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px #0006;font-size:12px;line-height:1.65;pointer-events:none}
@@ -88,7 +90,9 @@
  #app .firewall-toolbar>input{grid-column:1/-1;max-width:none;width:100%;min-width:0}#app .firewall-toolbar>select{width:100%;min-width:0}
  #app .goals-toolbar>.fi{max-width:none;width:100%;min-width:0}.goals-filters{width:100%}
  #app .partner-toolbar select{min-width:0;max-width:100%;width:100%}#app .partner-toolbar .partner-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
- #sales-period-filter.sales-period-bar{padding:12px!important;gap:7px}#sales-period-filter .app-sales-period{width:100%}.app-sales-period select{width:100%;min-width:0}#sales-period-caption{font-size:10px}
+ #sales-period-filter.sales-period-bar{padding:12px!important;gap:7px}
+ #sales-period-filter .mm-period-toggle{width:100%}
+ #sales-period-caption{font-size:10px}
 }
 @keyframes filter-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#tracking-refresh svg{animation:none}.mt-root .app-filter-toggle>span:last-child{transition:none}}

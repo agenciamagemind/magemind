@@ -23,7 +23,6 @@
   const bucket = 'dashboard-backgrounds';
   const backgrounds = new Map();
   const app = document.getElementById('app');
-  const main = app.querySelector('.main');
   const layer = document.createElement('div');
   layer.className = 'mm-background';
   layer.setAttribute('aria-hidden', 'true');
@@ -442,7 +441,7 @@
       applyBackground();
       measurePreview();
     });
-  }).observe(main);
+  }).observe(app, {box: 'border-box'});
   window.MagemindAppearance = {route, render, clear};
   setAccent('lime');
 })();

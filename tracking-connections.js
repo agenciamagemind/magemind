@@ -43,14 +43,14 @@
    '<p class="small">Mantenha este endereço em sigilo. O painel mostra a conexão como ativa ao receber o primeiro evento válido.</p>'+
    (id?action('Configurar taxa','cost-integration',id):''));
  }
- async function meta(reconnect=false){
-  const r=await edge({action:'oauth_start',provider:'meta',reconnect});
-  sessionStorage.setItem(authKey,c.state.tab==='ads'?'campaigns':'integrations');
+ async function meta(integration=null){
+  const r=await edge({action:'oauth_start',provider:'meta',...(integration?{integration}:{})});
+  try{sessionStorage.setItem(authKey,c.state.tab==='ads'?'campaigns':'integrations');}catch{}
   location.assign(r.url);
  }
  function returnPage(){
-  const route=sessionStorage.getItem(authKey);
-  sessionStorage.removeItem(authKey);
+  let route;
+  try{route=sessionStorage.getItem(authKey);sessionStorage.removeItem(authKey);}catch{}
   return route==='campaigns'?'campaigns':'integrations';
  }
  function campaignBar(rows){
@@ -73,7 +73,7 @@
    '<div class="mt-account-actions">'+
     (real&&account.connected?action('Testar conexão','campaign-test',account.id):'')+
     (account.connected&&health.kind!=='authorization'?action('Sincronizar','campaign-sync',account.id):'')+
-    (real&&(!account.connected||health.kind==='authorization'||readonly)?action('Renovar acesso','campaign-renew'):'')+
+    (real&&(!account.connected||health.kind==='authorization'||readonly)?action('Renovar acesso','campaign-renew',account.id):'')+
     (account.connected?action('Desconectar conta','campaign-disconnect',account.id,'quiet mt-fee-danger'):'')+
    '</div></article>';
  }
@@ -116,6 +116,11 @@
  }
  async function accounts(grant,{addOnly=false}={}){
   const r=await edge({action:'oauth_accounts',grant});
+  if(r.renewed){
+   const note='Acesso renovado para '+r.renewed.name+'. Sincronização solicitada.';
+   await c.render();
+   return hub(note+(r.renewed.management_access===false?' '+accessHelp:''));
+  }
   const items=r.accounts.filter(a=>!addOnly||!a.connected).sort((a,b)=>Number(b.needs_access)-Number(a.needs_access)||a.name.localeCompare(b.name,'pt-BR'));
   const choices=items.map((a,index)=>'<label class="mt-account-option" data-account-query="'+esc(normalizeSearch(a.name+' '+a.account_id+' '+a.currency))+'">'+
    '<input type="checkbox" name="accounts" value="'+esc(a.account_id)+'"'+(a.needs_access&&index<20?' checked':'')+'><span><strong>'+esc(a.name)+'</strong>'+
@@ -145,7 +150,7 @@
  async function campaignAction(name,id){
   if(name==='campaign-connections')return hub();
   if(name==='campaign-link'||name==='campaign-renew'){
-   try{return await meta(name==='campaign-renew');}
+   try{return await meta(name==='campaign-renew'?id:null);}
    catch(error){return hub(error.message,true);}
   }
   if(name==='campaign-add'){
