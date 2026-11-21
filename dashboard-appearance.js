@@ -14,8 +14,8 @@
     white: ['Branco', '#ffffff']
   };
   const sections = {
-    dashboard: {name: 'Menu', sample: ['Faturamento', 'Pedidos', 'Minhas demandas']},
-    demands: {name: 'Minhas demandas', sample: ['A fazer', 'Em andamento', 'Concluídas']},
+    dashboard: {name: 'Dashboard', sample: ['Faturamento', 'Pedidos', 'Demandas']},
+    demands: {name: 'Demandas', sample: ['A fazer', 'Em andamento', 'Concluídas']},
     campaigns: {name: 'Campanhas', sample: ['Campanha', 'Valor gasto', 'Vendas']},
     orders: {name: 'Pedidos', sample: ['Pedido', 'Pagamento', 'Status']},
     affiliates: {name: 'Indique e ganhe', sample: ['Convide um cliente', 'Suas indicações']}

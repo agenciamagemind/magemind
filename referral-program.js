@@ -67,7 +67,7 @@
   return `<article class="rf-rules rf-rules-article">${paragraphs(article?.paragraphs||(data.rules?.sections||[]).flatMap(s=>s.paragraphs||[]))}</article>`;
  }
  function welcome(){return `<div class="rf-terms rf-welcome-article">${rules()}
-  <form id="rf-accept-form" class="rf-consent"><label><input id="rf-ack" type="checkbox" required><span class="rf-check" aria-hidden="true">${icon('check')}</span><span>${e(data.rules?.acknowledgement)}</span></label><button class="btn btn-primary" id="rf-join" type="submit" disabled>Concordar e participar ${icon('arrow')}</button><small>Seu aceite fica registrado com a versão destas regras.</small></form></div>${data.finance_access?finance():''}`;}
+  <form id="rf-accept-form" class="rf-consent"><label><input id="rf-ack" type="checkbox" required><span class="rf-check" aria-hidden="true">${icon('check')}</span><span>${e(data.rules?.acknowledgement)}</span></label><button class="btn btn-primary" id="rf-join" type="submit" disabled>Concordar e participar ${icon('arrow')}</button><small>Seu aceite fica registrado com a versão destas regras.</small></form></div>`;}
  function finance(){const w=data.wallet||{},clients=data.clients||[];
   if(data.state==='suspended')return '';
   return `<div class="rf-stats">${stat('Disponível para saque',money(w.available),'Comissões aprovadas','rf-highlight')}${stat('Em análise',money(w.under_review),'Saques em processamento')}${stat('Recebido',money(w.withdrawn),'Pagamentos registrados')}${stat('Comissão pendente',money(w.pending_commission),'Ainda não disponível')}</div>

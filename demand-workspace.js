@@ -70,8 +70,8 @@
   window.openAccessibleDialog(dialog);
  }
  function init(){
-  const board=$('kanban-board'),list=$('demand-list-view');if(!board||!list)return;
-  const layout=document.createElement('div'),area=document.createElement('div');layout.className='demand-workspace';area.className='demand-board-area';board.before(layout);area.append(board,list);layout.append(area);
+  const board=$('kanban-board');if(!board)return;
+  const layout=document.createElement('div'),area=document.createElement('div');layout.className='demand-workspace';area.className='demand-board-area';board.before(layout);area.append(board);layout.append(area);
   panel=document.createElement('aside');panel.id='demand-production-panel';panel.setAttribute('aria-label','Acompanhamento da produção');panel.hidden=true;layout.append(panel);
   expanded=matchMedia('(min-width:901px)').matches;
   dialog=document.createElement('dialog');dialog.id='production-client-dialog';dialog.setAttribute('aria-labelledby','production-dialog-title');dialog.innerHTML='<div class="production-dialog-head"><h2 id="production-dialog-title"></h2><button type="button" data-production-close aria-label="Fechar informações do cliente">×</button></div><div id="production-dialog-body"></div>';document.body.append(dialog);

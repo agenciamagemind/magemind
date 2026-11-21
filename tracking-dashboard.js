@@ -110,7 +110,7 @@
    '<div data-widget-row><span>'+esc(paymentName(r.label))+'</span><strong>'+pct(ratio(r.approved,r.total))+'</strong><small>'+number(r.approved)+' de '+number(r.total)+'</small></div>').join('')+'</div>':
    '<div class="md-empty">Sem pedidos no período</div>';
   const demands=ctx.demands||[],states=[['Concluído','Concluídas','md-positive'],['Em andamento','Em produção','md-progress'],['Não iniciado','Pendentes','']];
-  if(kind==='demands')return '<div class="md-demands">'+states.map(([s,label,color])=>'<div><span>'+label+'</span><strong class="'+color+'">'+number(demands.filter(d=>d.status===s).length)+'</strong></div>').join('')+'</div>'+b('Minhas demandas →','demands','class="md-link"');
+  if(kind==='demands')return '<div class="md-demands">'+states.map(([s,label,color])=>'<div><span>'+label+'</span><strong class="'+color+'">'+number(demands.filter(d=>d.status===s).length)+'</strong></div>').join('')+'</div>'+b('Demandas →','demands','class="md-link"');
   return (demands.length?'<div class="md-widget-list md-demand-list">'+demands.slice().sort((a,b)=>String(b.createdAt||b.created_at||'').localeCompare(String(a.createdAt||a.created_at||''))).slice(0,8).map(d=>
    '<div data-widget-row><strong>'+esc(d.title||d.name||'Demanda')+'</strong><small>'+esc(d.status)+'</small></div>').join('')+'</div>':
    '<div class="md-empty">Nenhuma demanda por aqui</div>')+b('Ver demandas →','demands','class="md-link"');
@@ -130,7 +130,7 @@
  function html(){
   if(!data)return '';
   return '<div class="md-dashboard '+(editing?'md-editing':'')+' '+(device==='mobile'?'md-mobile-layout':'')+'"'+(editing?' data-no-pull':'')+'>'+
-   (editing?'<div class="md-toolbar">'+'<div><strong>Personalizar Menu</strong><p>Arraste os blocos e os cantos para ajustar. As mudanças só entram ao salvar.</p></div><div class="md-device" role="group" aria-label="Layout do dispositivo">'+['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device','data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('')+'</div><div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''))+'</div>'+'</div>':'')+
+   (editing?'<div class="md-toolbar">'+'<div><strong>Personalizar Dashboard</strong><p>Arraste os blocos e os cantos para ajustar. As mudanças só entram ao salvar.</p></div><div class="md-device" role="group" aria-label="Layout do dispositivo">'+['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device','data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('')+'</div><div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''))+'</div>'+'</div>':'')+
    '<div class="md-workspace">'+(editing?library():'')+'<div class="md-grid" id="md-grid" style="--md-cols:'+cols()+';--md-rows:'+Math.max(1,...layout().map(r=>r.y+r.h))+'">'+layout().map(tile).join('')+'</div></div></div>';
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
@@ -178,7 +178,7 @@
    edit.type='button';
    edit.className='btn btn-ghost btn-icon';
    edit.setAttribute('aria-label','Personalizar');
-   edit.title='Personalizar Menu';
+   edit.title='Personalizar Dashboard';
    edit.dataset.dashboardAction='edit';
    edit.innerHTML=svg('edit');
    $('notif-wrapper')?.prepend(edit);
@@ -214,13 +214,13 @@
   if(name==='cancel'){editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device,true);paint('[data-dashboard-action=edit]');return;}
   if(name==='save'){
    saving=true;paint();const key=sessionKey;
-   try{drafts[device]=clone(draft);const layouts=Object.fromEntries(Object.entries(drafts).map(([d,items])=>[d,{layout:items,revision:saved[d]?.revision||0}]));const result=await ctx.api('/dashboard-layout',{layouts});if(key!==sessionKey)return;for(const [d,r] of Object.entries(result))saved[d]={layout:clone(r.layout),revision:r.revision};editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device);ctx.toast('Menu personalizado salvo.');}
+   try{drafts[device]=clone(draft);const layouts=Object.fromEntries(Object.entries(drafts).map(([d,items])=>[d,{layout:items,revision:saved[d]?.revision||0}]));const result=await ctx.api('/dashboard-layout',{layouts});if(key!==sessionKey)return;for(const [d,r] of Object.entries(result))saved[d]={layout:clone(r.layout),revision:r.revision};editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device);ctx.toast('Dashboard personalizado salvo.');}
    catch(e){ctx.toast(e.message);}finally{saving=false;paint();}if(!editing)await ctx.refresh?.();return;
   }
   if(name==='device'){drafts[device]=clone(draft);device=el.dataset.device;await readDevice(device);draft=clone(drafts[device]||saved[device].layout||defaults());paint();return;}
   if(name==='reset'){draft=defaults();paint();return;}
   if(name==='add'){const id=el.dataset.id;if(draft.some(r=>r.id===id))return;const w=catalog[id][2]==='metric'?(device==='mobile'?2:3):(device==='mobile'?4:4),h=catalog[id][2]==='metric'?1:3;draft.push({id,...vacant(draft,w,h)});paint();return;}
-  if(name==='remove'){if(draft.length===1){ctx.toast('Mantenha pelo menos um bloco no Menu.');return;}draft=draft.filter(r=>r.id!==el.dataset.id);paint();return;}
+  if(name==='remove'){if(draft.length===1){ctx.toast('Mantenha pelo menos um bloco no Dashboard.');return;}draft=draft.filter(r=>r.id!==el.dataset.id);paint();return;}
   if(['grow','shrink','height'].includes(name)){const r=draft.find(r=>r.id===el.dataset.id);move(r.id,name==='height'?{h:r.h%4+1}:{w:r.w+(name==='grow'?1:-1)});paint();return;}
   if(name==='demands'){ctx.demandsOpen();return;}
   if(name==='info'){

@@ -485,8 +485,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-price-note{font-size:10px;color:var(--text3)}
 .solution-actions{display:flex;gap:7px;margin-top:14px}
 .solution-actions .btn{min-height:36px;flex:1}
-.solution-whatsapp{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:40px;margin-top:14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:#168c52;color:#fff;text-decoration:none;font:700 11px 'Poppins',sans-serif;transition:background .16s,transform .16s}
-.solution-whatsapp:hover{background:#1aa661;transform:translateY(-1px)}
+.solution-whatsapp{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:40px;margin-top:14px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:var(--solution-accent,var(--accent));color:var(--solution-ink,#101414);text-decoration:none;font:700 11px 'Poppins',sans-serif;transition:background .16s,transform .16s}
+.solution-whatsapp:hover{background:color-mix(in srgb,var(--solution-accent) 88%,white);transform:translateY(-1px)}
 .solution-custom-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:24px;padding:19px 20px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2)}
 .solution-custom-cta strong{display:block;font:700 15px 'Poppins',sans-serif}
 .solution-custom-cta span{display:block;margin-top:3px;color:var(--text2);font-size:11px}
@@ -499,7 +499,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261121-2">
 <link rel="stylesheet" href="partners.css?v=20260923-7">
-<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-2"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-2"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261030-7"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-2"></head>
+<script src="app-local-backend.js"></script><link rel="stylesheet" href="tracking-native.css?v=20261121-1"><link rel="stylesheet" href="tracking-dashboard.css?v=20261121-2"><link rel="stylesheet" href="mobile-shell.css?v=20261121-1"><link rel="stylesheet" href="desktop-sidebar.css?v=20261030-7"><link rel="stylesheet" href="filter-ui.css?v=20261121-2"><link rel="stylesheet" href="demand-workspace.css?v=20261102-1"><link rel="stylesheet" href="demand-detail.css?v=20261030-7"><link rel="stylesheet" href="document-library.css?v=20261030-7"><link rel="stylesheet" href="creative-deliveries.css?v=20261030-7"><link rel="stylesheet" href="app-scrollbars.css?v=20261030-7"><link rel="stylesheet" href="legal.css?v=20261030-7"><link rel="stylesheet" href="referral-program.css?v=20261121-3"><link rel="stylesheet" href="solution-scheduling.css?v=20261102-2"><link rel="stylesheet" href="demand-touch.css?v=20261030-7"><link rel="stylesheet" href="mobile-inputs.css?v=20261030-7"><link rel="stylesheet" href="oraculo.css?v=20261111-1"><link rel="stylesheet" href="dashboard-appearance.css?v=20261121-3"></head>
 <body>
 
 <div id="auth-screen" class="auth-shell">
@@ -553,7 +553,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 
 <div id="app" class="shell" style="display:none">
   <aside class="sidebar">
-    <button class="sb-logo" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Menu">
+    <button class="sb-logo" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Dashboard">
       <img src="magemind-logo-transparent.png" alt="Magemind">
       <div class="sb-logo-text" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
     </button>
@@ -583,7 +583,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="topbar-left">
-        <button class="topbar-brand mobile-only" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Menu">
+        <button class="topbar-brand mobile-only" type="button" onclick="goTo('dashboard')" aria-label="Ir para o Dashboard">
           <img src="magemind-logo-transparent.png" alt="">
           <div class="sb-logo-text" aria-hidden="true"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
         </button>
@@ -620,11 +620,12 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       <!-- DASHBOARD -->
       <section class="page" id="pg-oraculo" aria-label="Oráculo"><div id="oraculo-workspace" data-no-pull><div id="oraculo-status" role="status" aria-live="polite"><span class="oraculo-mark" aria-hidden="true"></span><p>Abrindo seu atendimento…</p><button type="button" class="btn btn-violet" id="oraculo-retry" hidden>Tentar novamente</button></div></div></section>
       <div class="page" id="pg-dashboard">
-        <div class="ph" style="padding-bottom:16px">
+        <div class="ph dashboard-heading">
           <div class="ph-info">
             <div class="ph-title" id="dash-greeting">Olá 👋</div>
             <div class="ph-sub" id="dash-summary-sub">Resumo operacional de hoje</div>
           </div>
+          <div id="dashboard-toolbar-mount" class="mt-root"></div>
         </div>
         <div id="tracking-dashboard-mount" class="mt-host"></div><div class="mt-demand-title" hidden>Suas demandas</div><div class="stats stats-4" style="margin-bottom:16px" id="dash-stats"></div>
         <div class="dash-grid">
@@ -724,14 +725,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
               <input type="checkbox" role="switch" id="mine-filter-chk" onchange="renderKanban()"><span class="demand-mine-track" aria-hidden="true"></span><span>Minhas demandas</span>
             </label>
 
-            <div class="demand-view-toggle" style="display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:3px">
-              <button class="btn btn-sm" id="view-kanban" onclick="setView('kanban')" style="background:var(--bg5);color:var(--text);border:none;padding:4px 12px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Kanban
-              </button>
-              <button class="btn btn-sm" id="view-list" onclick="setView('list')" style="background:transparent;color:var(--text3);border:none;padding:4px 12px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista
-              </button>
-            </div>
             </div>
             <div class="demand-client-actions">
             <select class="fi" id="client-filter-dd" onchange="renderKanban()" style="width:auto;padding:6px 10px;font-size:12px;display:none">
@@ -744,16 +737,6 @@ body.solution-reordering{user-select:none;cursor:grabbing}
           </div>
         </div>
         <div class="kanban-wrap" id="kanban-board"></div>
-        <div style="display:none;flex:1;overflow:hidden;flex-direction:column" id="demand-list-view">
-          <div class="table-wrap" style="padding-top:14px">
-            <div class="tbl-container">
-              <table>
-                <thead><tr id="demands-list-head"><th>Título</th><th>Cliente</th><th>Status</th><th>Prioridade</th><th>Responsável</th><th>Entrega</th></tr></thead>
-                <tbody id="demands-list-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- VENDAS -->
@@ -1006,7 +989,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <div class="fg"><label class="fl">Prioridade</label>
           <select class="fi" id="d-priority"><option value="Baixa">🟢 Baixa</option><option value="Média" selected>🟡 Média</option><option value="Alta">🔴 Alta</option></select>
         </div>
-        <div class="fg"><label class="fl">Status</label>
+        <div class="fg" id="d-status-wrap"><label class="fl" for="d-status">Status</label>
           <select class="fi" id="d-status"><option>Não iniciado</option><option>Em andamento</option><option>Concluído</option></select>
         </div>
         <div class="fg"><label class="fl">Entrega</label><input class="fi" type="date" id="d-date"></div>
@@ -1439,7 +1422,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <script src="app-core.js?v=20260915-1"></script>
 <script src="goals.js?v=20261103-1"></script>
 <script src="tasks.js?v=20260925-2"></script>
-<script src="mobile-app.js?v=20261030-7"></script>
+<script src="mobile-app.js?v=20261121-3"></script>
 <script src="mobile-shell.js?v=20261030-7"></script>
 <script src="desktop-sidebar.js?v=20261030-7"></script>
 <script>
@@ -1723,7 +1706,6 @@ function canMoveDemand(demand){
   if(!demand) return false;
   if(isCEO()||isManager()||isPartner()||isGestor()) return true;
   if(isEditor()) return demand.assigneeId===DB.me.id && hasPermission('demands.move');
-  if(isClient()) return clientHasDemandManagementPlan() && demand.client===DB.me.clientId;
   return false;
 }
 
@@ -1905,7 +1887,7 @@ function refreshActiveAvatarSurface(){
   else if(active==='clients') renderClients();
   else if(active==='demands'){
     renderKanban();
-    if(currentView==='list') renderDemandsList();
+
   }
   else if(active==='sales') loadSales();
   else if(active==='affiliates') loadAffiliates();
@@ -2289,7 +2271,7 @@ function clearSessionState(){
   avatarDirectoryLoadedAt = 0; avatarDirectoryRefreshPromise = null;
   currentDemandId = null; editDemandId = null; editClientId = null;
   editSaleId = null; editPlanId = null; convertTargetClientId = null; convertTargetTeamId = null;
-  currentView = 'kanban'; salesPeriod = 'all'; revPeriod = 'max';
+  salesPeriod = 'all'; revPeriod = 'max';
   dragId = null; dragOverId = null; dragInsertAfter = false;
   kanbanOrderSaving = false; suppressDemandClickUntil = 0;
 }
@@ -2754,12 +2736,12 @@ async function reloadDemandsForRole(){
     DB.demands = data.map(mapDemand);
     await window.MagemindDemandWorkspace?.load();
     renderKanban();
-    if(currentView==='list' && typeof renderDemandsList==='function') renderDemandsList();
+
   }
 }
 
 /* ═══ INIT APP ═══ */
-let currentView='kanban', currentDemandId=null, editClientId=null, editSaleId=null, editDemandId=null, editPlanId=null, salesPeriod='all';
+let currentDemandId=null, editClientId=null, editSaleId=null, editDemandId=null, editPlanId=null, salesPeriod='all';
 let revPeriod = 'max'; // período do card de receita no dashboard
 let dragId=null, dragOverId=null, dragInsertAfter=false, kanbanOrderSaving=false, suppressDemandClickUntil=0;
 
@@ -2826,7 +2808,7 @@ function updateSidebarUser(){
 
 function buildNav(){
   const staffItems = [
-    {id:'dashboard', icon:ico('home'),     label:'Menu'},
+    {id:'dashboard', icon:ico('home'),     label:'Dashboard'},
     {id:'clients',   icon:ico('users'),    label:'Clientes', badge:DB.clients.filter(c=>c.status==='Ativo').length},
     {id:'demands',   icon:ico('grid'),     label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'sales',     icon:ico('dollar'),   label:'Financias'},
@@ -2840,7 +2822,7 @@ function buildNav(){
     {id:'settings',  icon:ico('settings'), label:'Configurações'},
   ];
   const gestorItems = [
-    {id:'dashboard', icon:ico('home'), label:'Menu'},
+    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído').length, warn:true},
     {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'team',      icon:ico('teamGroup'),label:'Equipe'},
@@ -2848,21 +2830,21 @@ function buildNav(){
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const editorItems = [
-    {id:'dashboard', icon:ico('home'), label:'Menu'},
+    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
     {id:'demands',   icon:ico('grid'), label:'Demandas', badge:DB.demands.filter(d=>d.status!=='Concluído'&&d.assigneeId===DB.me.id).length, warn:true},
     {id:'docs',      icon:ico('file'), label:'Documentos'},
     {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const affiliateItems = [
-    {id:'dashboard', icon:ico('home'),   label:'Menu'},
+    {id:'dashboard', icon:ico('home'),   label:'Dashboard'},
     {id:'affiliates',icon:ico('gift'), label:'Indique & Ganhe'},
     {id:'docs',      icon:ico('file'),   label:'Documentos'},
     {id:'settings',  icon:ico('settings'),label:'Configurações'},
   ];
   const clientItems = [
-    {id:'dashboard', icon:ico('home'), label:'Menu'},
-    {id:'demands', icon:ico('grid'), label:'Minhas Demandas'},
+    {id:'dashboard', icon:ico('home'), label:'Dashboard'},
+    {id:'demands', icon:ico('grid'), label:'Demandas'},
     {id:'solutions',icon:ico('solutionTarget'),label:'Soluções'},
     {id:'affiliates',icon:ico('gift'),label:'Indique & Ganhe'},
     {id:'docs',    icon:ico('file'), label:'Documentos'},
@@ -2870,7 +2852,7 @@ function buildNav(){
   ];
   let items;
   if(isCEO()||isManager()) items = [...staffItems.slice(0,4),{id:'withdrawals',icon:ico('wallet'),label:'Saques'},...staffItems.slice(4)];
-  else if(isPartner()) items = [{id:'dashboard',icon:ico('home'),label:'Menu'},{id:'partners',icon:ico('dollar'),label:'Carteira'},{id:'demands',icon:ico('grid'),label:'Demandas'},{id:'team',icon:ico('teamGroup'),label:'Equipe'},{id:'docs',icon:ico('file'),label:'Documentos'},{id:'solutions',icon:ico('solutionTarget'),label:'Soluções'},{id:'settings',icon:ico('settings'),label:'Configurações'}];
+  else if(isPartner()) items = [{id:'dashboard',icon:ico('home'),label:'Dashboard'},{id:'partners',icon:ico('dollar'),label:'Carteira'},{id:'demands',icon:ico('grid'),label:'Demandas'},{id:'team',icon:ico('teamGroup'),label:'Equipe'},{id:'docs',icon:ico('file'),label:'Documentos'},{id:'solutions',icon:ico('solutionTarget'),label:'Soluções'},{id:'settings',icon:ico('settings'),label:'Configurações'}];
   else if(isGestor()) items = gestorItems;
   else if(isEditor()) items = editorItems;
   else if(isAffiliate()) items = affiliateItems;
@@ -2905,8 +2887,8 @@ function goTo(page){
   if(mainScroll){mainScroll.scrollTop=0;mainScroll.classList.remove('content-scrolled');}
   if(typeof syncMobileNavigation==='function') syncMobileNavigation(page);
   if(typeof closeMobileMenu==='function') closeMobileMenu();
-  const demandsTitle = (isAdmin()||isPartner()||isGestor()||isEditor())?'Demandas':(isAffiliate()?'Demandas dos indicados':'Minhas Demandas');
-  const T = {oraculo:'Oráculo',withdrawals:'Saques',partners:'Carteira',goals:'Metas',dashboard:'Menu',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
+  const demandsTitle = isAffiliate()?'Demandas dos indicados':'Demandas';
+  const T = {oraculo:'Oráculo',withdrawals:'Saques',partners:'Carteira',goals:'Metas',dashboard:'Dashboard',clients:isAffiliate()?'Meus Clientes':'Clientes',demands:demandsTitle,sales:'Financias',solutions:'Soluções',affiliates:'Indique & Ganhe',team:'Equipe',docs:'Documentos',firewall:'Firewall',settings:'Configurações'};
   const S = {oraculo:'Conversas e atendimento',goals:'Objetivos e resultados',dashboard:isClient()?'':'Visão geral operacional',clients:isAffiliate()?'Clientes que você indicou':'Gerencie sua base de clientes',demands:'Esteira de produção dos criativos.',sales:isAffiliate()?'Saldo, comissões e saques':'Receitas, gastos e resultados',solutions:isClient()?'Planos, pacotes e serviços disponíveis':'Catálogo comercial da Magemind',affiliates:'Indicações, comissões e participação',team:'Cargos e permissões da equipe',docs:'Biblioteca de arquivos',firewall:'Acessos e eventos de segurança',settings:'Dados pessoais, segurança e preferências'};
   document.title = `${({campaigns:'Campanhas',orders:'Pedidos',integrations:'Integrações'})[page]||T[page]||page} · Magemind`;
 
@@ -3852,19 +3834,6 @@ function getRoleDemands(){
   return DB.demands.filter(d=>d.client===DB.me.clientId);
 }
 function getMyDemands(){const demands=getRoleDemands();return window.MagemindDemandWorkspace?.filter(demands)||demands;}
-function setView(v){
-  currentView=v;
-  document.getElementById('kanban-board').style.display      = v==='kanban'?'flex':'none';
-  document.getElementById('demand-list-view').style.display  = v==='list'?'flex':'none';
-  ['kanban','list'].forEach(x=>{
-    const b=document.getElementById('view-'+x);
-    b.style.background = x===v?'var(--bg5)':'transparent';
-    b.style.color      = x===v?'var(--text)':'var(--text3)';
-  });
-  if(v==='list') renderDemandsList();
-  window.MagemindDemandWorkspace?.render();
-}
-
 function renderKanban(){
   const demands = getMyDemands();
   const cols    = ['Não iniciado','Em andamento','Concluído'];
@@ -3872,18 +3841,19 @@ function renderKanban(){
   const canCreate = hasPermission('demands.create');
   document.getElementById('kanban-board').innerHTML = cols.map(col=>{
     const cards = orderedDemandColumn(col,demands);
+    const canCreateHere = canCreate && (!isClient() || col === 'Não iniciado');
     return `<div class="k-col" data-demand-status="${col}" ondragover="columnDragOver(event)" ondrop="drop(event,'${col}')">
       <div class="k-col-head">
         <div class="k-col-dot" style="background:${colDots[col]}"></div>
         <div class="k-col-title">${col.toUpperCase()}</div>
         <div class="k-col-cnt">${cards.length}</div>
-        ${canCreate?`<button style="margin-left:auto;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px" onclick="openNewDemandWithStatus('${col}')">+</button>`:''}
+        ${canCreateHere?`<button style="margin-left:auto;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px" onclick="openNewDemandWithStatus('${col}')">+</button>`:''}
       </div>
       <div class="k-cards">${cards.map(d=>renderCard(d)).join('')}</div>
-      ${canCreate?`<div class="k-add" onclick="openNewDemandWithStatus('${col}')">+ Adicionar demanda</div>`:''}
+      ${canCreateHere?`<div class="k-add" onclick="openNewDemandWithStatus('${col}')">+ Adicionar demanda</div>`:''}
     </div>`;
   }).join('');
-  if(currentView==='list')renderDemandsList();
+
   window.MagemindDemandWorkspace?.render();
 }
 
@@ -3942,21 +3912,6 @@ function openDemandContextMenu(event,id){
   const pad=8, width=menu.offsetWidth, height=menu.offsetHeight;
   menu.style.left=`${Math.max(pad,Math.min(event.clientX,window.innerWidth-width-pad))}px`;
   menu.style.top=`${Math.max(pad,Math.min(event.clientY,window.innerHeight-height-pad))}px`;
-}
-
-function renderDemandsList(){
-  document.getElementById('demands-list-head').innerHTML='<th>Título</th><th>Cliente</th><th>Status</th><th>Prioridade</th>'+(isClient()?'':'<th>Responsável</th>')+'<th>Entrega</th>';
-  const visible=getMyDemands();
-  const demands=['Não iniciado','Em andamento','Concluído'].flatMap(status=>orderedDemandColumn(status,visible));
-  document.getElementById('demands-list-body').innerHTML = demands.map(d=>`
-    <tr class="${demandScheduleAlert(d)?'demand-plan-alert-row':''}" onclick="openDetail('${d.id}')">
-      <td style="font-weight:500">${escapeHTML(d.title)}${demandScheduleBadge(d)}</td>
-      <td style="color:var(--text2)">${escapeHTML(cn(d.client))}</td>
-      <td>${stBadge(d.status)}</td>
-      <td>${prBadge(d.priority)}</td>
-      ${isClient()?'':`<td><div style="display:flex;align-items:center;gap:6px"><div class="av av-xs">${profileAvatarHTML(d.assigneeId,d.assignee)}</div><span style="font-size:12px">${escapeHTML(d.assignee)}</span></div></td>`}
-      <td style="font-size:12px;color:var(--text2)">${fDate(d.date)}</td>
-    </tr>`).join('');
 }
 
 /* drag-and-drop */
@@ -4085,7 +4040,7 @@ async function drop(e,col){
   const sourceIds=sourceAfter?.map(card=>card.id)||[];
   const targetIds=targetAfter.map(card=>card.id);
   renderKanban();
-  if(currentView==='list')renderDemandsList();
+
 
   kanbanOrderSaving=true;
   try{
@@ -4112,7 +4067,7 @@ async function drop(e,col){
     });
     await reloadDemandsForRole().catch(()=>{
       renderKanban();
-      if(currentView==='list')renderDemandsList();
+
     });
     toast('Não consegui salvar essa ordem agora. Tente novamente.','err');
     return;
@@ -4158,7 +4113,8 @@ function openNewDemand(status,prefill=null){
     dc.value=clientId;
   }
   const allowedStatuses=['Não iniciado','Em andamento','Concluído'];
-  document.getElementById('d-status').value = typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
+  document.getElementById('d-status-wrap').hidden = isClient();
+  document.getElementById('d-status').value = !isClient()&&typeof status==='string'&&allowedStatuses.includes(status) ? status : 'Não iniciado';
   populateDemandAssignee(prefill?.assigneeId||'');
   document.getElementById('d-title').value = prefill?.title||'';
   setDemandRichEditor('d-desc',prefill?.desc||'');
@@ -4183,7 +4139,7 @@ async function saveDemand(){
   // operacional correspondente está ativa.
   const assigneeId= canChangeDemandAssignee() ? (document.getElementById('d-assignee')?.value||null) : null;
   const priority  = document.getElementById('d-priority').value;
-  const status    = document.getElementById('d-status').value;
+  const status    = isClient() ? 'Não iniciado' : document.getElementById('d-status').value;
   const dueDate   = document.getElementById('d-date').value||null;
   const desc      = demandRichValue(document.getElementById('d-desc'));
   const refs      = document.getElementById('d-refs')?.value||'';
@@ -4201,7 +4157,8 @@ async function saveDemand(){
     if(targetDemandId){
       // ── EDITAR
       const currentDemand=DB.demands.find(demand=>demand.id===targetDemandId);
-      const demandUpdate={title,priority,status,due_date:dueDate,description:desc,refs};
+      const demandUpdate={title,priority,due_date:dueDate,description:desc,refs};
+      if(canMoveDemand(currentDemand)) demandUpdate.status=status;
       if(canChangeDemandClient()) demandUpdate.client_id=clientId;
       if(canChangeDemandAssignee()) demandUpdate.assignee_id=assigneeId;
       const {data:savedDemand,error} = await supa.from('demands').update(demandUpdate).eq('id',targetDemandId).select('*').single();
@@ -4209,7 +4166,7 @@ async function saveDemand(){
       const d = currentDemand;
       if(d){
         const assigneeProf = DB.users.find(u=>u.id===assigneeId);
-        Object.assign(d,{title:savedDemand.title,priority,status,date:dueDate||'',desc,refs});
+        Object.assign(d,{title:savedDemand.title,priority,status:savedDemand.status,date:dueDate||'',desc,refs});
         Object.assign(d,{sortOrder:Number(savedDemand.sort_order),sortKey:savedDemand.sort_key??String(savedDemand.sort_order??0),completedAt:savedDemand.completed_at||null});
         if(canChangeDemandClient()) d.client=clientId;
         if(canChangeDemandAssignee()) Object.assign(d,{assigneeId,assignee:assigneeProf?.name||d.assignee});
@@ -4238,7 +4195,7 @@ async function saveDemand(){
       }
       closeModal('modal-demand'); toast('Demanda criada! ✓','ok');
     }
-    buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
+    buildNav(); renderKanban();
   } finally {
     demandSaveInFlight=false;
     if(btn) btn.disabled=false;
@@ -4902,7 +4859,7 @@ function persistDemandField(key){
     }
     const d=DB.demands.find(x=>x.id===pending.demandId);
     if(d&&pending.field==='priority'&&currentDemandId===d.id) document.getElementById('det-badges').innerHTML=`${stBadge(d.status)}${prBadge(d.priority)}`;
-    renderKanban(); if(currentView==='list'&&typeof renderDemandsList==='function') renderDemandsList(); buildNav();
+    renderKanban(); buildNav();
   });
   demandAutosaveQueues.set(key,job); return job;
 }
@@ -5056,6 +5013,7 @@ function openEditDemand(id){
   document.getElementById('d-title').value    = d.title;
   populateDemandAssignee(d.assigneeId||'');
   document.getElementById('d-priority').value = d.priority;
+  document.getElementById('d-status-wrap').hidden = isClient();
   document.getElementById('d-status').value   = d.status;
   document.getElementById('d-date').value     = d.date;
   setDemandRichEditor('d-desc',d.desc||'');
@@ -5103,7 +5061,7 @@ async function changeStatus(status){
   } else {
     await dbPushNotif(null,'admin','🔄','var(--violetbg)','Cliente alterou status',`${DB.me.name} moveu "${d.title}" para ${status}.`,d.id,'demand_status');
   }
-  toast(`Status: ${status}`,'ok'); renderKanban(); if(currentView==='list') renderDemandsList(); buildNav();
+  toast(`Status: ${status}`,'ok'); renderKanban(); buildNav();
 }
 
 async function deleteDemand(){
@@ -5113,7 +5071,7 @@ async function deleteDemand(){
   if(error){ toast('Erro: '+error.message,'err'); return; }
   DB.demands = DB.demands.filter(x=>x.id!==currentDemandId);
   closeModal('modal-detail'); toast('Demanda excluída','ok');
-  buildNav(); renderKanban(); if(currentView==='list') renderDemandsList();
+  buildNav(); renderKanban();
 }
 
 function duplicateDemand(id=currentDemandId){
@@ -5179,7 +5137,7 @@ function solutionCardHTML(plan,currentPlanIds,adminView){
   const includes=String(plan.includes||'').split('\n').map(item=>item.trim()).filter(item=>item&&!(delivery&&delivery.cadence!=='none'&&/^\d+\s*criativos?\s*por\s*(dia|semana|m[eê]s)/i.test(item)));
   const privatePlan=plan.custom===true||plan.type==='Personalizado';
   const reorderable=adminView&&!privatePlan;
-  return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}${reorderable?' has-drag-handle':''}" style="--solution-accent:${category.accent}"${reorderable?` data-solution-id="${plan.id}"`:''}>
+  return `<article class="solution-card${current?' current':''}${plan.active?'':' inactive'}${reorderable?' has-drag-handle':''}" style="--solution-accent:${category.accent};--solution-ink:${category.id==='closed_package'?'var(--accent-ink)':'#101414'}"${reorderable?` data-solution-id="${plan.id}"`:''}>
     ${reorderable?`<button class="solution-drag-handle" type="button" title="Arrastar para alterar a ordem" aria-label="Arrastar ${escapeHTML(plan.name)} para alterar a ordem" onpointerdown="startSolutionReorder(event,'${plan.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>`:''}
     <div class="solution-card-top">
       <span class="solution-kind">${escapeHTML(privatePlan?'Personalizado':category.short)}</span>
@@ -5839,7 +5797,7 @@ async function clearDB(){
 </script>
 <script src="app-accessibility.js?v=20261030-7"></script>
 <script src="push-notifications.js?v=20260925-2"></script>
-<div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" class="mm-glass mm-anchored-popover mm-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="filter-sync" role="status"></span></div><div id="tracking-content"></div></div>
+<div id="tracking-module" class="mt-root" hidden><div id="tracking-toolbar"><span class="period-label">Visão geral da sua operação</span><label id="tracking-workspace-label">Operação</label><div class="mt-period-control"><button id="tracking-period-toggle" class="quiet" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tracking-period-popover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span><strong id="tracking-period-label">Última semana</strong><small id="tracking-period-dates"></small></span><svg class="mt-period-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div id="tracking-period-popover" class="mm-glass mm-anchored-popover mm-period-popover" popover="auto" role="dialog" aria-label="Selecionar período"><div class="mt-period-head">Período dos resultados</div><div id="tracking-period-options" role="group" aria-label="Períodos rápidos"></div><form id="tracking-custom-period" hidden><div class="mt-custom-dates"><label>Data inicial<input id="tracking-from" type="date" required></label><label>Data final<input id="tracking-to" type="date" required></label></div><p id="tracking-period-error" class="mt-period-error" role="alert" hidden></p><div class="actions"><button type="button" id="tracking-period-cancel" class="quiet">Cancelar</button><button class="primary" type="submit">Aplicar período</button></div></form></div></div><input type="hidden" id="tracking-currency" value="BRL"><button id="tracking-refresh" type="button" class="quiet" aria-label="Atualizar informações" title="Atualizar informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg></button><span id="tracking-sync-status" class="sr-only" role="status"></span></div><div id="tracking-content"></div></div>
 <dialog id="tracking-dialog" class="mt-root" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="quiet" aria-label="Fechar">✕</button></div><div id="dialog-content"></div></dialog>
-<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-1"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-2"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-1"></script><script src="dashboard-appearance.js?v=20261121-1"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-1"></script><script src="demand-workspace.js?v=20261102-1"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261030-7"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
+<script src="tracking-supabase.js?v=20261120-1"></script><script src="tracking-brands.js?v=20261030-7"></script><script src="tracking-periods.js"></script><script src="tracking-admin.js?v=20261030-7"></script><script src="tracking-connectors.js?v=20261030-7"></script><script src="tracking-fees.js?v=20261120-1"></script><script src="tracking-connections.js?v=20261121-3"></script><script src="tracking-revenue-chart.js?v=20261121-1"></script><script src="tracking-dashboard.js?v=20261121-3"></script><script src="tracking-integration-health.js?v=20261120-1"></script><script src="tracking-native.js?v=20261121-3"></script><script src="dashboard-appearance.js?v=20261121-3"></script><div id="support-whatsapp" hidden><div id="support-message" role="status" aria-live="polite" hidden><p id="support-message-text"></p><button id="support-message-close" type="button" aria-label="Fechar mensagem de ajuda">×</button></div><a id="support-whatsapp-link" href="https://wa.me/554899391390" target="_blank" rel="noopener noreferrer" aria-label="Pedir ajuda pelo WhatsApp" title="Pedir ajuda pelo WhatsApp"><svg width="27" height="27" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></div><script src="support-whatsapp.js?v=20261121-1"></script><script src="filter-ui.js?v=20261121-3"></script><script src="demand-workspace.js?v=20261121-3"></script><script src="demand-detail.js?v=20261030-7"></script><script src="document-library.js?v=20261030-7"></script><script src="creative-deliveries.js?v=20261030-7"></script><script src="referral-program.js?v=20261121-3"></script><script src="referral-capture.js?v=20261030-7"></script><script src="solution-scheduling.js?v=20261030-7"></script><script src="demand-capacity.js?v=20261102-2"></script><script src="demand-touch.js?v=20261030-7"></script><script src="oraculo.js?v=20261109-1"></script></body>
 </html>

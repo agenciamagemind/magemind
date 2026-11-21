@@ -7,7 +7,7 @@
   root.querySelectorAll('.mt-root .filters').forEach(bar=>{
    if(!bar.querySelector('select'))return;
    let toggle=bar.querySelector('[data-filter-disclosure]');
-   if(!toggle){toggle=document.createElement('button');toggle.type='button';toggle.className='quiet app-filter-toggle';toggle.dataset.filterDisclosure='';toggle.setAttribute('aria-expanded','false');bar.classList.add('app-filter-collapsed');bar.append(toggle);}
+   if(!toggle){const open=bar.classList.contains('app-filter-expanded');toggle=document.createElement('button');toggle.type='button';toggle.className='quiet app-filter-toggle';toggle.dataset.filterDisclosure='';toggle.setAttribute('aria-expanded',String(open));bar.classList.toggle('app-filter-collapsed',!open);bar.append(toggle);}
    const count=[...bar.querySelectorAll('select:not(#ad-mobile-sort)')].filter(el=>el.value).length;
    toggle.innerHTML=filterIcon+'<span>Filtros'+(count?' · '+count:'')+'</span><span aria-hidden="true">⌄</span>';
   });

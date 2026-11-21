@@ -12,9 +12,9 @@
  const configure=context=>{c=context;};
  const status=i=>window.MagemindIntegrationHealth.integrationHealth(i);
  const action=(label,name,id='',style='quiet')=>'<button type="button" class="'+style+'" data-action="'+name+'"'+(id?' data-id="'+esc(id)+'"':'')+'>'+label+'</button>';
- const support=()=>{
+ const support=(message='Olá! Preciso de ajuda com a conexão de anúncios na Magemind.')=>{
   const phone=typeof getAgencyPhone==='function'?String(getAgencyPhone()||'').replace(/\D/g,''):'';
-  const url=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent('Olá! Preciso de ajuda com a conexão de anúncios na Magemind.'):'mailto:contato@magemind.com.br';
+  const url=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(message):'mailto:contato@magemind.com.br?body='+encodeURIComponent(message);
   return '<a class="mt-support-link" href="'+url+'" target="_blank" rel="noopener noreferrer">Falar com o suporte</a>';
  };
  const accessHelp='Confira sua função na conta de anúncios da Meta. Peça ao administrador acesso para gerenciar campanhas e renove a conexão.';
@@ -53,13 +53,11 @@
   try{route=sessionStorage.getItem(authKey);sessionStorage.removeItem(authKey);}catch{}
   return route==='campaigns'?'campaigns':'integrations';
  }
- function campaignBar(rows){
+ function campaignControl(rows){
   const problem=rows.map(status).find(item=>item.kind==='authorization')||rows.map(status).find(item=>['temporary','error'].includes(item.kind));
-  const readonly=rows.some(row=>row.management_access===false);
-  const count=rows.length;
-  return '<div class="mt-campaign-connection"><div><strong>'+esc(problem?.label||(count?count+(count===1?' conta conectada':' contas conectadas'):'Conexões de anúncios'))+'</strong>'+
-   '<p>'+esc(problem?.action||(readonly?'Algumas contas permitem apenas visualizar as campanhas.':'Gerencie perfis e contas de anúncios.'))+'</p></div>'+
-   action(linkIcon+' Conexões','campaign-connections','','quiet mt-connection-trigger')+'</div>';
+  return '<button type="button" class="quiet mt-connection-trigger" data-action="campaign-connections"'+
+   (problem?' title="'+esc(problem.label+' · '+problem.action)+'"':'')+'>'+linkIcon+' Conexões'+
+   (problem?'<span class="mt-connection-dot" aria-hidden="true"></span><span class="sr-only"> · requer atenção</span>':'')+'</button>';
  }
  function accountCard(account){
   const health=status(account);
@@ -149,6 +147,11 @@
  }
  async function campaignAction(name,id){
   if(name==='campaign-connections')return hub();
+  if(name==='campaign-integrate'&&['google','tiktok'].includes(id)){
+   const platform=c.brand.name(id);
+   return c.modal('Conectar '+platform,'<p>A conexão com '+esc(platform)+' ainda precisa ser habilitada pela Magemind. Fale com a equipe para solicitar a ativação.</p>'+
+    '<div class="actions">'+support('Olá! Quero solicitar a conexão com '+platform+' no painel da Magemind.')+'</div>');
+  }
   if(name==='campaign-link'||name==='campaign-renew'){
    try{return await meta(name==='campaign-renew'?id:null);}
    catch(error){return hub(error.message,true);}
@@ -228,7 +231,7 @@
   return false;
  }
  window.MagemindTrackingConnections={
-  configure,webhook,showWebhook,meta,accounts,platform,submit,campaignBar,campaignAction,returnPage,hub,support,
+  configure,webhook,showWebhook,meta,accounts,platform,submit,campaignControl,campaignAction,returnPage,hub,support,
   custom(){c.modal('API de pedidos','<form data-form="api-create"><label>Nome da conexão<input name="name" required maxlength="120" placeholder="Ex.: Minha integração"></label><button class="primary">Gerar credencial privada</button><p class="small">Integração para desenvolvedores: envia pedidos no contrato padronizado da Magemind.</p></form>');},
   async details(id){const r=await edge({action:'webhook_details',integration:id});showWebhook(r.provider,r.webhook,id);},
   async copy(){await navigator.clipboard.writeText(document.getElementById('mt-webhook-url').value);c.toast('URL copiada.');}

@@ -15,7 +15,7 @@
 #referral-rules-dialog .rf-rules-article,.rf-welcome-article .rf-rules-article{padding:8px 26px 24px}
 .rf-rules.rf-rules-article p{font-size:12px;line-height:1.95;margin:0 0 17px;color:var(--text2);overflow-wrap:anywhere}
 .rf-rules-article p:last-child{margin-bottom:0}
-.rf-welcome-article{max-width:960px}
+.rf-welcome-article{width:100%}
 .rf-document .rf-doc-intro{margin:10px 0 24px}
 .rf-root .rf-document h1{font:600 23px/1.35 'Poppins',sans-serif;letter-spacing:-.55px;margin:0 0 12px;color:var(--text)}
 .rf-root .rf-document h2{font:600 16px/1.5 'Poppins',sans-serif;letter-spacing:-.2px;margin:0 0 12px;color:var(--text)}

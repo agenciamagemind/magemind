@@ -383,3 +383,76 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   .mm-palette { right: auto; left: 0; }
   .mm-background-actions .btn { min-height: 44px; }
 }
+
+#pg-dashboard .dashboard-heading{align-items:center;justify-content:space-between;padding-bottom:14px;gap:12px 16px}
+#dashboard-toolbar-mount:empty{display:none}
+#dashboard-toolbar-mount #tracking-toolbar{margin:0;justify-content:flex-end;flex-wrap:nowrap}
+#dashboard-toolbar-mount #tracking-refresh{order:-1}
+#pg-integrations .ph{padding-bottom:22px}
+#modal-demand #d-status-wrap[hidden]{display:none}
+.mt-root .mt-compact-filters{gap:8px;margin-bottom:12px}
+.mt-compact-filters #tracking-toolbar:not([hidden]){display:contents}
+.mt-compact-filters #tracking-toolbar .mt-period-control{order:-1}
+.mt-root .mt-compact-filters > label{flex:1 1 108px;min-width:100px;max-width:180px}
+.mt-root .mt-compact-filters > .search{flex:2 1 180px;min-width:155px;max-width:290px}
+.mt-compact-filters #tracking-refresh{order:1;background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.mt-compact-filters #tracking-refresh:hover{background:color-mix(in srgb,var(--accent) 90%,white)}
+.mt-compact-filters .mt-filter-actions{display:flex;order:2;flex:none}
+.mt-order-filters .mt-filter-actions,.mt-ad-filters.mt-compact-filters #tracking-refresh{margin-inline-start:auto}
+.mt-compact-filters .mt-filter-actions button{min-height:var(--filter-h);white-space:nowrap}
+.mt-connection-dot{width:7px;height:7px;margin-left:3px;border-radius:50%;background:var(--amber);flex:none}
+#pg-campaigns .mt-level-tabs{margin-bottom:12px}
+#pg-campaigns .mt-ad-manager :is(summary, .mt-platform-heading){align-items:center;list-style:none}
+#pg-campaigns .mt-ad-manager summary{cursor:pointer}
+#pg-campaigns .mt-ad-manager summary::-webkit-details-marker{display:none}
+#pg-campaigns .mt-ad-manager summary:focus-visible{outline:2px solid var(--accent-text);outline-offset:-3px}
+#pg-campaigns .mt-ad-manager:not([open]) .mt-platform-heading{border-bottom:0}
+#pg-campaigns .mt-platform-heading > :is(.mt-platform-count, button){margin-inline-start:auto}
+#pg-campaigns .mt-platform-chevron{flex:none;color:var(--text2)}
+#pg-campaigns details[open] .mt-platform-chevron{transform:rotate(180deg)}
+#pg-campaigns .mt-platform-empty{margin:0;padding:12px 16px}
+
+#pg-campaigns :is(.mt-ad-manager,.mt-manager-tabs),#pg-orders .panel,
+:is(#pg-campaigns,#pg-orders,#pg-dashboard) :is(#tracking-period-toggle,.mt-compact-filters input,.mt-compact-filters select,.mt-filter-actions .quiet){
+  background:var(--mm-glass-texture),var(--mm-glass-fill,#191919);
+  border-color:var(--glass-edge);
+}
+#pg-campaigns .mt-ad-manager,#pg-orders .panel{border-radius:var(--mm-card-radius)}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #pg-campaigns :is(.mt-ad-manager,.mt-manager-tabs),#pg-orders .panel,
+  :is(#pg-campaigns,#pg-orders,#pg-dashboard) :is(#tracking-period-toggle,.mt-compact-filters input,.mt-compact-filters select,.mt-filter-actions .quiet){
+    --mm-glass-fill:rgb(18 18 18 / 60%);
+    -webkit-backdrop-filter:blur(24px) saturate(140%);
+    backdrop-filter:blur(24px) saturate(140%);
+  }
+}
+:is(#pg-orders,#pg-campaigns) :is(.panel td,.mt-ad-row td){background:transparent}
+:is(#pg-orders,#pg-campaigns) :is(.panel th,.mt-ad-table th,.mt-ad-table tfoot td){background:color-mix(in srgb,#181818 86%,transparent)}
+#app[data-custom-background] :is(#pg-orders,#pg-campaigns) .mt-compact-filters > label{color:var(--text);text-shadow:0 1px 5px #000}
+#pg-solutions .solution-whatsapp:focus-visible{outline:2px solid var(--solution-accent);outline-offset:3px}
+
+@media (min-width:901px) {
+  #pg-solutions .solution-section-title{font-size:clamp(17px,1.28vw,22px)}
+}
+@media (max-width:900px) {
+  #pg-dashboard .dashboard-heading{align-items:flex-start;flex-wrap:wrap}
+  #dashboard-toolbar-mount{margin-inline-start:auto}
+  .mt-root .mt-compact-filters > label,.mt-root .mt-compact-filters > .search{min-width:0;max-width:none}
+  .mt-root .mt-compact-filters > .search{grid-column:1/-1;grid-row:2}
+  .mt-root .mt-compact-filters #tracking-toolbar .mt-period-control{grid-column:1/-1;grid-row:1}
+  .mt-root .mt-compact-filters > .app-filter-toggle{grid-row:3}
+  .mt-root .mt-order-filters > .app-filter-toggle{grid-column:1/-1}
+  .mt-root .mt-compact-filters .mt-ad-mobile-sort{grid-row:3;margin:0}
+  .mt-compact-filters #tracking-refresh,.mt-compact-filters .mt-filter-actions button{width:100%;margin:0}
+  .mt-compact-filters #tracking-refresh{grid-column:1;gap:7px;border-radius:999px}
+  .mt-compact-filters #tracking-refresh::after{content:'Atualizar'}
+  .mt-compact-filters .mt-filter-actions{grid-column:2;margin:0;min-width:0}
+}
+@media (prefers-reduced-transparency:reduce){
+  #pg-campaigns :is(.mt-ad-manager,.mt-manager-tabs),#pg-orders .panel,
+  :is(#pg-campaigns,#pg-orders,#pg-dashboard) :is(#tracking-period-toggle,.mt-compact-filters input,.mt-compact-filters select,.mt-filter-actions .quiet){
+    --mm-glass-fill:#242424;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
