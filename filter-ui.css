@@ -59,6 +59,25 @@
 .mm-period-toggle{min-height:var(--filter-h);gap:9px;min-width:0;justify-content:flex-start;text-align:left;white-space:normal}
 .mm-period-toggle svg,.mm-period-toggle .mm-chevron{flex:none}
 .mm-period-toggle .mm-chevron{margin-left:auto}
+.mm-native-filter[hidden]{display:none!important}
+.mm-filter-toggle{
+ min-height:var(--filter-h);min-width:0;width:auto;gap:10px;padding:7px 12px;
+ justify-content:space-between;text-align:start;font-size:11px;border-radius:var(--filter-radius);
+ background:var(--mm-glass-texture),var(--mm-glass-fill,#191919);border-color:var(--glass-edge)
+}
+.mm-filter-toggle > span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-filter-toggle .mm-chevron{flex:none}
+.mm-filter-toggle:hover{background-color:#ffffff10;border-color:var(--border2)}
+.mm-filter-toggle:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
+.mm-filter-popover .mt-period-option > span:first-child{overflow-wrap:anywhere}
+.mm-filter-popover .mt-period-option:disabled{opacity:.45;cursor:default}
+:is(.filters,.mt-admin-filters,.mt-ad-mobile-sort) label > .mm-filter-toggle{width:100%}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ .mm-filter-toggle{--mm-glass-fill:rgb(18 18 18 / 60%);-webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%)}
+}
+@media(prefers-reduced-transparency:reduce){
+ .mm-filter-toggle{--mm-glass-fill:#242424;-webkit-backdrop-filter:none;backdrop-filter:none}
+}
 #app :is(#firewall-period,.rev-period-btn,#sales-period-filter>button)[hidden]{display:none!important}
 #sales-period-caption{flex-basis:auto;padding:0;font-size:11px}
 #notif-wrapper{display:flex;align-items:center;gap:8px}

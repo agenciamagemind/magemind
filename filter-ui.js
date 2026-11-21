@@ -8,22 +8,23 @@
    if(!bar.querySelector('select'))return;
    let toggle=bar.querySelector('[data-filter-disclosure]');
    if(!toggle){const open=bar.classList.contains('app-filter-expanded');toggle=document.createElement('button');toggle.type='button';toggle.className='quiet app-filter-toggle';toggle.dataset.filterDisclosure='';toggle.setAttribute('aria-expanded',String(open));bar.classList.toggle('app-filter-collapsed',!open);bar.append(toggle);}
-   const count=[...bar.querySelectorAll('select:not(#ad-mobile-sort)')].filter(el=>el.value).length;
+   const count=[...bar.querySelectorAll('select')].filter(el=>el.value).length;
    toggle.innerHTML=filterIcon+'<span>Filtros'+(count?' · '+count:'')+'</span><span aria-hidden="true">⌄</span>';
   });
  }
  document.addEventListener('click',e=>{const toggle=e.target.closest('[data-filter-disclosure]');if(!toggle)return;const bar=toggle.closest('.filters'),open=bar.classList.toggle('app-filter-expanded');bar.classList.toggle('app-filter-collapsed',!open);toggle.setAttribute('aria-expanded',String(open));});
- function periodFilter(anchor,id,label,choices,selected,choose){
+ function optionPicker(anchor,id,label,choices,selected,choose,{period=false}={}){
   const trigger=document.createElement('button');
   trigger.type='button';
-  trigger.className='btn btn-ghost mm-period-toggle';
+  trigger.id=anchor.id?anchor.id+'-trigger':id+'-trigger';
+  trigger.className='btn btn-ghost '+(period?'mm-period-toggle':'mm-filter-toggle');
   trigger.setAttribute('aria-haspopup','dialog');
   trigger.setAttribute('aria-controls',id);
   trigger.setAttribute('aria-expanded','false');
-  trigger.innerHTML=calendarIcon+'<span></span><i class="mm-chevron" aria-hidden="true"></i>';
+  trigger.innerHTML=(period?calendarIcon:'')+'<span></span><i class="mm-chevron" aria-hidden="true"></i>';
   const panel=document.createElement('div');
   panel.id=id;
-  panel.className='mm-glass mm-anchored-popover mm-period-popover';
+  panel.className='mm-glass mm-anchored-popover mm-period-popover'+(period?'':' mm-filter-popover');
   panel.setAttribute('popover','auto');
   panel.setAttribute('role','dialog');
   panel.setAttribute('aria-label',label);
@@ -33,28 +34,43 @@
   panel.append(heading);
   anchor.before(trigger,panel);
   const popup=bindAnchoredPopover(panel,trigger);
-  const options=choices.map((choice,index)=>{
-   const button=document.createElement('button');
-   button.type='button';button.className='mt-period-option';
-   const text=document.createElement('span'),check=document.createElement('span');
-   text.textContent=choice;check.textContent='✓';check.className='mt-period-check';check.setAttribute('aria-hidden','true');
-   button.append(text,check);
-   button.addEventListener('click',()=>{popup.close(true);choose(index);sync();});
-   panel.append(button);
-   return button;
-  });
+  if(!popup.native)fallbackPickers.set(anchor,popup);
   function sync(){
-   const index=selected(),text=choices[index]||choices[0];
+   const index=selected(),items=choices(),text=items[index]?.text||items[0]?.text||'Selecione';
    trigger.querySelector('span').textContent=text;
    trigger.setAttribute('aria-label',label+' · '+text);
-   options.forEach((option,i)=>option.setAttribute('aria-pressed',String(i===index)));
+   trigger.disabled=anchor.disabled||!items.some(item=>!item.disabled);
   }
-  trigger.addEventListener('click',()=>{
-   if(popup.isOpen())return popup.close(true);
-   sync();popup.open();(options[selected()]||options[0]).focus({preventScroll:true});
+  function open(){
+   sync();
+   if(trigger.disabled)return;
+   const index=selected();
+   const options=choices().map((choice,i)=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='mt-period-option';
+    button.disabled=Boolean(choice.disabled);
+    button.setAttribute('aria-pressed',String(i===index));
+    const text=document.createElement('span'),check=document.createElement('span');
+    text.textContent=choice.text;
+    check.textContent='✓';check.className='mt-period-check';check.setAttribute('aria-hidden','true');
+    button.append(text,check);
+    button.addEventListener('click',()=>{popup.close(true);choose(i);sync();});
+    return button;
+   });
+   panel.replaceChildren(heading,...options);
+   popup.open();
+   (options[index]&&!options[index].disabled?options[index]:options.find(button=>!button.disabled))?.focus();
+  }
+  trigger.addEventListener('click',()=>popup.isOpen()?popup.close(true):open());
+  trigger.addEventListener('keydown',event=>{
+   if(!['ArrowDown','ArrowUp'].includes(event.key))return;
+   event.preventDefault();if(!popup.isOpen())open();
   });
   panel.addEventListener('keydown',event=>{
    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+   const options=[...panel.querySelectorAll('button:not(:disabled)')];
+   if(!options.length)return;
    event.preventDefault();
    const index=options.indexOf(document.activeElement),step=event.key==='ArrowUp'?-1:1;
    options[event.key==='Home'?0:event.key==='End'?options.length-1:(index+step+options.length)%options.length].focus();
@@ -62,10 +78,37 @@
   sync();
   return sync;
  }
+ const fallbackPickers=new Map();
+ const nativeFilters='.mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
+ let selectId=0;
+ function labelFor(select){
+  const label=select.labels?.[0]?.cloneNode(true);
+  label?.querySelectorAll('select').forEach(node=>node.remove());
+  return select.getAttribute('aria-label')||label?.textContent.trim()||'Filtro';
+ }
+ function selectPicker(select,period=false,label=labelFor(select)){
+  if(select.classList.contains('mm-native-filter')||select.multiple||select.size>1)return;
+  const id=(select.id||'mm-filter-'+ ++selectId)+'-popover';
+  const sync=optionPicker(select,id,label,
+   ()=>[...select.options].map(option=>({text:option.label,disabled:option.disabled||option.parentElement.disabled&&option.parentElement.tagName==='OPTGROUP'})),
+   ()=>select.selectedIndex,i=>{
+    if(select.selectedIndex===i)return;
+    select.selectedIndex=i;
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+   },{period});
+  select.classList.add('mm-native-filter');
+  select.hidden=true;
+  select.addEventListener('change',sync);
+  new MutationObserver(sync).observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','selected','label']});
+ }
+ function enhanceSelects(root){
+  if(root.matches?.(nativeFilters))selectPicker(root);
+  root.querySelectorAll?.(nativeFilters).forEach(select=>selectPicker(select));
+ }
  function buttonPeriods(buttons,id,label){
   if(!buttons.length)return;
-  const sync=periodFilter(buttons[0],id,label,buttons.map(button=>button.textContent),
-   ()=>buttons.findIndex(button=>button.classList.contains('active')),i=>buttons[i].click());
+  const sync=optionPicker(buttons[0],id,label,()=>buttons.map(button=>({text:button.textContent,disabled:button.disabled})),
+   ()=>buttons.findIndex(button=>button.classList.contains('active')),i=>buttons[i].click(),{period:true});
   const observer=new MutationObserver(sync);
   for(const button of buttons){
    button.hidden=true;
@@ -74,25 +117,26 @@
  }
  function init(){
   initDemandClientPicker();
+  enhanceSelects(document);
   enhance();
   const content=document.getElementById('tracking-content');if(content)new MutationObserver(()=>enhance(content)).observe(content,{childList:true});
+  new MutationObserver(records=>{
+   for(const record of records)for(const node of record.addedNodes)enhanceSelects(node);
+   for(const [anchor,popup] of fallbackPickers)if(!anchor.isConnected){popup.close();popup.panel.remove();fallbackPickers.delete(anchor);}
+  }).observe(document.getElementById('app'),{childList:true,subtree:true});
   buttonPeriods([...document.querySelectorAll('#sales-period-filter > button')],'sales-period-popover','Período das vendas');
   buttonPeriods([...document.querySelectorAll('.rev-period-btn')],'revenue-period-popover','Período da receita');
   const firewall=document.getElementById('firewall-period');
-  if(firewall){
-   const sync=periodFilter(firewall,'firewall-period-popover','Período do histórico',[...firewall.options].map(option=>option.textContent),
-    ()=>firewall.selectedIndex,i=>{firewall.selectedIndex=i;firewall.dispatchEvent(new Event('change',{bubbles:true}));});
-   firewall.hidden=true;
-   firewall.addEventListener('change',sync);
-  }
+  if(firewall)selectPicker(firewall,true,'Período do histórico');
  }
+ window.MagemindFilters={enhanceSelects};
  function initDemandClientPicker(){
   const select=document.getElementById('client-filter-dd');if(!select)return;
   const root=document.createElement('div');root.className='demand-client-picker';root.hidden=true;
   const trigger=document.createElement('button');trigger.type='button';trigger.className='demand-client-trigger';trigger.setAttribute('role','combobox');trigger.setAttribute('aria-label','Filtrar demandas por cliente');trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');trigger.setAttribute('aria-controls','demand-client-options');
   trigger.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m3-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 2 4"/></svg><span>Todos os clientes</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   root.append(trigger);select.after(root);
-  const panel=document.createElement('div');panel.className='demand-client-popover';panel.hidden=true;
+  const panel=document.createElement('div');panel.className='demand-client-popover mm-glass';panel.hidden=true;
   const search=document.createElement('input');search.type='search';search.placeholder='Nome, e-mail ou telefone';search.setAttribute('aria-label','Pesquisar clientes');search.autocomplete='off';
   const list=document.createElement('div');list.className='demand-client-options';list.id='demand-client-options';list.setAttribute('role','listbox');list.setAttribute('aria-label','Clientes disponíveis');
   panel.append(search,list);document.body.append(panel);

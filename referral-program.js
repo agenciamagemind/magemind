@@ -50,7 +50,7 @@
   try{const result=await inflight;if(shouldRender)render();return result;}
   catch(cause){if(DB.me?.id===uid){error=cause.message||'Não foi possível carregar o programa.';if(shouldRender)render();}throw cause;}
  }
- function clear(){epoch++;inflight=null;data=null;owner=null;error='';busy=false;search='';filter='all';closeRules();document.getElementById('referral-rules-content')?.replaceChildren();syncHelp();for(const id of ['referral-admin-view','referral-member-view'])document.getElementById(id)?.replaceChildren();}
+ function clear(){epoch++;inflight=null;data=null;owner=null;error='';busy=false;search='';filter='all';document.getElementById('referral-page-heading').hidden=true;closeRules();document.getElementById('referral-rules-content')?.replaceChildren();syncHelp();for(const id of ['referral-admin-view','referral-member-view'])document.getElementById(id)?.replaceChildren();}
  const stat=(label,value,sub='',accent='')=>`<div class="rf-stat ${accent}"><span>${e(label)}</span><strong>${e(value)}</strong>${sub?`<small>${e(sub)}</small>`:''}</div>`;
  const empty=text=>`<div class="rf-empty">${e(text)}</div>`;
  function rules(){
@@ -93,9 +93,12 @@
   return `<div class="rf-table-scroll"><table class="rf-participant-table"><thead><tr><th>Participante</th><th>Comissão</th><th>Indicados</th><th>Disponível</th><th>Participação</th><th>Ações</th></tr></thead><tbody>${people.map(p=>`<tr><td><div class="rf-person"><span class="rf-initials">${e(p.name.split(/\s+/).filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase())}</span><div><strong>${e(p.name)}</strong><small>${e(p.email)} · ${e(roles[p.role]||p.role)}</small></div></div></td><td><form data-rf-rate-form="${e(p.id)}" class="rf-rate-form"><label><input type="number" aria-label="Comissão de ${e(p.name)}" min="0" max="100" step="0.01" required value="${Number(p.rate)}" ${p.account_active?'':'disabled'}><span>%</span></label><button type="submit" class="btn btn-ghost btn-xs" ${p.account_active?'':'disabled'}>Salvar</button></form></td><td>${Number(p.clients)}</td><td class="financial-value">${money(p.available)}</td><td><span class="rf-badge ${p.state}">${{active:'Ativo',needs_acceptance:'Aceite a confirmar',suspended:'Suspenso'}[p.state]}</span><small>${!p.account_active?'Conta inativa':p.accepted_at?'Aceite em '+date(p.accepted_at):'O participante confirma no próprio painel'}</small></td><td><button type="button" class="btn ${p.state==='suspended'?'btn-ghost':'btn-danger'} btn-xs" data-rf-${p.state==='suspended'?'restore':'suspend'}="${e(p.id)}" ${p.state==='suspended'&&!p.account_active?'disabled':''}>${p.state==='suspended'?'Reativar':'Suspender'}</button></td></tr>`).join('')}</tbody></table></div>`;
  }
  function render(){
+  if(!visible()){syncHelp();return;}
+  const adminView=isAdmin();
+  const accepted=owner===DB.me?.id&&['active','suspended'].includes(data?.state);
+  document.getElementById('referral-page-heading').hidden=!adminView&&!accepted;
   syncHelp();
-  if(!visible())return;
-  const adminView=isAdmin();document.getElementById('referral-admin-view').classList.toggle('active',adminView);document.getElementById('referral-member-view').classList.toggle('active',!adminView);
+  document.getElementById('referral-admin-view').classList.toggle('active',adminView);document.getElementById('referral-member-view').classList.toggle('active',!adminView);
   const target=document.getElementById(adminView?'referral-admin-view':'referral-member-view');
   if(!data||owner!==DB.me?.id){target.innerHTML=`<div class="rf-root">${error?`<div class="rf-load-error" role="alert"><h3>Não foi possível carregar o programa</h3><p>Seus dados continuam preservados. Tente novamente.</p><button type="button" class="btn btn-primary btn-sm" data-rf-action="retry">Tentar novamente</button></div>`:`<div class="rf-empty" role="status"><span class="rf-spinner"></span> Carregando programa…</div>`}</div>`;return;}
   target.innerHTML=`<div class="rf-root">${error?'<div class="rf-suspended" role="alert">Não foi possível atualizar. Os dados abaixo são da última consulta. <button type="button" class="btn btn-ghost btn-xs" data-rf-action="retry">Tentar novamente</button></div>':''}${data.state==='admin'?admin():member()}</div>`;
@@ -103,6 +106,9 @@
  }
  function syncHelp(){
   const button=document.getElementById('referral-rules-help');if(!button)return;
+  const slot=document.getElementById('referral-mobile-help-slot');
+  const target=slot&&matchMedia('(max-width:900px)').matches&&!slot.parentElement.hidden?slot:document.getElementById('notif-wrapper');
+  if(target&&button.parentElement!==target)target.prepend(button);
   button.hidden=!visible()||!DB.me;button.disabled=!data?.rules||owner!==DB.me?.id;
   if(button.hidden||button.disabled)closeRules();
  }
@@ -115,8 +121,7 @@
   wrapper.prepend(button);
   const slot=document.createElement('div');slot.id='referral-mobile-help-slot';page().querySelector('.ph').append(slot);
   const mobile=matchMedia('(max-width:900px)');
-  const place=()=>{const target=mobile.matches?slot:wrapper;if(button.parentElement!==target)target.prepend(button);};
-  mobile.addEventListener('change',place);place();
+  mobile.addEventListener('change',syncHelp);
   const dialog=document.createElement('dialog');dialog.id='referral-rules-dialog';dialog.setAttribute('aria-labelledby','referral-rules-title');dialog.innerHTML='<div class="rf-dialog-head"><div><h2 id="referral-rules-title">Regras do programa</h2><p>Indique &amp; Ganhe Magemind</p></div><button type="button" class="btn btn-ghost btn-icon" aria-label="Fechar regras">×</button></div><div id="referral-rules-content" class="rf-dialog-body"></div>';
   document.body.append(dialog);
   button.addEventListener('click',()=>{if(!visible()||!data?.rules||owner!==DB.me?.id)return;closeNotifPanel();renderRules();window.openAccessibleDialog(dialog);});

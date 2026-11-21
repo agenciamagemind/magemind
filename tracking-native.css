@@ -42,7 +42,7 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-root .mt-platform-heading{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg3)}
 .mt-root .mt-platform-heading h2{font-size:14px;color:var(--text)}.mt-root .mt-platform-heading>span:last-child{margin-left:auto;font-size:10px;color:var(--text2)}
 .mt-root .mt-platform-meta{--platform-accent:#458fff;border-color:#0866ff55}.mt-root .mt-platform-meta .mt-platform-heading{background:linear-gradient(100deg,#0866ff,#0747b6)}.mt-root .mt-platform-meta .mt-platform-heading h2,.mt-root .mt-platform-meta .mt-platform-heading>span{color:white}.mt-root .mt-platform-meta .mt-brand-meta{background:#ffffff14}
-.mt-root .mt-platform-google{--platform-accent:#4285f4;border-color:#4285f455}.mt-root .mt-platform-google .mt-platform-heading{background:linear-gradient(100deg,#152948,#17251f);border-top:3px solid transparent;border-image:linear-gradient(90deg,#4285f4 25%,#ea4335 25%,#ea4335 50%,#fbbc05 50%,#fbbc05 75%,#34a853 75%) 1}
+.mt-root .mt-platform-google{--platform-accent:#4285f4;border-color:#4285f455}.mt-root .mt-platform-google .mt-platform-heading{background:linear-gradient(100deg,#152948,#17251f)}
 .mt-root .mt-platform-tiktok{--platform-accent:#fe2c55;border-color:#fe2c5555}.mt-root .mt-platform-tiktok .mt-platform-heading{background:#050509;border-left:3px solid #25f4ee;border-bottom-color:#fe2c5544}.mt-root .mt-platform-tiktok .mt-platform-heading h2{color:#ff6686}
 .mt-root .mt-campaign-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px}
 .mt-root .mt-campaign-card{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--platform-accent);border-radius:var(--r2);padding:16px;min-width:0}
@@ -83,9 +83,21 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-root .mt-manager-tabs button{border:0;border-radius:8px 8px 0 0;padding:12px 22px;background:transparent;white-space:nowrap;border-bottom:2px solid transparent}
 .mt-root .mt-manager-tabs button[aria-pressed=true]{background:rgba(151,112,245,.09);border-bottom-color:var(--accent,#a78bfa);color:#c9b5ff}
 .mt-root .mt-ad-manager{--platform-accent:#65a5ff;overflow:hidden;margin:0 0 18px;border:1px solid var(--border);border-radius:12px;background:var(--bg2)}
-.mt-root .mt-ad-manager.mt-platform-google{--platform-accent:#81c995}
+.mt-root .mt-ad-manager.mt-platform-google{--platform-mark:linear-gradient(#4285f4 25%,#ea4335 25% 50%,#fbbc05 50% 75%,#34a853 75%)}
 .mt-root .mt-ad-manager.mt-platform-tiktok{--platform-accent:#ff7295}
-.mt-root .mt-ad-manager .mt-platform-heading{background:transparent;border-bottom:1px solid var(--border);border-left:3px solid var(--platform-accent);padding:12px 16px;gap:10px;color:var(--text)}
+.mt-root .mt-ad-manager .mt-platform-heading{position:relative;background:transparent;border-left:0;border-bottom:1px solid var(--border);padding:12px 16px 12px 19px;gap:10px;color:var(--text)}
+.mt-root .mt-ad-manager .mt-platform-heading::before{content:'';position:absolute;inset:7px auto 7px 0;width:3px;border-radius:0 3px 3px 0;background:var(--platform-mark,var(--platform-accent))}
+.mt-root .mt-ad-manager .mt-platform-heading .mt-coming-soon{padding:5px 10px;border:1px solid color-mix(in srgb,var(--platform-accent) 22%,transparent);border-radius:999px;background:color-mix(in srgb,var(--platform-accent) 8%,transparent);color:color-mix(in srgb,var(--platform-accent) 78%,white);white-space:nowrap}
+.mt-root .mt-platform-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:8px 16px;border-bottom:1px solid var(--border)}
+.mt-root .mt-platform-tools .mt-manager-tabs{width:auto;margin:0;border-radius:999px}
+.mt-root .mt-platform-tools .mt-manager-tabs button{border-radius:999px;border-bottom:0}
+.mt-root .mt-platform-tools .mt-manager-tabs button[aria-pressed=true]{background:color-mix(in srgb,var(--platform-accent) 16%,transparent);color:var(--platform-accent)}
+.mt-root .mt-platform-tools :is(.mt-ad-breadcrumb,.mt-ad-mobile-sort){margin:0;min-width:0}
+.mt-root .mt-platform-tools .mt-ad-breadcrumb{max-width:100%}
+@media(max-width:600px){
+ .mt-root .mt-platform-tools{padding:8px 11px}
+ .mt-root .mt-platform-tools .mt-manager-tabs{width:100%}
+}
 .mt-root .mt-ad-manager .mt-platform-heading h2{font-size:13px;font-weight:600}
 .mt-root .mt-ad-manager .mt-platform-heading>.mt-brand-mark{width:28px;height:28px}
 .mt-root .mt-ad-manager .mt-platform-heading>span{color:var(--text3);font-size:11px}
