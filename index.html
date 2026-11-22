@@ -494,7 +494,7 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 .solution-private-note{display:flex;align-items:center;gap:8px;color:var(--amber);font-size:10px;font-weight:600}
 </style>
 <link rel="stylesheet" href="mobile.css?v=20261121-1">
-<link rel="stylesheet" href="auth.css?v=20261122-2">
+<link rel="stylesheet" href="auth.css?v=20261122-7">
 <link rel="stylesheet" href="goals.css?v=20260925-2">
 <link rel="stylesheet" href="security-rich-text.css?v=20260923-4">
 <link rel="stylesheet" href="product-ui.css?v=20261122-3">
@@ -505,11 +505,13 @@ body.solution-reordering{user-select:none;cursor:grabbing}
 <div id="auth-screen" class="auth-shell">
   <div class="auth-stage">
     <div class="auth-card mm-glass">
-      <div class="auth-logo">
-        <img src="magemind-logo-transparent.png" alt="Magemind">
-        <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
-      </div>
-      <div class="auth-intro"><h1 id="auth-heading">Bem-vindo.</h1><p id="auth-subheading">Crie, organize e acompanhe o status das suas demandas.</p></div>
+      <header class="auth-header">
+        <div class="auth-logo">
+          <img src="magemind-logo-transparent.png" alt="Magemind">
+          <div class="auth-title" aria-label="magemind"><span class="brand-mage">mage</span><span class="brand-mind">mind</span></div>
+        </div>
+        <div class="auth-intro"><h1 id="auth-heading">Bem-vindo.</h1><p id="auth-subheading">Crie, organize e acompanhe o status das suas demandas.</p></div>
+      </header>
       <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
         <button type="button" class="auth-tab active" role="tab" id="auth-login-tab" aria-selected="true" aria-controls="auth-login" onclick="authTab('login')">Entrar</button>
         <button type="button" class="auth-tab" role="tab" id="auth-reg-tab" aria-selected="false" aria-controls="auth-reg" tabindex="-1" onclick="authTab('reg')">Criar conta</button>
@@ -520,8 +522,8 @@ body.solution-reordering{user-select:none;cursor:grabbing}
         <a id="account-status-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Falar com o suporte no WhatsApp</a>
       </div>
       <form id="auth-login" role="tabpanel" aria-labelledby="auth-login-tab" onsubmit="event.preventDefault();if(!this.querySelector('.btn-primary').disabled)doLogin()" style="display:flex;flex-direction:column;gap:14px">
-        <div class="fg"><label class="fl">Email</label><input class="fi" id="li-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
-        <div class="fg"><label class="fl">Senha</label><div class="password-field"><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="li-pass" onclick="togglePasswordVisibility('li-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
+        <div class="fg"><label class="fl" for="li-email">Email</label><input class="fi" id="li-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+        <div class="fg"><label class="fl" for="li-pass">Senha</label><div class="password-field"><input class="fi" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="li-pass" onclick="togglePasswordVisibility('li-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
         <div class="auth-options">
           <label class="remember-option"><input id="li-keep" type="checkbox" role="switch" checked><span>Manter conectado</span></label>
           <a class="auth-forgot" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20Magemind.%20Esqueci%20minha%20senha%20e%20preciso%20de%20ajuda%20para%20recuperar%20o%20acesso." target="_blank" rel="noopener noreferrer">Esqueceu a senha?</a>
@@ -530,17 +532,21 @@ body.solution-reordering{user-select:none;cursor:grabbing}
       </form>
       <form id="auth-reg" role="tabpanel" aria-labelledby="auth-reg-tab" onsubmit="event.preventDefault();if(!this.querySelector('.btn-primary').disabled)doRegister()" style="display:none;flex-direction:column;gap:12px">
         <div class="f2">
-          <div class="fg"><label class="fl">Nome *</label><input class="fi" id="rg-nome" autocomplete="given-name" placeholder="Seu nome"></div>
-          <div class="fg"><label class="fl">Sobrenome *</label><input class="fi" id="rg-sobre" autocomplete="family-name" placeholder="Sobrenome"></div>
+          <div class="fg"><label class="fl" for="rg-nome">Nome *</label><input class="fi" id="rg-nome" autocomplete="given-name" placeholder="Seu nome"></div>
+          <div class="fg"><label class="fl" for="rg-sobre">Sobrenome *</label><input class="fi" id="rg-sobre" autocomplete="family-name" placeholder="Sobrenome"></div>
         </div>
-        <div class="fg"><label class="fl">Email *</label><input class="fi" id="rg-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
-        <div class="fg"><label class="fl">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
-        <div class="fg"><label class="fl">Senha * (mín. 8 caracteres)</label><div class="password-field"><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass" onclick="togglePasswordVisibility('rg-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
-        <div class="fg"><label class="fl">Confirme sua senha *</label><div class="password-field"><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass-confirm" onclick="togglePasswordVisibility('rg-pass-confirm',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
+        <div class="auth-contact-fields">
+          <div class="fg"><label class="fl" for="rg-email">Email *</label><input class="fi" id="rg-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+          <div class="fg"><label class="fl" for="rg-phone">WhatsApp *</label><input class="fi" id="rg-phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[0-9]*" placeholder="11999999999" oninput="sanitizePhoneInput(this)"></div>
+        </div>
+        <div class="auth-password-fields">
+          <div class="fg"><label class="fl" for="rg-pass">Senha * (8+ caracteres)</label><div class="password-field"><input class="fi" id="rg-pass" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass" onclick="togglePasswordVisibility('rg-pass',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
+          <div class="fg"><label class="fl" for="rg-pass-confirm">Confirmar senha *</label><div class="password-field"><input class="fi" id="rg-pass-confirm" type="password" autocomplete="new-password" placeholder="••••••••"><button class="password-toggle" type="button" data-password-for="rg-pass-confirm" onclick="togglePasswordVisibility('rg-pass-confirm',this)" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.1 12s3.6-7 9.9-7 9.9 7 9.9 7-3.6 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c6.3 0 9.9 8 9.9 8a17.6 17.6 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.5 8.7 2.1 12 2.1 12s3.6 8 9.9 8a9.8 9.8 0 0 0 5.4-1.6"/></svg></button></div></div>
+        </div>
         <button type="submit" class="btn btn-primary" style="width:100%;padding:11px">Criar conta</button>
       </form>
       <a class="auth-help" href="https://wa.me/554899391390?text=Ol%C3%A1%2C%20equipe%20Magemind.%20Preciso%20de%20ajuda%20para%20acessar%20minha%20conta." target="_blank" rel="noopener noreferrer">Problemas para entrar?<strong>Pedir ajuda</strong></a>
-      <nav class="app-legal-links" aria-label="Sobre a Magemind e privacidade"><a href="about.html" target="_blank" rel="noopener noreferrer">Sobre a Magemind</a><a href="privacy.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a><a href="data-deletion.html" target="_blank" rel="noopener noreferrer">Exclusão de dados</a></nav>
+      <nav class="app-legal-links" aria-label="Sobre a Magemind e privacidade"><a href="about.html" target="_blank" rel="noopener noreferrer">Sobre a Magemind</a><span aria-hidden="true">•</span><a href="privacy.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a><span aria-hidden="true">•</span><a href="data-deletion.html" target="_blank" rel="noopener noreferrer">Exclusão de dados</a></nav>
     </div>
     <div class="auth-brand-panel">
       <div class="auth-phrase" id="auth-phrase">
