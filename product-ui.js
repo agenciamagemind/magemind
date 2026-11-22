@@ -9,13 +9,15 @@ function bindAnchoredPopover(panel, trigger, {align = 'start'} = {}) {
     listenForAnchoredPopovers();
   }
   const native = typeof panel.showPopover === 'function';
+  const modal = native ? null : trigger.closest('dialog');
   const isOpen = () => native ? panel.matches(':popover-open') : !panel.hidden;
   if (native) {
     trigger.setAttribute('popovertarget', panel.id);
     trigger.addEventListener('click', event => event.preventDefault());
   } else {
     panel.hidden = true;
-    document.body.append(panel);
+    (modal || document.body).append(panel);
+    if (modal) panel.style.position = 'absolute';
   }
 
   function position() {
@@ -24,10 +26,12 @@ function bindAnchoredPopover(panel, trigger, {align = 'start'} = {}) {
     if (!anchor.width || !anchor.height) return close();
     const viewport = window.visualViewport;
     const inset = 12, gap = 8;
-    const left = (viewport?.offsetLeft || 0) + inset;
-    const top = (viewport?.offsetTop || 0) + inset;
-    const right = left + (viewport?.width || innerWidth) - 2 * inset;
-    const bottom = top + (viewport?.height || innerHeight) - 2 * inset;
+    const bounds = modal?.getBoundingClientRect();
+    const viewportLeft = viewport?.offsetLeft || 0, viewportTop = viewport?.offsetTop || 0;
+    const left = Math.max(viewportLeft, bounds?.left ?? viewportLeft) + inset;
+    const top = Math.max(viewportTop, bounds?.top ?? viewportTop) + inset;
+    const right = Math.min(viewportLeft + (viewport?.width || innerWidth), bounds?.right ?? Infinity) - inset;
+    const bottom = Math.min(viewportTop + (viewport?.height || innerHeight), bounds?.bottom ?? Infinity) - inset;
     if (anchor.bottom < top || anchor.top > bottom) return close();
 
     panel.style.setProperty('--popover-width', Math.max(0, right - left) + 'px');
@@ -39,8 +43,11 @@ function bindAnchoredPopover(panel, trigger, {align = 'start'} = {}) {
     const available = Math.max(0, placeAbove ? above : below);
     const x = align === 'end' ? anchor.right - size.width : anchor.left;
     panel.style.setProperty('--popover-space', available + 'px');
-    panel.style.left = Math.max(left, Math.min(x, right - size.width)) + 'px';
-    panel.style.top = (placeAbove ? anchor.top - gap - Math.min(size.height, available) : Math.max(top, anchor.bottom + gap)) + 'px';
+    const offsetX = modal ? modal.scrollLeft - bounds.left - modal.clientLeft : 0;
+    const offsetY = modal ? modal.scrollTop - bounds.top - modal.clientTop : 0;
+    panel.style.left = (Math.max(left, Math.min(x, right - size.width)) + offsetX) + 'px';
+    const y = placeAbove ? anchor.top - gap - Math.min(size.height, available) : Math.max(top, anchor.bottom + gap);
+    panel.style.top = (y + offsetY) + 'px';
   }
 
   function sync() {

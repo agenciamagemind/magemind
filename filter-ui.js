@@ -39,7 +39,7 @@
    const index=selected(),items=choices(),text=items[index]?.text||items[0]?.text||'Selecione';
    trigger.querySelector('span').textContent=text;
    trigger.setAttribute('aria-label',label+' · '+text);
-   trigger.disabled=anchor.disabled||!items.some(item=>!item.disabled);
+   trigger.disabled=anchor.disabled||!items.some(item=>!item.disabled&&!item.hidden);
   }
   function open(){
    sync();
@@ -50,6 +50,7 @@
     button.type='button';
     button.className='mt-period-option';
     button.disabled=Boolean(choice.disabled);
+    button.hidden=Boolean(choice.hidden);
     button.setAttribute('aria-pressed',String(i===index));
     const text=document.createElement('span'),check=document.createElement('span');
     text.textContent=choice.text;
@@ -60,7 +61,7 @@
    });
    panel.replaceChildren(heading,...options);
    popup.open();
-   (options[index]&&!options[index].disabled?options[index]:options.find(button=>!button.disabled))?.focus();
+   (options[index]&&!options[index].disabled&&!options[index].hidden?options[index]:options.find(button=>!button.disabled&&!button.hidden))?.focus();
   }
   trigger.addEventListener('click',()=>popup.isOpen()?popup.close(true):open());
   trigger.addEventListener('keydown',event=>{
@@ -69,7 +70,7 @@
   });
   panel.addEventListener('keydown',event=>{
    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
-   const options=[...panel.querySelectorAll('button:not(:disabled)')];
+   const options=[...panel.querySelectorAll('button:not(:disabled):not([hidden])')];
    if(!options.length)return;
    event.preventDefault();
    const index=options.indexOf(document.activeElement),step=event.key==='ArrowUp'?-1:1;
@@ -79,7 +80,7 @@
   return sync;
  }
  const fallbackPickers=new Map();
- const nativeFilters='.mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, .mt-ad-delivery select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
+ const nativeFilters='#tracking-dialog [data-form=cost] select, .mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, .mt-ad-delivery select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
  let selectId=0;
  function labelFor(select){
   const label=select.labels?.[0]?.cloneNode(true);
@@ -90,7 +91,7 @@
   if(select.classList.contains('mm-native-filter')||select.multiple||select.size>1)return;
   const id=(select.id||'mm-filter-'+ ++selectId)+'-popover';
   const sync=optionPicker(select,id,label,
-   ()=>[...select.options].map(option=>({text:option.label,disabled:option.disabled||option.parentElement.disabled&&option.parentElement.tagName==='OPTGROUP'})),
+   ()=>[...select.options].map(option=>({text:option.label,hidden:option.hidden||option.closest('optgroup')?.hidden,disabled:option.disabled||option.closest('optgroup')?.disabled})),
    ()=>select.selectedIndex,i=>{
     if(select.selectedIndex===i)return;
     select.selectedIndex=i;
@@ -99,7 +100,7 @@
   select.classList.add('mm-native-filter');
   select.hidden=true;
   select.addEventListener('change',sync);
-  new MutationObserver(sync).observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','selected','label']});
+  new MutationObserver(sync).observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','selected','label','hidden']});
  }
  function enhanceSelects(root){
   if(root.matches?.(nativeFilters))selectPicker(root);
@@ -120,10 +121,13 @@
   enhanceSelects(document);
   enhance();
   const content=document.getElementById('tracking-content');if(content)new MutationObserver(()=>enhance(content)).observe(content,{childList:true});
-  new MutationObserver(records=>{
+  const selectChanges=new MutationObserver(records=>{
    for(const record of records)for(const node of record.addedNodes)enhanceSelects(node);
    for(const [anchor,popup] of fallbackPickers)if(!anchor.isConnected){popup.close();popup.panel.remove();fallbackPickers.delete(anchor);}
-  }).observe(document.getElementById('app'),{childList:true,subtree:true});
+  });
+  for(const host of [document.getElementById('app'),document.getElementById('tracking-dialog')]){
+   if(host)selectChanges.observe(host,{childList:true,subtree:true});
+  }
   buttonPeriods([...document.querySelectorAll('#sales-period-filter > button')],'sales-period-popover','Período das vendas');
   buttonPeriods([...document.querySelectorAll('.rev-period-btn')],'revenue-period-popover','Período da receita');
   const firewall=document.getElementById('firewall-period');

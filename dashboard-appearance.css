@@ -128,6 +128,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 }
 .mm-glass, #tracking-dialog, #modal-sales-period .modal { border-style: solid; border-width: 1px; }
 #tracking-dialog, .overlay .modal { border-radius: var(--mm-panel-radius); }
+#tracking-dialog:has([data-form=cost]) { --mm-glass-opacity: .89; }
+#tracking-dialog .mm-filter-popover { --mm-glass-opacity: .94; }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .mm-glass, #tracking-dialog, #modal-sales-period .modal, #app > .sidebar,
@@ -478,14 +480,14 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .mt-order-filters .mt-filter-actions,.mt-ad-filters.mt-compact-filters #tracking-refresh{margin-inline-start:auto}
 .mt-compact-filters .mt-filter-actions button{min-height:var(--filter-h);white-space:nowrap}
 .mt-connection-dot{width:7px;height:7px;margin-left:3px;border-radius:50%;background:var(--amber);flex:none}
-#pg-campaigns:has(.mt-campaigns-lock) > .ph,
-#pg-campaigns:has(.mt-campaigns-lock) #tracking-toolbar{display:none}
-#app .main > .content:has(> #pg-campaigns.active .mt-campaigns-lock),
-#pg-campaigns.active:has(.mt-campaigns-lock){flex:1 0 auto}
-#pg-campaigns:has(.mt-campaigns-lock) #tracking-campaigns-mount{flex:1;display:grid;place-items:center}
-#pg-campaigns:has(.mt-campaigns-lock) #tracking-module{width:100%}
-.mt-campaigns-lock{display:grid;place-items:center;padding:24px 0}
-.mt-campaigns-lock .mt-connect-message{width:min(100%,520px);padding:clamp(22px,5vw,44px);border-radius:var(--mm-panel-radius);text-align:center}
+:is(#pg-campaigns,#pg-orders):has(.mt-connection-gate) > .ph,
+:is(#pg-campaigns,#pg-orders):has(.mt-connection-gate) #tracking-toolbar{display:none}
+#app .main > .content:has(> :is(#pg-campaigns,#pg-orders).active .mt-connection-gate),
+:is(#pg-campaigns,#pg-orders).active:has(.mt-connection-gate){flex:1 0 auto}
+:is(#pg-campaigns,#pg-orders):has(.mt-connection-gate) :is(#tracking-campaigns-mount,#tracking-orders-mount){flex:1;display:grid;place-items:center}
+:is(#pg-campaigns,#pg-orders):has(.mt-connection-gate) #tracking-module{width:100%}
+.mt-connection-gate{display:grid;place-items:center;padding:24px 0}
+.mt-connection-gate .mt-connect-message{width:min(100%,520px);padding:clamp(22px,5vw,44px);border-radius:var(--mm-panel-radius);text-align:center}
 .mt-connect-message h1{font-size:clamp(19px,2vw,25px);line-height:1.25;margin:20px 0 10px}
 .mt-connect-message p{font-size:13px;line-height:1.65;margin:0 auto 20px;max-width:340px}
 .mt-connect-message .primary{min-height:42px}
@@ -565,7 +567,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   :is(#pg-dashboard,#pg-campaigns,#pg-orders) #tracking-refresh,
   :is(#pg-campaigns,#pg-orders) .mt-filter-actions { display: none; }
   :is(#tracking-campaigns-mount,#tracking-orders-mount) { margin-top: 12px; }
-  #pg-campaigns:has(.mt-campaigns-lock) #tracking-campaigns-mount { margin-top: 0; }
+  :is(#pg-campaigns,#pg-orders):has(.mt-connection-gate) :is(#tracking-campaigns-mount,#tracking-orders-mount) { margin-top: 0; }
   :is(#pg-campaigns,#pg-orders) .mt-root .filters .search input { border-radius: 999px; }
   :is(#pg-campaigns,#pg-orders) .mt-root .filters .search input::placeholder { font-size: 12px; }
   #pg-campaigns .mt-root .mt-ad-filters > .search { grid-row: 2; }

@@ -70,8 +70,9 @@
 .mm-filter-toggle:hover{background-color:#ffffff10;border-color:var(--border2)}
 .mm-filter-toggle:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
 .mm-filter-popover .mt-period-option > span:first-child{overflow-wrap:anywhere}
+.mm-filter-popover .mt-period-option[hidden]{display:none}
 .mm-filter-popover .mt-period-option:disabled{opacity:.45;cursor:default}
-:is(.filters,.mt-admin-filters,.mt-ad-mobile-sort) label > .mm-filter-toggle{width:100%}
+:is(.filters,.mt-admin-filters,.mt-ad-mobile-sort,[data-form=cost]) label > .mm-filter-toggle{width:100%}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
  .mm-filter-toggle{--mm-glass-fill:rgb(18 18 18 / 60%);-webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%)}
 }
@@ -123,9 +124,6 @@
 @media(max-width:380px){
  #app .topbar:has(#dashboard-privacy:not([hidden])){gap:4px}
  #app .topbar:has(#dashboard-privacy:not([hidden])) :is(.topbar-right,#notif-wrapper){gap:4px}
- #app .topbar:has(#dashboard-privacy:not([hidden])) .topbar-brand{gap:5px}
- #app .topbar:has(#dashboard-privacy:not([hidden])) .topbar-brand img{width:29px;height:29px}
- #app .topbar:has(#dashboard-privacy:not([hidden])) .sb-logo-text{font-size:14px}
 }
 @keyframes filter-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#tracking-refresh svg{animation:none}.mt-root .app-filter-toggle>span:last-child{transition:none}}

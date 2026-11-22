@@ -59,7 +59,7 @@
   const dialog=$('tracking-dialog');
   $('dialog-title').textContent=title;
   $('dialog-content').innerHTML=html;
-  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker,.mt-order-detail,.mt-ad-detail')));
+  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker,.mt-order-detail,.mt-ad-detail,[data-form=cost]')));
   dialog.scrollTop=0;
   if(dialog.open)window.focusDialogSurface(dialog);
   else window.openAccessibleDialog(dialog);
@@ -67,7 +67,14 @@
  function metric(label,value,note='',cls=''){return '<article class="metric '+cls+'"><span class="metric-label">'+label+'</span><strong>'+esc(value)+'</strong><small>'+esc(note)+'</small></article>';}
  function empty(title,text,action=''){return '<div class="empty"><span class="eyebrow">COMECE PELA SUA OPERAÇÃO</span><h2>'+title+'</h2><p>'+text+'</p><div class="actions">'+action+'</div></div>';}
  function panel(title,html){return '<section class="panel"><div class="panel-head"><h2>'+title+'</h2></div><div class="panel-body">'+html+'</div></section>';}
- function lockView(html,title,action,platforms=[],small=false){return '<section class="mt-data-lock'+(small?' mt-mini-lock':'')+'"><div class="mt-data-preview" inert aria-hidden="true">'+html+'</div><div class="mt-data-overlay"><div class="mt-data-message">'+(platforms.length?'<div class="mt-connect-brands">'+platforms.map(p=>brand.logo(p)).join('')+'</div>':'')+'<h3>'+title+'</h3>'+button(action==='setup-costs'?'Configurar custos':'Conectar integração',action,'',true)+'</div></div></section>';}
+ function connectionGate(page,platforms,title,description,action){
+  const canManage=['owner','admin'].includes(workspace()?.role),heading=page+'-connect-title';
+  return '<div class="mt-connection-gate"><section class="mt-connect-message mm-glass" aria-labelledby="'+heading+'">'+
+   '<div class="mt-connect-brands">'+platforms.map(p=>brand.logo(p)).join('')+'</div>'+
+   '<h1 id="'+heading+'">'+title+'</h1><p>'+description+'</p>'+
+   (canManage?button('Abrir Integrações',action,'',true):'<p>Peça ao responsável pela operação para configurar a conexão em Integrações.</p>')+
+   '</section></div>';
+ }
  function tutorialHTML(){
   if(!isClient()||setup?.completed_at)return '';
   const definitions={checkout:['Conecte seu checkout','Receba pedidos e faturamento de Kiwify, Hotmart ou da sua API.','setup-checkouts','Conectar checkout'],ads:['Conecte sua conta de anúncios','Acompanhe investimento, campanhas, CPA e ROAS.','setup-ads','Conectar anúncios'],costs:['Configure custos e taxas','Cadastre os custos e as taxas da operação, ou informe que você não tem custos.','setup-costs','Configurar custos'],order:['Receba seu primeiro pedido','Assim que o checkout enviar um pedido, ele aparecerá automaticamente.','setup-orders','Ver pedidos']};
@@ -186,10 +193,10 @@
   if(!el.childElementCount||renderedScope!==scope)el.innerHTML='<div class="stats-grid">'+[1,2,3,4].map(()=>'<div class="skeleton" aria-label="Carregando"></div>').join('')+'</div>';
   renderedScope=scope;
   try{const uid=DB.me.id;if(observer()){
-   $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
+   $('tracking-workspace-label').style.display='none';$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
    const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,orderCards,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.search='';state.status='';state.provider='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid){replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});}return;
-  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,products:productList,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
+  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,products:productList,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});if(state.tab==='overview')window.MagemindDashboard.mount();$('tracking-toolbar').toggleAttribute('inert',Boolean(el.querySelector('.mt-connection-gate')));maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)replaceContent(el,'<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>');if(options.propagate)throw e;}
  }
  async function syncStatus(version){
@@ -240,7 +247,8 @@
   return '<svg class="chart" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Receita aprovada por dia"><defs><linearGradient id="tracking-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".25"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path d="M20 160H580 M20 115H580 M20 70H580 M20 25H580" stroke="var(--border2)" fill="none"/><polygon points="20,160 '+line+' 580,160" fill="url(#tracking-chart-fill)"/><polyline points="'+line+'" stroke="var(--accent)" stroke-width="2.5" fill="none"/>'+points.map(([x,y],i)=>'<circle cx="'+x+'" cy="'+y+'" r="4" fill="var(--accent)"><title>'+esc(rows[i].date+': '+money(rows[i].gross_minor))+'</title></circle>').join('')+'</svg><div class="legend"><span>'+esc(rows[0].date)+'</span><span>Receita bruta de pedidos · '+esc(state.currency)+'</span><span>'+esc(rows.at(-1).date)+'</span></div>';
  }
  async function orders(){
-  if(!setup.checkout_ready)return '<div class="mt-orders-lock">'+lockView('<div class="filters"><div class="mt-preview-line"></div></div>'+panel('Todos os pedidos',table(['Pedido','Comprador','Status','Pagamento','Valor'],[1,2,3,4].map(()=>'<tr>'+[1,2,3,4,5].map(()=>'<td><div class="mt-preview-line"></div></td>').join('')+'</tr>'))),'Conecte seu checkout para receber os pedidos','setup-checkouts',['kiwify','hotmart'])+'</div>';
+  if(!setup.checkout_ready)return connectionGate('orders',['kiwify','hotmart','cartpanda'],
+   'Conecte seu checkout','Receba seus pedidos e acompanhe vendas e pagamentos por aqui.','setup-checkouts');
   const data=await api('/list/orders',null,{search:state.search,status:state.status,provider:state.provider,channel:state.channel,payment:state.payment});
   return ordersFilters()+panel('Todos os pedidos',data.rows.length?orderCards(data.rows)+table(['Pedido / checkout','Comprador','Status','Pagamento','Valor','Origem','Criado',''],data.rows.map(o=>'<tr><td>'+esc(o.external_id)+'<small>'+esc(o.provider)+'</small></td><td>'+esc(o.buyer_name||'Não informado')+'</td><td>'+pill(o.status)+(o.renewal?' <small>Renovação</small>':'')+'</td><td>'+esc(o.payment_method==='CREDIT_CARD'?'Cartão':o.payment_method==='PIX'?'Pix':o.payment_method||'—')+'</td><td>'+money(o.gross_minor)+'</td><td>'+esc(o.channel==='unattributed'?'Não atribuído':o.channel||'—')+'</td><td>'+dt(o.created_at)+'</td><td>'+button('Detalhes','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+paginate(data.total):'<p>Nenhum pedido encontrado. Ajuste a busca ou conecte seu checkout em Integrações.</p>');
  }
@@ -316,11 +324,8 @@
   const canManage=!observer()&&['owner','admin'].includes(workspace()?.role);
   if(observer()&&!connected.length)return '<div class="mt-admin-empty"><div class="mt-connect-brands">'+adProviders.map(p=>brand.logo(p)).join('')+'</div><h3>Esta operação ainda não tem contas de anúncios conectadas</h3><p>As campanhas aparecerão aqui quando o responsável conectar uma conta.</p></div>';
   const platformHeading=p=>brand.logo(p)+'<h2>'+brand.name(p)+'</h2>';
-  if(!connected.length){
-   return '<div class="mt-campaigns-lock"><section class="mt-connect-message mm-glass" aria-labelledby="campaign-connect-title"><div class="mt-connect-brands">'+adProviders.map(p=>brand.logo(p)).join('')+
-    '</div><h1 id="campaign-connect-title">Conecte sua conta de anúncios</h1><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+
-    (canManage?button('Abrir Integrações','setup-ads','',true):'<p>Peça ao responsável pela operação para conectar um perfil em Integrações.</p>')+'</section></div>';
-  }
+  if(!connected.length)return connectionGate('campaign',adProviders,
+   'Conecte sua conta de anúncios','Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.','setup-ads');
   const query=state.search.toLocaleLowerCase('pt-BR');
   const rows=d.rows.filter(r=>r.connected&&(!query||r.name.toLocaleLowerCase('pt-BR').includes(query)));
   const groups=adProviders.map(p=>{
@@ -479,7 +484,7 @@
   costFlow=flow;
   costProducts=product?[product]:flow?[]:await api('/cost-products');
   const integration=flow?.integration;
-  const category=row?.category||(integration?'fee':'product');
+  const category=row?.category||(integration?'fee':product?'product':'');
   const legacyFee=category==='fee'&&row&&!row.fee_schedule;
   const mode=row?.calculation==='legacy'?(category==='tax'?'percentage':category==='product'?'fixed_per_item':row.rate_bps?'percentage':'fixed_per_sale'):row?.calculation||'fixed_per_item';
   const known=costProducts.findIndex(p=>p.product_id===(product||row)?.product_id&&p.provider===(product||row)?.provider&&p.currency===(product||row)?.currency);
@@ -488,10 +493,10 @@
   const decimal=(value,digits)=>value==null?'':(Number(value)/10**digits).toFixed(digits).replace('.',',');
   const header=integration?'<div class="mt-fee-integration wide">'+brand.logo(provider)+'<div><strong>'+esc(integration.name)+'</strong><p>Revise as tarifas antes de receber pedidos.</p></div></div>':'';
   modal(product?'Configurar custo':integration?'Configurar taxa de pagamento':row?'Editar custo':'Adicionar custo',
-   '<form data-form="cost" class="form-grid" data-linked-fee="'+Boolean(integration||row?.integration_id)+'">'+
+   '<form data-form="cost" class="form-grid" data-linked-fee="'+Boolean(integration||row?.integration_id)+'" data-provider="'+esc(provider)+'" data-currency="'+esc(currency)+'" data-fixed-product="'+Boolean(product)+'">'+
    '<input type="hidden" name="id" value="'+esc(row?.id||'')+'"><input type="hidden" name="integration_id" value="'+esc(integration?.id||row?.integration_id||'')+'">'+header+
    '<label '+(integration?'hidden':'')+'>Nome do custo<input name="name" required maxlength="120" value="'+esc(integration?.name||row?.name||product?.name?.slice(0,120)||'')+'" placeholder="Ex.: Produto, imposto ou embalagem" '+(integration||row?.integration_id?'readonly':'')+'></label>'+
-   (integration?'<input id="cost-category" type="hidden" value="fee">':select('cost-category','Tipo de custo',[['product','Custo do produto'],['tax','Imposto'],['fee','Taxa de pagamento'],['expense','Custo adicional']],category))+
+   (integration?'<input id="cost-category" type="hidden" value="fee">':select('cost-category','Tipo de custo',[['','Selecione o tipo de custo'],['product','Custo do produto'],['tax','Imposto'],['fee','Taxa de pagamento'],['expense','Custo adicional']],category))+
    (legacyFee?select('fee-mode','Tipo de tarifa',[['general','Mesma tarifa para todos'],['schedule','Pix e cartão']], 'general'):'')+
    select('cost-calculation','Como calcular',[['fixed_per_item','Valor fixo por unidade'],['fixed_per_sale','Valor fixo por venda aprovada'],['percentage','Porcentagem sobre vendas aprovadas'],['fixed_once','Valor fixo único']],mode)+
    '<input type="hidden" id="cost-currency" value="'+esc(currency)+'">'+
@@ -502,45 +507,58 @@
    select('cost-provider','Checkout',[['','Todos os checkouts'],...checkoutProviders.map(p=>[p,brand.name(p)]),['custom','API própria']],provider)+
    '<section class="mt-payment-fee wide" id="cost-payment-schedule" hidden></section>'+
    '<div class="mt-cost-explanation wide" id="cost-explanation" role="status"></div>'+
-   '<p class="small wide">As alterações valem para as próximas aprovações.</p>'+
-   '<div class="mt-fee-actions wide">'+(flow?'<button type="button" class="quiet mt-fee-danger" data-action="cost-skip">Não configurar agora</button>':'')+
+   '<p class="small wide" id="cost-effective-note">As alterações valem para as próximas aprovações.</p>'+
+   '<div class="mt-fee-actions wide" id="cost-actions">'+(flow?'<button type="button" class="quiet mt-fee-danger" data-action="cost-skip">Não configurar agora</button>':'')+
    '<button type="submit" class="primary">'+(integration?'Salvar taxa':row?'Salvar alteração':'Adicionar custo')+'</button></div>'+
    '<p class="mt-form-error wide" role="alert" hidden></p></form>');
   const form=$('dialog-content').querySelector('[data-form="cost"]');
-  if(row?.integration_id&&!integration)$('cost-category').disabled=true;
+  const categoryField=$('cost-category');
+  if(categoryField.tagName==='SELECT'){categoryField.options[0].disabled=true;categoryField.options[0].hidden=true;}
+  if(product||row?.integration_id)categoryField.disabled=true;
   fees.fill($('cost-payment-schedule'),provider,currency,row?.fee_schedule,Boolean(integration&&!row));
   updateCostForm(form);
-  if(product){$('cost-category').disabled=true;$('cost-product').disabled=true;}
+  window.MagemindFilters?.enhanceSelects(form);
+ }
+ function showCostField(field,visible,enabled=visible){
+  field.closest('label').hidden=!visible;
+  field.disabled=!enabled;
  }
  function updateCostForm(form){
-  const cat=$('cost-category').value,c=$('cost-calculation'),product=cat==='product',tax=cat==='tax';
-  const schedule=cat==='fee'&&$('fee-mode')?.value!=='general';
-  const legacyMode=$('fee-mode');
-  if(legacyMode)legacyMode.closest('label').hidden=cat!=='fee';
+  const cat=$('cost-category').value,c=$('cost-calculation'),product=cat==='product',tax=cat==='tax',fee=cat==='fee';
+  const legacyMode=$('fee-mode'),schedule=fee&&legacyMode?.value!=='general';
+  const selected=Boolean(cat),linked=form.dataset.linkedFee==='true';
+  if(legacyMode)showCostField(legacyMode,fee);
   $('cost-payment-schedule').hidden=!schedule;
-  c.closest('label').hidden=schedule;
-  for(const option of c.options)option.hidden=product?option.value!=='fixed_per_item':tax?option.value!=='percentage':
-   option.value==='fixed_per_item'||(option.value==='fixed_once'&&cat!=='expense');
-  if(product)c.value='fixed_per_item';
-  else if(tax)c.value='percentage';
-  else if(!c.value||c.value==='fixed_per_item'||(c.value==='fixed_once'&&cat!=='expense'))c.value='fixed_per_sale';
-  c.disabled=product||tax||schedule;
+
+  const modes=product?['fixed_per_item']:tax?['percentage']:
+   cat==='expense'?['fixed_per_sale','percentage','fixed_once']:['fixed_per_sale','percentage'];
+  for(const option of c.options)option.hidden=!modes.includes(option.value);
+  if(!modes.includes(c.value))c.value=modes[0];
+  const showMode=selected&&!schedule&&!product&&!tax;
+  showCostField(c,showMode);
   const percentage=c.value==='percentage';
-  form.elements.amount.closest('label').hidden=schedule;
-  form.elements.rate.closest('label').hidden=schedule;
-  form.elements.amount.disabled=schedule||percentage;form.elements.amount.required=!schedule&&!percentage;
-  form.elements.rate.disabled=schedule||!percentage;form.elements.rate.required=!schedule&&percentage;
-  $('cost-product').closest('label').hidden=!product;$('cost-product').disabled=!product;
-  const value=$('cost-product').value,known=product&&/^\d+$/.test(value)?costProducts[Number(value)]:null,manual=product&&value==='manual';
-  $('cost-product-id-label').hidden=!manual;form.elements.product_id.disabled=!manual;form.elements.product_id.required=manual;
-  const linked=form.dataset.linkedFee==='true';
-  $('cost-provider').closest('label').hidden=Boolean(costFlow?.integration);
-  $('cost-provider').disabled=Boolean(known||linked);
-  if(known){$('cost-provider').value=known.provider;$('cost-currency').value=known.currency;}
-  const cur=$('cost-currency').value;
-  $('cost-amount-label').textContent='Valor em '+cur+(product?' por unidade':' por venda');
-  $('cost-explanation').hidden=schedule;
-  $('cost-explanation').innerHTML='<strong>'+esc(tax?'Imposto sobre o faturamento aprovado':product?'Custo por unidade vendida':percentage?'Percentual sobre as vendas aprovadas':'Valor aplicado a cada venda aprovada')+'</strong><p>'+esc(cat==='fee'?'O valor informado pelo checkout tem prioridade.':product?'O custo é multiplicado pela quantidade do produto no pedido. Produtos com uma configuração específica usam essa configuração.':percentage?'O percentual será aplicado sobre o valor bruto do pedido aprovado.':'O valor fixo será descontado uma vez.')+'</p>';
+  const showAmount=selected&&!schedule&&!percentage,showRate=selected&&!schedule&&percentage;
+  showCostField(form.elements.amount,showAmount);
+  showCostField(form.elements.rate,showRate);
+  form.elements.amount.required=showAmount;
+  form.elements.rate.required=showRate;
+
+  const productField=$('cost-product');
+  showCostField(productField,product,product&&form.dataset.fixedProduct!=='true');
+  const value=productField.value,known=product&&/^\d+$/.test(value)?costProducts[Number(value)]:null;
+  const manual=product&&value==='manual';
+  showCostField(form.elements.product_id,manual);
+  form.elements.product_id.required=manual;
+  showCostField($('cost-provider'),selected&&!product&&!costFlow?.integration,!linked);
+  const cur=known?.currency||form.dataset.currency;
+  $('cost-currency').value=cur;
+  $('cost-amount-label').textContent='Valor em '+cur+(product?' por unidade':c.value==='fixed_once'?'':' por venda');
+  $('cost-effective-note').hidden=!selected;
+  $('cost-actions').hidden=!selected;
+  form.querySelector('[type=submit]').disabled=!selected;
+  $('cost-explanation').hidden=!selected||schedule;
+  if(!selected||schedule)return;
+  $('cost-explanation').innerHTML='<strong>'+esc(tax?'Imposto sobre o faturamento aprovado':product?'Custo por unidade vendida':percentage?'Percentual sobre as vendas aprovadas':c.value==='fixed_once'?'Despesa única':'Valor aplicado a cada venda aprovada')+'</strong><p>'+esc(fee?'O valor informado pelo checkout tem prioridade.':product?'O custo é multiplicado pela quantidade vendida. A configuração do produto tem prioridade sobre o custo geral.':percentage?'O percentual será aplicado sobre o valor bruto do pedido aprovado.':c.value==='fixed_once'?'O valor será lançado uma vez.':'O valor fixo será descontado de cada venda aprovada.')+'</p>';
  }
  document.addEventListener('change',e=>{
   const form=e.target.closest('[data-form="cost"]');
@@ -695,8 +713,9 @@
    if(type==='site'){await api('/sites',data);await sitesForm();return;}
    if(type==='cost'){
     const category=$('cost-category').value,calculation=$('cost-calculation').value,currency=$('cost-currency').value,known=category==='product'&&/^\d+$/.test($('cost-product').value)?costProducts[Number($('cost-product').value)]:null;
+    if(!category)throw new Error('Selecione o tipo de custo.');
     const scheduled=category==='fee'&&$('fee-mode')?.value!=='general';
-    const payload={name:data.name,category,calculation:scheduled?'fee_schedule':calculation,currency,product_id:category==='product'?(known?.product_id||data.product_id||null):null,provider:$('cost-provider').value||null,amount_minor:scheduled||calculation==='percentage'?null:minorInput(data.amount,scale[currency]),rate_bps:!scheduled&&calculation==='percentage'?minorInput(data.rate,2):null};
+    const payload={name:data.name,category,calculation:scheduled?'fee_schedule':calculation,currency,product_id:category==='product'?(known?.product_id||data.product_id||null):null,provider:(category==='product'?(known?.provider||form.dataset.provider):$('cost-provider').value)||null,amount_minor:scheduled||calculation==='percentage'?null:minorInput(data.amount,scale[currency]),rate_bps:!scheduled&&calculation==='percentage'?minorInput(data.rate,2):null};
     if(scheduled){
      payload.fee_schedule=fees.read(form,currency,minorInput);
      if(data.integration_id)payload.integration_id=data.integration_id;

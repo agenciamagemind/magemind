@@ -98,10 +98,11 @@
     return `<div class="mt-fee-tabs" role="group" aria-label="Meio de pagamento">
         <button type="button" data-fee-tab="pix" aria-pressed="true">Pix</button>
         <button type="button" data-fee-tab="card" aria-pressed="false">Cartão</button>
+        <button type="button" data-fee-tab="both" aria-pressed="false">Ambos</button>
       </div>
-      <div data-fee-panel="pix" class="mt-fee-panel"><div class="mt-fee-inputs">${inputs('pix', schedule.pix, currency, 'Pix')}</div></div>
+      <div data-fee-panel="pix" class="mt-fee-panel"><strong class="mt-fee-method" hidden>Pix</strong><div class="mt-fee-inputs">${inputs('pix', schedule.pix, currency, 'Pix')}</div></div>
       <div data-fee-panel="card" class="mt-fee-panel" hidden>
-        <div class="mt-fee-inputs">${inputs('card', schedule.card, currency, 'Cartão')}</div>
+        <strong class="mt-fee-method" hidden>Cartão</strong><div class="mt-fee-inputs">${inputs('card', schedule.card, currency, 'Cartão')}</div>
         <details class="mt-fee-installments">
           <summary>Tarifa por número de parcelas</summary>
           <p class="small">Informe o percentual total para cada número de parcelas. Campos vazios usam a tarifa padrão do cartão.</p>
@@ -195,7 +196,11 @@
     if (tab) {
       const editor = tab.closest('[data-fee-editor]');
       for (const button of editor.querySelectorAll('[data-fee-tab]')) button.setAttribute('aria-pressed', String(button === tab));
-      for (const panel of editor.querySelectorAll('[data-fee-panel]')) panel.hidden = panel.dataset.feePanel !== tab.dataset.feeTab;
+      const bothMethods = tab.dataset.feeTab === 'both';
+      for (const panel of editor.querySelectorAll('[data-fee-panel]')) {
+        panel.hidden = !bothMethods && panel.dataset.feePanel !== tab.dataset.feeTab;
+        panel.querySelector('.mt-fee-method').hidden = !bothMethods;
+      }
     }
     event.target.closest('[data-fee-remove-tier]')?.closest('[data-fee-tier]').remove();
   });
