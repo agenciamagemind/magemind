@@ -103,7 +103,7 @@ function listenForAnchoredPopovers() {
 function groupSidebarNavigation(items, renderItem) {
   const groups = [
     ['trabalho', 'Trabalho', ['dashboard', 'demands', 'docs', 'oraculo']],
-    ['negocio', 'Negócio', ['campaigns', 'orders', 'integrations', 'clients', 'sales', 'partners', 'withdrawals', 'goals', 'solutions', 'affiliates']],
+    ['negocio', 'Negócio', ['campaigns', 'orders', 'products', 'integrations', 'clients', 'sales', 'partners', 'withdrawals', 'goals', 'solutions', 'affiliates']],
     ['gestao', 'Gestão', ['team', 'firewall', 'settings']]
   ];
   return groups.map(([id, label, pages]) => {

@@ -42,6 +42,7 @@
    if(route==='/dashboard')return rpc('tracking_dashboard_report',{w,f:state.from,t:state.to,cur:state.currency});
    if(route==='/dashboard-layout')return data?.layouts?rpc('tracking_dashboard_save_layouts',{w,p:data.layouts}):rpc('tracking_dashboard_layout',{w,d:data?.device||params.device,p:data?.layout||null,expected_revision:data?.revision??null});
    if(route==='/onboarding/celebrate')return {claimed:await rpc('tracking_onboarding_celebrate',{w})};
+   if(route==='/catalog')return rpc('tracking_catalog',{w,q:state.search,p:state.page});
    if(route==='/cost-products')return rpc('tracking_cost_products',{w});
    if(route==='/costs/edit')return {id:await rpc('tracking_update_cost',{w,c:data.id,p:data})};
    if(route==='/costs/archive')return rpc('tracking_archive_cost',{w,c:data.id});

@@ -1,3 +1,4 @@
+import {catalogAction,CatalogError} from '../_shared/tracking-catalog.ts';
 import {service,userClient,checkDatabase,guard,json,body,credential,encrypt,decrypt,env,sha256,requireMember,allowReads} from '../_shared/tracking-runtime.ts';
 import {oauthStart,exchangeOAuth,listAccounts,setMetaStatus,metaFailure,metaProfile,metaAccountManagement,verifyMetaRead} from '../_shared/tracking/adapters.mjs';
 import {connector,validateWebhookSetup,webhookEndpoint} from '../_shared/tracking/connectors.mjs';
@@ -164,6 +165,7 @@ Deno.serve(async(req)=>{
    const grant=await rpc(db,'tracking_oauth_finish',{h,c:await encrypt(secrets)});
    return json(req,{grant});
   }
+  if(['catalog_connect','catalog_sync','catalog_detail','catalog_update'].includes(input.action))return json(req,await catalogAction(db,integration,input));
   if(input.action==='webhook_details'){
    connector(integration.provider);const {secrets}=await credential(db,integration.id);if(!secrets.ingressToken)throw new Error('Reconecte a plataforma para gerar o endereço privado');return json(req,{provider:integration.provider,webhook:webhookEndpoint(env('TRACKING_CALLBACK_ORIGIN'),integration.provider,integration.id,secrets.ingressToken)});
   }
@@ -213,6 +215,7 @@ Deno.serve(async(req)=>{
   }
   throw new Error('Ação indisponível');
  }catch(error){
+  if(error instanceof CatalogError)return json(req,{error:error.message},422);
   if(error instanceof MetaError)return json(req,{error:error.message,code:error.code},error.code==='rate_limit'?429:error.code==='ad_status_conflict'?409:422);
   console.error('tracking-api rejected:',error?.code||'validation');
   const msg=String(error?.message||'');

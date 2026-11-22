@@ -5,12 +5,13 @@
  if(pilot){if(cfg.environmentId!=='magemind-tracking-pilot-v1'||cfg.supabaseUrl!=='https://tsawxmlfvnvepzgcztfc.supabase.co')throw new Error('Piloto inválido');}else if(!cfg||cfg.environment!=='test'||cfg.externalDelivery!==false||!/magemind-tracking-(local|test)-/.test(cfg.environmentId)||JSON.stringify(cfg).includes('tsawxmlfvnvepzgcztfc'))throw new Error('Configuração isolada de teste necessária');
  const $=id=>document.getElementById(id);
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const tabs=[['overview','Dashboard'],['ads','Campanhas'],['orders','Pedidos'],['integrations','Integrações'],['settings','Configurações']];
- const routes={overview:'dashboard',ads:'campaigns',orders:'orders',integrations:'integrations',settings:'settings'};
+ const tabs=[['overview','Dashboard'],['ads','Campanhas'],['orders','Pedidos'],['products','Produtos'],['integrations','Integrações'],['settings','Configurações']];
+ const routes={overview:'dashboard',ads:'campaigns',orders:'orders',products:'products',integrations:'integrations',settings:'settings'};
  const brand=window.MagemindTrackingBrands;
  const periods=window.MagemindTrackingPeriods;
  const connections=window.MagemindTrackingConnections;
  const fees=window.MagemindTrackingFees;
+ const catalog=window.MagemindTrackingProducts;
  const checkoutProviders=Object.keys(window.MagemindWebhookConnectors);
  const adProviders=['meta','google','tiktok'];
  const adViews=new Map();
@@ -174,7 +175,7 @@
   const mount=state.tab==='settings'?$('settings-panel-tracking'):$('tracking-'+nativePage+'-mount');
   if(!mount)return;mount.appendChild($('tracking-module'));$('tracking-module').hidden=false;
   const toolbar=$('tracking-toolbar'), el=$('tracking-content'), scope=[DB.me.id,state.tab,state.workspace].join(':');
-  toolbar.hidden=state.tab==='settings'||state.tab==='integrations';
+  toolbar.hidden=['settings','integrations','products'].includes(state.tab);
   toolbar.querySelector('.period-label').textContent=state.tab==='overview'?'Visão geral da sua operação':'Período e filtros da operação';
   if(renderedScope!==scope)restoreTrackingToolbar();
   if(state.tab==='overview'){
@@ -188,7 +189,7 @@
    $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
    const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,orderCards,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.search='';state.status='';state.provider='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid){replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});}return;
-  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
+  }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,products:productList,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)replaceContent(el,'<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>');if(options.propagate)throw e;}
  }
  async function syncStatus(version){
@@ -222,10 +223,10 @@
  async function refreshData(options={}){
   if(refreshingAds||window.MagemindDashboard.isEditing())return;
   refreshingAds=true;$('tracking-refresh').setAttribute('aria-busy','true');$('tracking-refresh').disabled=true;
-  try{if(await ready()&&!observer()&&state.tab!=='orders'&&state.workspace&&window.MagemindTrackingBackend?.edge)await window.MagemindTrackingBackend.edge({action:'queue_ads_sync',workspace:state.workspace});await render();}
+  try{if(await ready()&&!observer()&&['overview','ads'].includes(state.tab)&&state.workspace&&window.MagemindTrackingBackend?.edge)await window.MagemindTrackingBackend.edge({action:'queue_ads_sync',workspace:state.workspace});await render();}
   catch(e){if(options.propagate)throw e;toast(e.message);}finally{refreshingAds=false;$('tracking-refresh').removeAttribute('aria-busy');$('tracking-refresh').disabled=false;}
  }
- function route(page){adDetailRequest++;$('mobile-track-export').hidden=true;$('mobile-track-connections').hidden=true;closePeriod();clearTimeout(filterTimer);filterTimer=0;if(page!=='dashboard')restoreTrackingToolbar();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
+ function route(page){adDetailRequest++;$('mobile-track-export').hidden=true;$('mobile-track-connections').hidden=true;closePeriod();clearTimeout(filterTimer);filterTimer=0;if(page!=='dashboard')restoreTrackingToolbar();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard','products'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
  async function overview(){
   const uid=user.user_id,w=state.workspace,[data,series]=await Promise.all([api('/dashboard'),api('/revenue-series')]);data.revenue_series=series;
   if(user?.user_id!==uid||state.workspace!==w||window.MagemindDashboard.isEditing())return '';
@@ -418,6 +419,12 @@
   };
   return brand.integrationSections(card)+panel('Origem das vendas','<div class="mt-sales-origin"><p>UTMs identificam o anúncio que originou cada pedido. O script próprio permite acompanhar também as visitas e etapas do funil.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+'</div></div>');
  }
+ const catalogContext=()=>({
+  state,api,esc,money,dt,brand,button,select,paginate,modal,toast,render,
+  costForm,minorInput,scale,canWrite:['owner','admin'].includes(workspace()?.role),
+  edge:(action,data)=>window.MagemindTrackingBackend.edge({action,workspace:state.workspace,...data})
+ });
+ const productList=()=>catalog.render(catalogContext());
  async function costs(){
   costRules=await api('/costs');
   const labels={product:'Custo do produto',tax:'Imposto',fee:'Taxa de pagamento',expense:'Custo adicional'};
@@ -468,22 +475,22 @@
   $('tracking-dialog').close();
   return finish?.();
  }
- async function costForm(row=null,flow=null){
+ async function costForm(row=null,flow=null,product=null){
   costFlow=flow;
-  costProducts=flow?[]:await api('/cost-products');
+  costProducts=product?[product]:flow?[]:await api('/cost-products');
   const integration=flow?.integration;
   const category=row?.category||(integration?'fee':'product');
   const legacyFee=category==='fee'&&row&&!row.fee_schedule;
   const mode=row?.calculation==='legacy'?(category==='tax'?'percentage':category==='product'?'fixed_per_item':row.rate_bps?'percentage':'fixed_per_sale'):row?.calculation||'fixed_per_item';
-  const known=costProducts.findIndex(p=>p.product_id===row?.product_id&&p.provider===row?.provider&&p.currency===row?.currency);
-  const currency=row?.currency||(integration?'BRL':workspace()?.currency||state.currency);
-  const provider=integration?.provider||row?.provider||'';
+  const known=costProducts.findIndex(p=>p.product_id===(product||row)?.product_id&&p.provider===(product||row)?.provider&&p.currency===(product||row)?.currency);
+  const currency=product?.currency||row?.currency||(integration?'BRL':workspace()?.currency||state.currency);
+  const provider=product?.provider||integration?.provider||row?.provider||'';
   const decimal=(value,digits)=>value==null?'':(Number(value)/10**digits).toFixed(digits).replace('.',',');
   const header=integration?'<div class="mt-fee-integration wide">'+brand.logo(provider)+'<div><strong>'+esc(integration.name)+'</strong><p>Revise as tarifas antes de receber pedidos.</p></div></div>':'';
-  modal(integration?'Configurar taxa de pagamento':row?'Editar custo':'Adicionar custo',
+  modal(product?'Configurar custo':integration?'Configurar taxa de pagamento':row?'Editar custo':'Adicionar custo',
    '<form data-form="cost" class="form-grid" data-linked-fee="'+Boolean(integration||row?.integration_id)+'">'+
    '<input type="hidden" name="id" value="'+esc(row?.id||'')+'"><input type="hidden" name="integration_id" value="'+esc(integration?.id||row?.integration_id||'')+'">'+header+
-   '<label '+(integration?'hidden':'')+'>Nome do custo<input name="name" required maxlength="120" value="'+esc(integration?.name||row?.name||'')+'" placeholder="Ex.: Produto, imposto ou embalagem" '+(integration||row?.integration_id?'readonly':'')+'></label>'+
+   '<label '+(integration?'hidden':'')+'>Nome do custo<input name="name" required maxlength="120" value="'+esc(integration?.name||row?.name||product?.name?.slice(0,120)||'')+'" placeholder="Ex.: Produto, imposto ou embalagem" '+(integration||row?.integration_id?'readonly':'')+'></label>'+
    (integration?'<input id="cost-category" type="hidden" value="fee">':select('cost-category','Tipo de custo',[['product','Custo do produto'],['tax','Imposto'],['fee','Taxa de pagamento'],['expense','Custo adicional']],category))+
    (legacyFee?select('fee-mode','Tipo de tarifa',[['general','Mesma tarifa para todos'],['schedule','Pix e cartão']], 'general'):'')+
    select('cost-calculation','Como calcular',[['fixed_per_item','Valor fixo por unidade'],['fixed_per_sale','Valor fixo por venda aprovada'],['percentage','Porcentagem sobre vendas aprovadas'],['fixed_once','Valor fixo único']],mode)+
@@ -503,6 +510,7 @@
   if(row?.integration_id&&!integration)$('cost-category').disabled=true;
   fees.fill($('cost-payment-schedule'),provider,currency,row?.fee_schedule,Boolean(integration&&!row));
   updateCostForm(form);
+  if(product){$('cost-category').disabled=true;$('cost-product').disabled=true;}
  }
  function updateCostForm(form){
   const cat=$('cost-category').value,c=$('cost-calculation'),product=cat==='product',tax=cat==='tax';
@@ -542,6 +550,7 @@
  function minorInput(value,s){if(!value)return null;const parts=value.replace(',','.').split('.');if(parts.length>2||!/^\d+$/.test(parts[0])||!/^[0-9]*$/.test(parts[1]||'')||(parts[1]||'').length>s)throw new Error('Precisão do valor inválida');const n=Number(BigInt(parts[0])*10n**BigInt(s)+BigInt((parts[1]||'').padEnd(s,'0')||'0'));if(!Number.isSafeInteger(n))throw new Error('Valor acima do limite permitido');return n;}
  async function action(name,el){
   if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','ad-detail','ad-accounts','dialog-close','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
+  if(name.startsWith('catalog-'))return catalog.action(name,el,catalogContext());
   if(name.startsWith('campaign-')){
    if(!['owner','admin'].includes(workspace()?.role))throw new Error('Somente os responsáveis pela operação podem gerenciar as conexões.');
    return connections.campaignAction(name,el.dataset.id);
@@ -662,6 +671,10 @@
   const form=e.target.closest('.mt-root [data-form]');if(!form)return;e.preventDefault();const btn=form.querySelector('button[type=submit],button.primary');btn.disabled=true;
   try{
    const data=Object.fromEntries(new FormData(form)),type=form.dataset.form;
+   if(type.startsWith('catalog-')){
+    await catalog.submit(type,form,data,catalogContext());
+    return;
+   }
    if(type==='ad-accounts'){
     if(form.dataset.workspace!==state.workspace||state.tab!=='ads')return $('tracking-dialog').close();
     const view=campaignView(data.provider);
@@ -747,7 +760,7 @@
   event.preventDefault();applyClientFilters();
  });
  document.addEventListener('input',event=>{
-  if(event.target.id!=='tracking-search'||!event.target.closest('.mt-compact-filters')||event.isComposing)return;
+  if(event.target.id!=='tracking-search'||!event.target.closest('.mt-compact-filters,.mt-catalog-toolbar')||event.isComposing)return;
   clearTimeout(filterTimer);
   filterTimer=setTimeout(applyClientFilters,260);
  });
