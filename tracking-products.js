@@ -27,16 +27,31 @@
    (canWrite?'<div class="mt-product-actions">'+button('Configurar custo','catalog-cost','data-index="'+index+'"')+
     (row.editable?button('Editar produto','catalog-edit','data-index="'+index+'"'):'')+'</div>':'')+'</div></li>';
  }
+ function emptyState(title,description,action=''){
+  return '<section class="mt-catalog-empty">'+box+'<h2>'+title+'</h2><p>'+description+'</p>'+action+'</section>';
+ }
  async function render(ctx){
-  const {state,api,esc,button,paginate,canWrite}=ctx;
+  const {state,api,esc,button,paginate,canWrite,hasCheckout}=ctx;
   const w=state.workspace,query=state.search,page=state.page;
   const result=await api('/catalog',null,{search:query});
   if(state.workspace!==w||state.search!==query||state.page!==page)return '';
   if(!result.rows.length&&page>1){state.page=Math.max(1,Math.ceil(result.total/24));return render(ctx);}
   if(workspace!==w){workspace=w;syncMessage='';syncing=false;}
   items=result.rows;sources=result.sources;
-  const hint=sources.some(s=>!s.synced_at)?'Autorize a Cartpanda para importar fotos, preços e produtos sem pedidos.':
+  const needsConnection=!query&&!result.total&&!hasCheckout&&!sources.length;
+  const integrationsButton=canWrite?button('Abrir integrações','setup-checkouts','',needsConnection):'';
+  if(needsConnection){
+   return emptyState('Conecte sua plataforma de vendas',
+    'Escolha seu checkout, gateway de pagamento ou API de pedidos para trazer seus produtos e configurar o custo de cada um.',
+    integrationsButton);
+  }
+  const needsAuthorization=sources.some(s=>!s.synced_at);
+  const hint=needsAuthorization?'Autorize a Cartpanda para importar fotos, preços e produtos sem pedidos.':
    'Os produtos de integrações sem catálogo são identificados pelos pedidos recebidos.';
+  const emptyDescription=needsAuthorization?'Autorize o catálogo da loja conectada ou aguarde os primeiros pedidos.':
+   sources.length?'Sincronize o catálogo da loja ou aguarde os primeiros pedidos da sua integração.':
+    'Os produtos aparecerão aqui assim que a sua integração enviar os primeiros pedidos.';
+  const emptyAction=sources.length&&canWrite?button('Abrir catálogo Cartpanda','catalog-sources'):integrationsButton;
   return '<div class="mt-catalog-toolbar"><label class="mt-catalog-search">'+search+'<input id="tracking-search" type="search" maxlength="120" value="'+esc(query)+
    '" placeholder="Buscar produto" aria-label="Pesquisar produtos"></label>'+
    (canWrite?button(sync+'<span>'+(syncing?'Sincronizando…':'Sincronizar produtos')+'</span>','catalog-sync',(syncing?'disabled':''),true): '')+'</div>'+
@@ -44,9 +59,8 @@
    (sources.length&&canWrite?button('Catálogo Cartpanda','catalog-sources'):'')+'</div>'+
    '<p class="mt-catalog-status" id="catalog-status" role="status">'+esc(syncMessage||hint)+'</p>'+
    (items.length?'<ul class="mt-product-grid">'+items.map((row,i)=>card(row,i,ctx)).join('')+'</ul>':
-    '<section class="mt-catalog-empty">'+box+'<h2>'+(query?'Nenhum produto encontrado':'Nenhum produto disponível')+'</h2><p>'+
-    (query?'Experimente outro nome, SKU ou ID.':'Autorize o catálogo da Cartpanda ou aguarde os primeiros pedidos do seu checkout.')+'</p>'+
-    (!query && canWrite?(sources.length?button('Abrir catálogo Cartpanda','catalog-sources'):button('Abrir integrações','setup-checkouts')):'')+'</section>')+
+    query?emptyState('Nenhum produto encontrado','Experimente outro nome, SKU ou ID.'):
+     emptyState('Nenhum produto disponível',emptyDescription,emptyAction))+
    (result.total>24?paginate(result.total,24):'');
  }
  function connectDialog(ctx,id){

@@ -418,7 +418,7 @@
  }
  const catalogContext=()=>({
   state,api,esc,money,dt,brand,button,select,paginate,modal,toast,render,
-  costForm,minorInput,scale,canWrite:['owner','admin'].includes(workspace()?.role),
+  costForm,minorInput,scale,hasCheckout:setup?.has_checkout,canWrite:['owner','admin'].includes(workspace()?.role),
   edge:(action,data)=>window.MagemindTrackingBackend.edge({action,workspace:state.workspace,...data})
  });
  const productList=()=>catalog.render(catalogContext());
