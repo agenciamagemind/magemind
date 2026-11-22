@@ -15,7 +15,8 @@
  }
  function sync(){
   const me=typeof DB!=='undefined'?DB.me:null,phone=typeof getAgencyPhone==='function'?getAgencyPhone():'';
-  const active=Boolean(me&&!['ceo','manager'].includes(me.role)&&phone&&document.getElementById('app')?.style.display!=='none');widget.hidden=!active;
+  const app=document.getElementById('app');
+  const active=Boolean(me&&!['ceo','manager'].includes(me.role)&&phone&&app.style.display!=='none'&&!app.hasAttribute('data-hide-whatsapp'));widget.hidden=!active;
   if(!active){hide();clearTimeout(timer);account=null;return false;}
   link.href='https://wa.me/'+phone+'?text='+encodeURIComponent('Olá, equipe Magemind! Consegue me ajudar?');
   if(account!==me.id){account=me.id;shown=0;lastMessage=-1;hide();schedule(12000);}

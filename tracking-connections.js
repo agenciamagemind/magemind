@@ -293,11 +293,6 @@
  }
  async function campaignAction(name,id){
   if(name==='campaign-connections')return hub();
-  if(name==='campaign-integrate'&&['google','tiktok'].includes(id)){
-   const platform=c.brand.name(id);
-   return c.modal('Conectar '+platform,'<p>A conexão com '+esc(platform)+' ainda precisa ser habilitada pela Magemind. Fale com a equipe para solicitar a ativação.</p>'+
-    '<div class="actions">'+support('Olá! Quero solicitar a conexão com '+platform+' no painel da Magemind.')+'</div>');
-  }
   if(['campaign-link','campaign-renew','campaign-profile-reconnect'].includes(name)){
    try{return await meta(name==='campaign-renew'?id:null,name==='campaign-profile-reconnect'?id:null);}
    catch(error){return hub(error.message,true);}

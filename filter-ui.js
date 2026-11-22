@@ -79,7 +79,7 @@
   return sync;
  }
  const fallbackPickers=new Map();
- const nativeFilters='.mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
+ const nativeFilters='.mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, .mt-ad-delivery select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
  let selectId=0;
  function labelFor(select){
   const label=select.labels?.[0]?.cloneNode(true);

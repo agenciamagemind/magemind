@@ -283,6 +283,14 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .mm-background-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .mm-background-actions .btn { min-height: 40px; border-radius: 999px; font-size: 12px; }
 .mm-background-actions .mm-remove-bg { color: #ffa5a5; }
+.mm-appearance-switch {
+  position: relative; flex: 0 0 42px; width: 42px; height: 25px; appearance: none;
+  border: 1px solid var(--border3); border-radius: 999px; background: var(--bg4); cursor: pointer;
+}
+.mm-appearance-switch::before { content: ''; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: var(--text2); }
+.mm-appearance-switch:checked { background: var(--accent); border-color: var(--accent); }
+.mm-appearance-switch:checked::before { transform: translateX(17px); background: var(--accent-ink); }
+.mm-appearance-switch:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
 
 .mm-background {
   position: absolute;
@@ -304,18 +312,20 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .mm-background[data-shade="strong"] { --shadow-top: .74; --shadow-center: .57; --shadow-bottom: .92; }
 #app > .mm-background { inset-inline-start: var(--sidebar-rail, 0px); }
 #app[data-custom-background] > .main { position: relative; background: transparent; }
-#app[data-custom-background] .main .topbar {
-  background: transparent;
-  border-color: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-#app[data-custom-background] .topbar :is(#btn-notif, #dashboard-customize, #dashboard-privacy, .mobile-menu-btn, .topbar-brand, .topbar-profile) {
-  --mm-glass-fill: rgb(18 18 18 / 64%);
-  background: var(--mm-glass-texture), var(--mm-glass-fill);
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  color: var(--text);
+@media (min-width:901px) {
+  #app[data-custom-background] .main .topbar {
+    background: transparent;
+    border-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  #app[data-custom-background] .topbar :is(#btn-notif,#dashboard-customize,#dashboard-privacy) {
+    --mm-glass-fill: rgb(18 18 18 / 64%);
+    background: var(--mm-glass-texture), var(--mm-glass-fill);
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    color: var(--text);
+  }
 }
 #app[data-custom-background] .page.active :is(.ph-title, .ph-sub) { text-shadow: 0 2px 14px #000, 0 1px 4px #000; }
 #app[data-custom-background] .page.active .ph-sub { color: #eee; }
@@ -531,4 +541,51 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
     -webkit-backdrop-filter:none;
     backdrop-filter:none;
   }
+}
+@media (max-width:900px) {
+  #app .main .topbar {
+    background: linear-gradient(180deg,#111e 0%,#111a 65%,#1110 100%);
+    border: 0;
+  }
+  #app .main .topbar :is(.topbar-brand,.mobile-menu-btn),
+  #app .main .topbar #notif-wrapper :is(#btn-notif,#dashboard-customize,#dashboard-privacy,.mobile-tracking-action) {
+    background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  #app .main .topbar .topbar-brand { padding: 0; width: max-content; max-width: 100%; }
+  #app > .sidebar.mobile-open { --mm-glass-opacity: .87; }
+  #app .topbar .topbar-right,#app .topbar #notif-wrapper { gap: 3px; }
+  #app .topbar #notif-wrapper .mobile-tracking-action:not([hidden]) { display: inline-flex; width: 42px; height: 42px; color: var(--text); }
+  #app .topbar #saved-ind { display: none; }
+  #pg-dashboard .dashboard-heading { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; padding-bottom: 12px; }
+  #pg-dashboard .dashboard-heading .ph-info { min-width: 0; }
+  #dash-greeting,#dash-summary-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dash-summary-sub { font-size: clamp(11px,3.15vw,13px); }
+  #dashboard-toolbar-mount { margin-inline-start: 0; width: 100%; }
+  #dashboard-toolbar-mount #tracking-toolbar { justify-content: flex-start; }
+  #dashboard-toolbar-mount #tracking-toolbar .mt-period-control { flex: 0 1 auto; }
+  :is(#pg-dashboard,#pg-campaigns,#pg-orders) #tracking-refresh,
+  :is(#pg-campaigns,#pg-orders) .mt-filter-actions { display: none; }
+  :is(#tracking-campaigns-mount,#tracking-orders-mount) { margin-top: 12px; }
+  #pg-campaigns:has(.mt-campaigns-lock) #tracking-campaigns-mount { margin-top: 0; }
+  :is(#pg-campaigns,#pg-orders) .mt-root .filters .search input { border-radius: 999px; }
+  :is(#pg-campaigns,#pg-orders) .mt-root .filters .search input::placeholder { font-size: 12px; }
+  #pg-campaigns .mt-root .mt-ad-filters > .search { grid-row: 2; }
+  #pg-campaigns .mt-root .mt-ad-table tfoot :is(th,td) { background: transparent; }
+  #pg-campaigns .mt-root .mt-ad-table-scroll:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+  #pg-orders .mt-root .mt-order-filters { grid-template-columns: minmax(0,1.45fr) minmax(0,1fr); }
+  #pg-orders .mt-root .mt-order-filters #tracking-toolbar .mt-period-control { grid-column: 1; grid-row: 1; }
+  #pg-orders .mt-root .mt-order-filters > .app-filter-toggle { grid-column: 2; grid-row: 1; }
+  #pg-orders .mt-root .mt-order-filters > .search { grid-column: 1/-1; grid-row: 2; }
+  #pg-orders .mt-root .mt-order-filters #tracking-period-toggle { padding-inline: 9px; gap: 5px; }
+  #pg-orders .mt-root .mt-order-filters #tracking-period-toggle small { font-size: clamp(7px,2vw,9px); white-space: nowrap; }
+  #pg-orders .mt-root .mt-order-filters #tracking-period-toggle svg:first-child { width: 14px; }
+  #pg-orders .mt-root .panel-body:has(.mt-order-cards) { padding: 9px; }
+  #pg-solutions .solution-custom-cta {
+    position: static; margin: 18px auto 0; width: 100%; flex-wrap: wrap; gap: 7px;
+    padding: 10px 12px; box-shadow: none;
+  }
+  #pg-solutions .solution-custom-cta :is(strong,span) { display: block; white-space: nowrap; }
+  #pg-solutions .solution-custom-cta .btn { max-width: 100%; min-height: 40px; margin-inline-start: auto; }
+  #pg-solutions .solution-custom-cta strong { font-size: 12px; }
+  #pg-solutions .solution-custom-cta span { font-size: 10px; }
 }

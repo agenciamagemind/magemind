@@ -25,13 +25,13 @@
  const notificationPreferences=[['pending','Pedidos pendentes'],['sales','Vendas aprovadas'],['renewals','Renovações'],['refusals','Pagamentos recusados'],['cancellations','Pedidos cancelados'],['refunds','Reembolsos'],['chargebacks','Chargebacks'],['disputes','Pagamentos em disputa'],['failures','Falhas de integração'],['hide_amount','Ocultar valores nos avisos']];
  let setup=null,costRules=[],costProducts=[],costHistory=false,celebrating=false,welcomePending=null,sessionStarted=Date.now(),onboardingExpanded=false;
  const day=timestamp=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'}).format(new Date(timestamp));
- const state={workspace:null,tab:'overview',preset:'week',...periods.range('week'),currency:'BRL',page:1,status:'',provider:'',channel:'',payment:'',search:'',account_id:''};
+ const state={workspace:null,tab:'overview',preset:'week',...periods.range('week'),currency:'BRL',page:1,status:'',provider:'',channel:'',payment:'',search:''};
  function campaignView(provider){
   const key=state.workspace+':'+provider;
-  if(!adViews.has(key))adViews.set(key,{level:'campaign',sort:'spend_minor',direction:'desc',parent:'',account:''});
+  if(!adViews.has(key))adViews.set(key,{level:'campaign',sort:'spend_minor',direction:'desc',parent:'',account:'',accountIds:[],delivery:''});
   return adViews.get(key);
  }
- let costFlow=null,filterTimer=0;
+ let costFlow=null,filterTimer=0,adDetailRequest=0;
  connections.configure({modal,brand,state,render,toast,api,configureFee});
  const workspace=()=>workspaces.find(w=>w.id===state.workspace);
  const observer=()=>window.trackingObserver?.()===true;
@@ -58,7 +58,7 @@
   const dialog=$('tracking-dialog');
   $('dialog-title').textContent=title;
   $('dialog-content').innerHTML=html;
-  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker')));
+  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker,.mt-order-detail,.mt-ad-detail')));
   dialog.scrollTop=0;
   if(dialog.open)window.focusDialogSurface(dialog);
   else window.openAccessibleDialog(dialog);
@@ -77,7 +77,7 @@
  function quietLock(html,label,mini=false,action=null){return '<section class="mt-passive-lock'+(mini?' mt-mini-passive':'')+'"><div class="mt-data-preview" inert aria-hidden="true">'+html+'</div><div class="mt-lock-content"><span class="mt-lock-caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'+label+'</span>'+(action?button(action==='setup-costs'?'Configurar custos':action==='setup-journey'?'Configurar rastreamento':'Conectar integração',action):'')+'</div></section>';}
  async function maybeCelebrate(){
   const canShow=()=>state.tab==='overview'&&$('pg-dashboard').classList.contains('active')&&
-   !window.MagemindDashboard.isEditing()&&!document.querySelector('dialog[open],.overlay.open');
+   !window.MagemindDashboard.isEditing()&&!document.querySelector('dialog[open],.overlay.open,.sidebar.mobile-open');
   if(!isClient()||celebrating||Date.now()-sessionStarted<1800||!canShow())return;
   const uid=user?.user_id;if(!uid)return;
   if(welcomePending===uid){welcomePending=null;showWelcome();return;}
@@ -94,6 +94,24 @@
    '<label class="search"><input id="tracking-search" aria-label="Buscar pedidos" value="'+esc(state.search)+'" placeholder="Pedido, produto ou comprador"></label>'+
    select('filter-status','Status',[['','Todos'],...Object.entries(statusLabel)],state.status)+select('filter-provider','Checkout',[['','Todos'],['custom','API própria'],...checkoutProviders.map(p=>[p,brand.name(p)])],state.provider)+select('filter-channel','Origem',[['','Todas'],['meta','Meta'],['google','Google'],['unattributed','Não atribuído']],state.channel)+select('filter-payment','Pagamento',[['','Todos'],['PIX','Pix'],['CREDIT_CARD','Cartão']],state.payment)+
    (compact?'<div class="mt-filter-actions">'+button('Exportar pedidos','export')+'</div>':button('Filtrar','filter','',true))+'</div>';
+ }
+ const paymentLabel=method=>({CREDIT_CARD:'Cartão',DEBIT_CARD:'Débito',PIX:'Pix',BOLETO:'Boleto'}[method]||method||'—');
+ function orderCards(rows,admin=false){
+  return '<ul class="mt-order-cards">'+rows.map(o=>{
+   const created=o.created_at?dt(o.created_at):'Data indisponível';
+   const attrs=' data-id="'+esc(o.id)+'"'+(admin?' data-workspace="'+esc(o.workspace_id)+'"':'');
+   const buyer=o.buyer_name||'Comprador não informado';
+   return '<li><button type="button" class="mt-order-card" data-action="'+(admin?'admin-order':'order')+'"'+attrs+' aria-label="'+esc('Abrir pedido '+o.external_id+', '+buyer)+'">'+
+    '<span class="mt-order-card-main"><strong>'+esc(buyer)+'</strong><small>'+esc(brand.name(o.provider))+' · #'+esc(o.external_id)+'</small></span>'+
+    '<span class="mt-order-card-value"><strong>'+esc(money(o.gross_minor,o.currency,o.amount_scale))+'</strong>'+pill(o.status)+'</span>'+
+    '<span class="mt-order-card-meta">'+esc([admin?o.client_name:null,o.payment_method?paymentLabel(o.payment_method):null,created,o.renewal?'Renovação':null].filter(Boolean).join(' · '))+'</span>'+
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>';
+  }).join('')+'</ul>';
+ }
+ function syncHeaderActions(){
+  const active=!$('tracking-module').hidden&&!observer();
+  $('mobile-track-export').hidden=!(active&&state.tab==='orders'&&setup?.checkout_ready);
+  $('mobile-track-connections').hidden=!(active&&state.tab==='ads'&&['owner','admin'].includes(workspace()?.role));
  }
  async function loadWorkspaces(){
   if(observer()){workspaces=(await api('/admin/catalog')).rows;state.workspace=null;$('tracking-workspace-label').style.display='none';window.MagemindTrackingBackend?.subscribe('observer',()=>{if(user)markPending();});return;}
@@ -133,6 +151,7 @@
   slot?.replaceWith(toolbar);
   el.querySelector('.mt-order-filters .mt-filter-actions')?.prepend($('tracking-refresh'));
   window.MagemindFilters?.enhanceSelects(el);
+  syncHeaderActions();
   if(expanded)el.querySelector('.mt-compact-filters')?.classList.add('app-filter-expanded');
   if(focus){
    const target=$(focus.id);
@@ -167,7 +186,7 @@
   renderedScope=scope;
   try{const uid=DB.me.id;if(observer()){
    $('tracking-workspace-label').style.display='none';$('tracking-module').classList.remove('mt-campaigns-locked');$('tracking-toolbar').removeAttribute('inert');$('tracking-toolbar').querySelector('.period-label').textContent='Acompanhamento das operações';
-   const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.search='';state.status='';state.provider='';state.account_id='';state.page=1;}});
+   const html=await window.MagemindTrackingAdmin.render({state,api,esc,money,dt,brand,button,select,table,pill,paginate,ads,ordersFilters,orderCards,detail,modal,render,goTo,setCatalog:rows=>{workspaces=rows;},catalog:()=>workspaces,selectOperation:op=>{state.workspace=op?.id||null;state.admin_workspace=op?.id||null;state.simulation_only=op?.simulation_only===true;state.search='';state.status='';state.provider='';state.page=1;}});
    if(version===requestVersion&&DB.me?.id===uid){replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});}return;
   }const status=await api('/onboarding');if(version!==requestVersion||DB.me?.id!==uid)return;setup=status;const html=await ({overview,orders,ads,integrations,settings})[state.tab]();if(version!==requestVersion||DB.me?.id!==uid||state.tab==='overview'&&window.MagemindDashboard.isEditing())return;replaceContent(el,html);pendingData=false;syncFingerprint='';syncStatus(version).catch(()=>{});if(state.tab==='overview')window.MagemindDashboard.mount();const locked=Boolean(el.querySelector('.mt-campaigns-lock,.mt-orders-lock'));$('tracking-module').classList.toggle('mt-campaigns-locked',locked);$('tracking-toolbar').toggleAttribute('inert',locked);maybeCelebrate();}
   catch(e){if(version===requestVersion&&user)replaceContent(el,'<div class="error-state"><h2>Não foi possível carregar</h2><p>'+esc(e.message)+'</p>'+button('Tentar novamente','refresh')+'</div>');if(options.propagate)throw e;}
@@ -206,7 +225,7 @@
   try{if(await ready()&&!observer()&&state.tab!=='orders'&&state.workspace&&window.MagemindTrackingBackend?.edge)await window.MagemindTrackingBackend.edge({action:'queue_ads_sync',workspace:state.workspace});await render();}
   catch(e){if(options.propagate)throw e;toast(e.message);}finally{refreshingAds=false;$('tracking-refresh').removeAttribute('aria-busy');$('tracking-refresh').disabled=false;}
  }
- function route(page){closePeriod();clearTimeout(filterTimer);filterTimer=0;if(page!=='dashboard')restoreTrackingToolbar();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';state.account_id='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
+ function route(page){adDetailRequest++;$('mobile-track-export').hidden=true;$('mobile-track-connections').hidden=true;closePeriod();clearTimeout(filterTimer);filterTimer=0;if(page!=='dashboard')restoreTrackingToolbar();if(page!=="dashboard")window.MagemindDashboard.leave();if(!window.trackingEnabled()||observer()&&['settings','dashboard'].includes(page)){$('tracking-module').hidden=true;return;}const tab=Object.keys(routes).find(k=>routes[k]===page);requestVersion++;if(!tab){$('tracking-module').hidden=true;return;}if(state.tab!==tab){state.page=1;state.search='';state.provider='';state.status='';if(observer()){state.admin_workspace=null;state.workspace=null;state.admin_sort=tab==='ads'?'spend':'newest';}}state.tab=tab;render();}
  async function overview(){
   const uid=user.user_id,w=state.workspace,[data,series]=await Promise.all([api('/dashboard'),api('/revenue-series')]);data.revenue_series=series;
   if(user?.user_id!==uid||state.workspace!==w||window.MagemindDashboard.isEditing())return '';
@@ -222,9 +241,74 @@
  async function orders(){
   if(!setup.checkout_ready)return '<div class="mt-orders-lock">'+lockView('<div class="filters"><div class="mt-preview-line"></div></div>'+panel('Todos os pedidos',table(['Pedido','Comprador','Status','Pagamento','Valor'],[1,2,3,4].map(()=>'<tr>'+[1,2,3,4,5].map(()=>'<td><div class="mt-preview-line"></div></td>').join('')+'</tr>'))),'Conecte seu checkout para receber os pedidos','setup-checkouts',['kiwify','hotmart'])+'</div>';
   const data=await api('/list/orders',null,{search:state.search,status:state.status,provider:state.provider,channel:state.channel,payment:state.payment});
-  return ordersFilters()+panel('Todos os pedidos',data.rows.length?table(['Pedido / checkout','Comprador','Status','Pagamento','Valor','Origem','Criado',''],data.rows.map(o=>'<tr><td>'+esc(o.external_id)+'<small>'+esc(o.provider)+'</small></td><td>'+esc(o.buyer_name||'Não informado')+'</td><td>'+pill(o.status)+(o.renewal?' <small>Renovação</small>':'')+'</td><td>'+esc(o.payment_method==='CREDIT_CARD'?'Cartão':o.payment_method==='PIX'?'Pix':o.payment_method||'—')+'</td><td>'+money(o.gross_minor)+'</td><td>'+esc(o.channel==='unattributed'?'Não atribuído':o.channel||'—')+'</td><td>'+dt(o.created_at)+'</td><td>'+button('Detalhes','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+paginate(data.total):'<p>Nenhum pedido encontrado. Ajuste a busca ou conecte seu checkout em Integrações.</p>');
+  return ordersFilters()+panel('Todos os pedidos',data.rows.length?orderCards(data.rows)+table(['Pedido / checkout','Comprador','Status','Pagamento','Valor','Origem','Criado',''],data.rows.map(o=>'<tr><td>'+esc(o.external_id)+'<small>'+esc(o.provider)+'</small></td><td>'+esc(o.buyer_name||'Não informado')+'</td><td>'+pill(o.status)+(o.renewal?' <small>Renovação</small>':'')+'</td><td>'+esc(o.payment_method==='CREDIT_CARD'?'Cartão':o.payment_method==='PIX'?'Pix':o.payment_method||'—')+'</td><td>'+money(o.gross_minor)+'</td><td>'+esc(o.channel==='unattributed'?'Não atribuído':o.channel||'—')+'</td><td>'+dt(o.created_at)+'</td><td>'+button('Detalhes','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+paginate(data.total):'<p>Nenhum pedido encontrado. Ajuste a busca ou conecte seu checkout em Integrações.</p>');
  }
 
+ const adLevels={campaign:['Campanhas','Campanha'],group:['Conjuntos / grupos','Conjunto / grupo'],ad:['Anúncios','Anúncio']};
+ const adMetrics=[['spend_minor','Valor gasto'],['checkout_purchases','Vendas'],['cpa','CPA'],['impressions','Impressões'],['clicks','Cliques'],['ctr','CTR']];
+ function adToggle(r,account){
+   const canManage=!observer()&&['owner','admin'].includes(workspace()?.role);
+   const health=window.MagemindIntegrationHealth.integrationHealth(account);
+   const active=r.status==='ACTIVE',label=active?'Ativo':'Pausado';
+   const unavailable=r.provider_status&&!['ACTIVE','PAUSED'].includes(r.provider_status);
+   if(unavailable)return '<span class="pill">'+(r.provider_status==='ARCHIVED'?'Arquivado':r.provider_status==='DELETED'?'Excluído':'Indisponível')+'</span>';
+   if(observer())return '<span class="pill '+(active?'paid':'pending')+'">'+label+'</span>';
+   const disabled=!canManage||!r.connected||health.kind==='authorization'||account?.management_access===false||
+    (r.mode!=='simulated'&&!(pilot&&r.provider==='meta'));
+   const title=health.kind==='authorization'?health.action:account?.management_access===false?'Somente leitura. Confira as permissões em Conexões.':'';
+   return '<button type="button" class="status-switch" role="switch" aria-label="'+(active?'Desativar ':'Ativar ')+esc(r.name)+'" aria-checked="'+active+'" data-action="ad-status" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-status="'+(active?'PAUSED':'ACTIVE')+'" data-revision="'+r.revision+'" '+(disabled?'disabled ':'')+(title?' title="'+esc(title)+'"':'')+'><span aria-hidden="true"></span>'+label+'</button>';
+ }
+  const number=n=>n==null?'—':Number(n).toLocaleString('pt-BR');
+  const adValue=(r,k)=>k==='cpa'?(r.checkout_purchases&&r.spend_minor!=null?r.spend_minor/r.checkout_purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
+  const adFormat=(r,k)=>['spend_minor','cpa'].includes(k)?(adValue(r,k)==null?'—':money(Math.round(adValue(r,k)))):k==='ctr'?(adValue(r,k)==null?'—':adValue(r,k).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%'):number(adValue(r,k));
+ function adDetailButton(row){
+  return button(esc(row.name)+'<span aria-hidden="true"> ›</span>','ad-detail',
+   'data-provider="'+esc(row.provider)+'" data-account="'+esc(row.account_id)+'" data-entity="'+esc(row.entity_id)+'"');
+ }
+ function metaEditorUrl(row){
+  const account=/^act_(\d+)$/.exec(row.account_id);
+  if(!account||row.provider!=='meta'||!/^\d+$/.test(row.entity_id))return null;
+  const [tab,param]={campaign:['campaigns','selected_campaign_ids'],group:['adsets','selected_adset_ids'],ad:['ads','selected_ad_ids']}[row.level];
+  const url=new URL('https://adsmanager.facebook.com/adsmanager/manage/'+tab);
+  url.search=new URLSearchParams({act:account[1],[param]:row.entity_id});
+  return url.href;
+ }
+ async function adDetail(provider,accountId,entityId){
+  const w=state.workspace,request=++adDetailRequest;
+  const [report,integrations]=await Promise.all([api('/ad-management'),api('/integrations')]);
+  if(request!==adDetailRequest||state.workspace!==w||state.tab!=='ads')return;
+  const rows=report.rows.filter(r=>r.provider===provider&&r.account_id===accountId&&r.connected);
+  const row=rows.find(r=>r.entity_id===entityId);
+  if(!row)throw Error('Este item não está disponível na conta de anúncios conectada.');
+  const integration=integrations.find(i=>i.provider===provider&&i.account_id===accountId&&i.connected);
+  const parent=rows.find(r=>r.entity_id===row.parent_id);
+  const children=rows.filter(r=>r.parent_id===row.entity_id);
+  const next=row.level==='campaign'?'group':row.level==='group'?'ad':null;
+  const groupTitle=next==='group'?'Conjuntos de anúncios':'Anúncios';
+  const kind=adLevels[row.level][1];
+  const editUrl=!observer()&&['owner','admin'].includes(workspace()?.role)?metaEditorUrl(row):null;
+  const editingScope={campaign:'Nome, orçamento e estratégia da campanha.',group:'Público, posicionamentos, orçamento e calendário do conjunto.',ad:'Criativo, texto e destino do anúncio.'};
+  const attrs='data-provider="'+esc(provider)+'" data-account="'+esc(accountId)+'" data-entity="'+esc(entityId)+'" data-level="'+row.level+'"';
+  modal(row.name,'<div class="mt-ad-detail"><div class="mt-ad-detail-lead"><div><strong>'+esc(kind)+'</strong><small>'+esc(brand.name(provider))+' · '+esc(integration?.name||accountId)+'</small></div>'+adToggle(row,integration)+'</div>'+
+   (parent?'<p class="mt-ad-parent">'+adDetailButton(parent)+'</p>':'')+
+   '<section class="mt-ad-detail-card"><header><h3>Resultados</h3><small>'+esc($('tracking-period-dates').textContent)+'</small></header>'+
+   '<dl class="mt-ad-detail-metrics">'+adMetrics.map(([key,label])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(adFormat(row,key))+'</dd></div>').join('')+'</dl></section>'+
+   (editUrl?'<section class="mt-ad-detail-card"><h3>Configuração</h3><p>'+editingScope[row.level]+'</p><a class="btn btn-ghost" href="'+esc(editUrl)+'" target="_blank" rel="noopener noreferrer">Editar na Meta <span aria-hidden="true">↗</span></a></section>':'')+
+   (next?'<section class="mt-ad-detail-card"><header><h3>'+groupTitle+'</h3><small>'+children.length+'</small></header>'+
+    (children.length?'<ul class="mt-ad-detail-children">'+children.slice(0,8).map(child=>'<li>'+adDetailButton(child)+'<small>'+esc(adFormat(child,'spend_minor'))+' · '+esc(child.effective_active?'Ativo':'Sem veiculação')+'</small></li>').join('')+'</ul>'+
+    button('Ver '+groupTitle.toLowerCase()+' na lista','ad-drill',attrs):'<p>Nenhum item vinculado foi encontrado.</p>')+'</section>':'')+'</div>');
+ }
+ async function adAccounts(provider){
+  if(!adProviders.includes(provider))return;
+  const w=state.workspace;
+  const integrations=await api('/integrations');
+  if(state.workspace!==w||state.tab!=='ads')return;
+  const rows=integrations.filter(i=>i.provider===provider&&i.connected&&!i.account_id.startsWith('oauth:'));
+  const selected=campaignView(provider).accountIds;
+  modal('Contas · '+brand.name(provider),'<form data-form="ad-accounts" data-workspace="'+esc(w)+'" class="mt-connections-panel"><input type="hidden" name="provider" value="'+esc(provider)+'">'+
+   '<p>Selecione as contas que quer ver. Sem seleção, aparecem todas.</p><div class="mt-ad-account-options">'+rows.map(i=>'<label><input type="checkbox" name="accounts" value="'+esc(i.account_id)+'"'+(selected.includes(i.account_id)?' checked':'')+'><span>'+esc(i.name||i.account_id)+'</span></label>').join('')+
+   '</div><div class="actions">'+button('Cancelar','dialog-close')+'<button type="submit" class="primary">Aplicar</button></div></form>');
+ }
  async function ads(){
   const [d,opts,integrations]=await Promise.all([api('/ad-management'),api('/ad-options'),api('/integrations')]);
   const connected=integrations.filter(i=>adProviders.includes(i.provider)&&i.connected&&!i.account_id.startsWith('oauth:'));
@@ -236,28 +320,8 @@
     '</div><h1 id="campaign-connect-title">Conecte sua conta de anúncios</h1><p>Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.</p>'+
     (canManage?button('Abrir Integrações','setup-ads','',true):'<p>Peça ao responsável pela operação para conectar um perfil em Integrações.</p>')+'</section></div>';
   }
-  const levels={campaign:['Campanhas','Campanha'],group:['Conjuntos / grupos','Conjunto / grupo'],ad:['Anúncios','Anúncio']};
-  const accountKey=row=>row.provider+':'+row.account_id;
-  const accountsByKey=new Map(connected.map(i=>[accountKey(i),i]));
-  const selectedAccount=accountsByKey.has(state.account_id)?state.account_id:'';
   const query=state.search.toLocaleLowerCase('pt-BR');
-  const rows=d.rows.filter(r=>r.connected&&(!selectedAccount||accountKey(r)===selectedAccount)&&
-   (!state.status||(state.status==='ACTIVE'?r.effective_active:!r.effective_active))&&(!query||r.name.toLocaleLowerCase('pt-BR').includes(query)));
-  const toggle=r=>{
-   const account=accountsByKey.get(accountKey(r));
-   const health=window.MagemindIntegrationHealth.integrationHealth(account);
-   const active=r.status==='ACTIVE',label=active?'Ativo':'Pausado';
-   const unavailable=r.provider_status&&!['ACTIVE','PAUSED'].includes(r.provider_status);
-   if(unavailable)return '<span class="pill">'+(r.provider_status==='ARCHIVED'?'Arquivado':r.provider_status==='DELETED'?'Excluído':'Indisponível')+'</span>';
-   if(observer())return '<span class="pill '+(active?'paid':'pending')+'">'+label+'</span>';
-   const disabled=!canManage||!r.connected||health.kind==='authorization'||account?.management_access===false||
-    (r.mode!=='simulated'&&!(pilot&&r.provider==='meta'));
-   const title=health.kind==='authorization'?health.action:account?.management_access===false?'Somente leitura. Confira as permissões em Conexões.':'';
-   return '<button type="button" class="status-switch" role="switch" aria-label="'+(active?'Desativar ':'Ativar ')+esc(r.name)+'" aria-checked="'+active+'" data-action="ad-status" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-status="'+(active?'PAUSED':'ACTIVE')+'" data-revision="'+r.revision+'" '+(disabled?'disabled ':'')+(title?' title="'+esc(title)+'"':'')+'><span aria-hidden="true"></span>'+label+'</button>';
-  };
-  const number=n=>n==null?'—':Number(n).toLocaleString('pt-BR');
-  const value=(r,k)=>k==='cpa'?(r.checkout_purchases&&r.spend_minor!=null?r.spend_minor/r.checkout_purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
-  const format=(r,k)=>['spend_minor','cpa'].includes(k)?(value(r,k)==null?'—':money(Math.round(value(r,k)))):k==='ctr'?(value(r,k)==null?'—':value(r,k).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%'):number(value(r,k));
+  const rows=d.rows.filter(r=>r.connected&&(!query||r.name.toLocaleLowerCase('pt-BR').includes(query)));
   const groups=adProviders.map(p=>{
    const heading=platformHeading(p);
    if(!connected.some(i=>i.provider===p)){
@@ -268,60 +332,89 @@
    }
    const view=campaignView(p);
    const {level,sort,direction}=view;
-   const [plural,singular]=levels[level];
+   const [plural,singular]=adLevels[level];
    const parent=d.rows.find(r=>r.provider===p&&r.entity_id===view.parent&&r.account_id===view.account);
-   const cols=[['name',singular],['spend_minor','Valor gasto'],['checkout_purchases','Vendas'],['cpa','CPA'],['impressions','Impressões'],['clicks','Cliques'],['ctr','CTR'],['network_purchases','Conversões da rede']];
+   const cols=[['name',singular],...adMetrics];
    const compare=(a,b)=>{
-    const x=value(a,sort),y=value(b,sort);
+    const x=adValue(a,sort),y=adValue(b,sort);
     if(x==null||y==null)return x==null?(y==null?0:1):-1;
     return (typeof x==='string'?x.localeCompare(y,'pt-BR'):Number(x)-Number(y))*(direction==='asc'?1:-1)||a.name.localeCompare(b.name,'pt-BR');
    };
-   const entries=rows.filter(r=>r.provider===p&&r.level===level&&(!parent||(r.parent_id===parent.entity_id&&r.account_id===parent.account_id))).sort(compare);
+   const accounts=connected.filter(item=>item.provider===p);
+   const selected=view.accountIds.filter(id=>accounts.some(a=>a.account_id===id));
+   const entries=rows.filter(r=>r.provider===p&&r.level===level
+    &&(!selected.length||selected.includes(r.account_id))
+    &&(!view.delivery||(view.delivery==='ACTIVE'?r.effective_active:!r.effective_active))
+    &&(!parent||(r.parent_id===parent.entity_id&&r.account_id===parent.account_id))).sort(compare);
    const countLabel=entries.length===1?singular:plural;
-   const totals={};for(const k of ['spend_minor','checkout_purchases','impressions','clicks','network_purchases'])totals[k]=entries.every(r=>r[k]==null)?null:entries.reduce((n,r)=>n+Number(r[k]??0),0);
+   const totals={};for(const k of ['spend_minor','checkout_purchases','impressions','clicks'])totals[k]=entries.every(r=>r[k]==null)?null:entries.reduce((n,r)=>n+Number(r[k]??0),0);
    const account=r=>opts.accounts.find(a=>a.provider===r.provider&&a.account_id===r.account_id)?.name||r.account_id;
-   const metricCells=r=>cols.slice(1).map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+esc(format(r,key))+'</td>').join('');
+   const metricCells=r=>cols.slice(1).map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+esc(adFormat(r,key))+'</td>').join('');
    const tabs='<div class="mt-level-tabs mt-manager-tabs" role="group" aria-label="Nível dos anúncios · '+brand.name(p)+'">'+
-    Object.entries(levels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
+    Object.entries(adLevels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
    const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
    const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordenar resultados</span>',sortOptions,sort+':'+direction)+'</div>';
+   const filters='<div class="mt-ad-controls">'+mobileSort+button('Contas'+(selected.length?' · '+selected.length:''),'ad-accounts','id="ad-accounts-'+p+'" aria-haspopup="dialog"')+
+    '<div class="mt-ad-delivery">'+select('ad-delivery-'+p,'<span class="sr-only">Veiculação</span>',[['','Veiculação'],['ACTIVE','Ativa'],['PAUSED','Pausada']],view.delivery)+'</div></div>';
    const breadcrumb=parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'';
    return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'">'+
     '<header class="mt-platform-heading">'+heading+'<span class="mt-platform-count">'+entries.length+' '+countLabel.toLowerCase()+'</span></header>'+
-    '<div class="mt-platform-tools">'+tabs+mobileSort+breadcrumb+'</div>'+
+    '<div class="mt-platform-tools">'+tabs+filters+breadcrumb+'</div>'+
     (entries.length?'<div class="mt-ad-table-scroll" tabindex="0" role="region" aria-label="'+plural+' · '+brand.name(p)+'">'+
     '<table class="mt-ad-table" role="table" data-mobile-table="scroll"><thead role="rowgroup"><tr role="row"><th scope="col">Veiculação</th>'+
      cols.map(([key,label])=>'<th scope="col" aria-sort="'+(sort===key?(direction==='asc'?'ascending':'descending'):'none')+'">'+
       '<button type="button" data-action="ad-sort" data-sort="'+key+'">'+label+' <span aria-hidden="true">'+(sort===key?(direction==='asc'?'↑':'↓'):'↕')+'</span></button></th>').join('')+
-    '</tr></thead><tbody role="rowgroup">'+entries.map(r=>'<tr role="row" class="mt-ad-row"><td role="cell" class="mt-ad-state">'+toggle(r)+
+    '</tr></thead><tbody role="rowgroup">'+entries.map(r=>'<tr role="row" class="mt-ad-row"><td role="cell" class="mt-ad-state">'+adToggle(r,connected.find(i=>i.provider===r.provider&&i.account_id===r.account_id))+
       (r.status==='ACTIVE'&&!r.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td>'+
-      '<td role="cell" class="mt-ad-name">'+(level!=='ad'?'<button type="button" data-action="ad-drill" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" title="Ver '+(level==='campaign'?'conjuntos / grupos':'anúncios')+'">'+esc(r.name)+'<span aria-hidden="true"> ›</span></button>':'<strong>'+esc(r.name)+'</strong>')+
+      '<td role="cell" class="mt-ad-name">'+adDetailButton(r)+
       '<small>'+esc(account(r))+'</small></td>'+metricCells(r)+'</tr>').join('')+
     '</tbody><tfoot role="rowgroup"><tr role="row"><td role="cell"></td><th scope="row" title="Soma das linhas filtradas. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+
       metricCells(totals)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
   }).join('');
   const compact=!observer();
   return '<div class="filters mt-ad-filters'+(compact?' mt-compact-filters':'')+'">'+(compact?'<span data-tracking-toolbar></span>':'')+
-    '<label class="search"><input id="tracking-search" aria-label="Buscar por nome" value="'+esc(state.search)+'" placeholder="Pesquisar por nome"></label>'+
-    select('filter-account_id','Conta',[['','Todas'],...opts.accounts.filter(a=>accountsByKey.has(accountKey(a))).map(a=>[accountKey(a),brand.name(a.provider)+' / '+a.name])],selectedAccount)+
-    select('filter-status','Veiculação',[['','Todas'],['ACTIVE','Ativa'],['PAUSED','Pausada']],state.status)+
+    '<label class="search"><input id="tracking-search" type="search" aria-label="Pesquisar campanha, conjunto ou anúncio" value="'+esc(state.search)+'" placeholder="Pesquisar campanha, conjunto ou anúncio"></label>'+
     (compact?(canManage?'<div class="mt-filter-actions">'+connections.campaignControl(connected)+'</div>':''):button('Aplicar','filter'))+
     '</div>'+groups;
+ }
+ function integrationRecord(i){
+  const p=i.provider,checkout=checkoutProviders.includes(p);
+  const health=window.MagemindIntegrationHealth.integrationHealth(i);
+  const problem=!['healthy','queued','disconnected'].includes(health.kind);
+  const status=problem?health.label:!i.connected?'Desconectado':i.error_code==='sync_requested'?'Sincronizando':checkout&&!i.last_received_at?'Aguardando pedidos':'Conectado';
+  const attrs='data-id="'+esc(i.id)+'"';
+  const reconnect='data-provider="'+esc(p)+'"';
+  const access=checkout?button('Ver webhook','webhook-details',attrs):p==='custom'?button('Credencial da API','token',attrs):button('Sincronizar','sync',attrs);
+  return '<div class="list-row"><span>'+esc(i.name||brand.name(p))+'<small><br>'+esc(checkout?'Último pedido recebido: ':'Última atualização: ')+
+   dt(i.last_received_at||i.last_sync_at)+'</small></span>'+pill(status)+'</div>'+
+   (problem?'<div class="mt-integration-diagnostic" role="status"><strong>'+esc(health.reason)+'</strong><p>'+esc(health.action)+'</p></div>':'')+
+   '<div class="actions">'+(i.connected?access+(health.kind==='authorization'?button('Renovar acesso','connect',reconnect):'')+
+    button('Desconectar','disconnect',attrs):button('Reconectar','connect',reconnect))+'</div>';
+ }
+ async function checkoutConnection(provider){
+  if(!checkoutProviders.includes(provider))return;
+  const w=state.workspace;
+  const rows=(await api('/integrations')).filter(i=>i.provider===provider);
+  if(state.workspace!==w||state.tab!=='integrations')return;
+  if(!rows.length)throw Error('A conexão deste checkout não está disponível.');
+  modal(brand.name(provider),'<div class="mt-connections-panel mt-checkout-detail">'+rows.map(integrationRecord).join('')+'</div>');
  }
  async function integrations(){
   const data=await api('/integrations');
   const card=p=>{
-   const rows=data.filter(i=>i.provider===p),checkout=checkoutProviders.includes(p),available=p==='meta'||checkout||p==='custom';
+   const rows=data.filter(i=>i.provider===p),checkout=checkoutProviders.includes(p);
    const heading='<div class="mt-integration-brand">'+brand.logo(p)+'<h3>'+brand.name(p)+'</h3></div>';
    if(p==='meta')return '<article class="integration-card mt-integration-meta">'+heading+connections.metaIntegrationCard(rows,['owner','admin'].includes(workspace()?.role))+'</article>';
-   if(pilot&&!available)return '<article class="integration-card mt-integration-'+p+'">'+heading+'<p>A ativação desta conexão é feita pela Magemind.</p>'+
-    (['owner','admin'].includes(workspace()?.role)?button('Solicitar conexão','campaign-integrate','data-id="'+p+'"',true):'')+'</article>';
-   return '<article class="integration-card mt-integration-'+p+'">'+heading+'<p>'+(p==='meta'?'Entre com sua conta Meta e escolha as contas de anúncios.':checkout?'Receba pedidos e pagamentos por webhook.':'Pedidos enviados pela API da sua operação.')+'</p>'+rows.map(i=>{
-    const health=window.MagemindIntegrationHealth.integrationHealth(i),problem=!['healthy','queued','disconnected'].includes(health.kind);
-    return '<div class="list-row"><span>'+esc(i.name||brand.name(p))+'<small><br>'+esc(checkout?'Último pedido recebido: ':'Última atualização: ')+dt(i.last_received_at||i.last_sync_at)+'</small></span>'+pill(problem?health.label:!i.connected?'Desconectado':i.error_code==='sync_requested'?'Sincronizando':checkout&&!i.last_received_at?'Aguardando pedidos':'Conectado')+'</div>'+(problem?'<div class="mt-integration-diagnostic" role="status"><strong>'+esc(health.reason)+'</strong><p>'+esc(health.action)+'</p></div>':'')+'<div class="actions">'+(i.connected?(checkout?button('Ver webhook','webhook-details','data-id="'+esc(i.id)+'"'):p==='custom'?button('Credencial da API','token','data-id="'+esc(i.id)+'"'):button('Sincronizar','sync','data-id="'+esc(i.id)+'"'))+(health.kind==='authorization'?button('Renovar acesso','connect','data-provider="'+p+'"'):'')+button('Desconectar','disconnect','data-id="'+esc(i.id)+'"'):button('Reconectar','connect','data-provider="'+p+'"'))+'</div>';
-   }).join('')+(!rows.length||p==='meta'?'<div class="actions">'+button(rows.length?'Conectar outra conta':'Conectar','connect','data-provider="'+p+'"',true)+'</div>':'')+'</article>';
+   if(!checkout&&p!=='custom')return '<article class="integration-card mt-integration-'+p+'">'+heading+'<div class="actions"><span class="mt-integration-soon">Em breve</span></div></article>';
+   const attrs='data-provider="'+esc(p)+'"';
+   const body=rows.length?rows.map(integrationRecord).join(''):'<div class="actions">'+button('Conectar','connect',attrs,true)+'</div>';
+   const compact=rows.some(i=>i.connected)?button('Gerenciar','checkout-connection',attrs):
+    rows.length?button('Reconectar','connect',attrs):button('Conectar','connect',attrs,true);
+   return '<article class="integration-card mt-integration-'+p+'">'+heading+
+    (checkout?'<div class="mt-checkout-full">'+body+'</div><div class="mt-checkout-compact">'+compact+'</div>':
+     '<p>Pedidos enviados pela API da sua operação.</p>'+body)+'</article>';
   };
-  return brand.integrationSections(card)+panel('Origem das vendas','<p>UTMs identificam o anúncio que originou cada pedido. O script próprio permite acompanhar também as visitas e etapas do funil.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+'</div>');
+  return brand.integrationSections(card)+panel('Origem das vendas','<div class="mt-sales-origin"><p>UTMs identificam o anúncio que originou cada pedido. O script próprio permite acompanhar também as visitas e etapas do funil.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+'</div></div>');
  }
  async function costs(){
   costRules=await api('/costs');const rows=costRules.filter(r=>costHistory||!r.archived_at);
@@ -340,7 +433,7 @@
   const d=await api(observer()?'/admin/order':'/order',null,{id,workspace_id:workspaceId}),o=d.order,a=d.attribution||{};
   const dt=value=>value?new Date(value).toLocaleString('pt-BR',{timeZone:workspaces.find(w=>w.id===o.workspace_id)?.timezone||'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'Ainda não recebida';
   const money=n=>n==null?'Indisponível':new Intl.NumberFormat('pt-BR',{style:'currency',currency:o.currency}).format(Number(n)/10**o.amount_scale);
-  modal('Pedido '+o.external_id,pill(o.status)+'<dl class="detail-grid">'+Object.entries({'Checkout':o.provider,'Pagamento':o.payment_method==='CREDIT_CARD'?'Cartão'+(o.installments?' · '+o.installments+'×':''):o.payment_method==='PIX'?'Pix':o.payment_method||'Indisponível','Bruto':money(o.gross_minor),'Receita do usuário':money(o.recipient_minor),'Devolvido':money(o.refund_minor),'Comprador':o.buyer_name||'Indisponível','E-mail':o.buyer_email||'Indisponível','Telefone':o.buyer_phone||'Indisponível','Criado':dt(o.created_at),'Aprovado':dt(o.approved_at),'Origem':a.channel||'Não atribuído','Evidência':a.evidence||'Indisponível','Anúncio':a.ad_id||'Sem anúncio validado','Confiança':a.confidence||'Baixa'}).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'+(o.money_components?.manual_fees?'<p class="mt-cost-explanation">A loja informou o valor bruto. O resultado é estimado com as taxas e os custos cadastrados na sua conta.</p>':'')+'<h3>Itens</h3>'+table(['Produto','Quantidade','Total da linha'],d.items.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.quantity+'</td><td>'+money(i.amount_minor)+'</td></tr>'))+'<h3>Origem da venda</h3><p>'+esc(a.channel==='unattributed'?'Não atribuído':a.channel||'Não informado')+' · '+esc(a.utm_campaign||'Sem campanha informada')+'</p><h3>Histórico auditável</h3><ul class="timeline">'+d.history.map(e=>'<li>'+dt(e.occurred_at)+'<strong>'+esc(statusLabel[e.status])+' · '+esc(e.processing)+'</strong><small>'+esc(e.reason||e.event_key)+'</small></li>').join('')+'</ul>');
+  modal('Pedido '+o.external_id,'<div class="mt-order-detail">'+pill(o.status)+'<dl class="detail-grid">'+Object.entries({'Checkout':o.provider,'Pagamento':o.payment_method==='CREDIT_CARD'?'Cartão'+(o.installments?' · '+o.installments+'×':''):o.payment_method==='PIX'?'Pix':o.payment_method||'Indisponível','Bruto':money(o.gross_minor),'Receita do usuário':money(o.recipient_minor),'Devolvido':money(o.refund_minor),'Comprador':o.buyer_name||'Indisponível','E-mail':o.buyer_email||'Indisponível','Telefone':o.buyer_phone||'Indisponível','Criado':dt(o.created_at),'Aprovado':dt(o.approved_at),'Origem':a.channel||'Não atribuído','Evidência':a.evidence||'Indisponível','Anúncio':a.ad_id||'Sem anúncio validado','Confiança':a.confidence||'Baixa'}).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'+(o.money_components?.manual_fees?'<p class="mt-cost-explanation">A loja informou o valor bruto. O resultado é estimado com as taxas e os custos cadastrados na sua conta.</p>':'')+'<h3>Itens</h3>'+table(['Produto','Quantidade','Total da linha'],d.items.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.quantity+'</td><td>'+money(i.amount_minor)+'</td></tr>'))+'<h3>Origem da venda</h3><p>'+esc(a.channel==='unattributed'?'Não atribuído':a.channel||'Não informado')+' · '+esc(a.utm_campaign||'Sem campanha informada')+'</p><h3>Histórico auditável</h3><ul class="timeline">'+d.history.map(e=>'<li>'+dt(e.occurred_at)+'<strong>'+esc(statusLabel[e.status])+' · '+esc(e.processing)+'</strong><small>'+esc(e.reason||e.event_key)+'</small></li>').join('')+'</ul></div>');
  }
  async function customerDetail(id){
   const d=await api('/customer',null,{id});modal(d.customer.name||'Comprador','<p>'+esc(d.customer.email||'E-mail não informado')+' · '+esc(d.customer.phone||'Telefone não informado')+'</p>'+table(['Pedido','Status','Moeda','Total',''],d.orders.map(o=>'<tr><td>'+esc(o.external_id)+'</td><td>'+pill(o.status)+'</td><td>'+esc(o.currency)+'</td><td>'+esc(Number(o.gross_minor)/10**o.amount_scale)+'</td><td>'+button('Abrir','order','data-id="'+esc(o.id)+'"')+'</td></tr>'))+'<p class="small">Até 25 compras recentes. Identidade canônica '+esc(d.customer.provider)+' / '+esc(d.customer.external_id)+'.</p>');
@@ -433,11 +526,12 @@
  });
  function minorInput(value,s){if(!value)return null;const parts=value.replace(',','.').split('.');if(parts.length>2||!/^\d+$/.test(parts[0])||!/^[0-9]*$/.test(parts[1]||'')||(parts[1]||'').length>s)throw new Error('Precisão do valor inválida');const n=Number(BigInt(parts[0])*10n**BigInt(s)+BigInt((parts[1]||'').padEnd(s,'0')||'0'));if(!Number.isSafeInteger(n))throw new Error('Valor acima do limite permitido');return n;}
  async function action(name,el){
-  if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
+  if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','ad-detail','ad-accounts','dialog-close','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
   if(name.startsWith('campaign-')){
    if(!['owner','admin'].includes(workspace()?.role))throw new Error('Somente os responsáveis pela operação podem gerenciar as conexões.');
    return connections.campaignAction(name,el.dataset.id);
   }
+  if(name==='checkout-connection')return checkoutConnection(el.dataset.provider);
   if(name==='webhook-details')return connections.details(el.dataset.id);
   if(name==='connection-copy')return connections.copy();
   if(name==='meta-platform')return connections.platform();
@@ -487,7 +581,10 @@
   if(name==='filter')return applyFilters();
   if(name==='order')return detail(el.dataset.id);
   if(name==='customer')return customerDetail(el.dataset.id);
-  const platform=el.closest('[data-platform]')?.dataset.platform;
+  const platform=el.dataset.provider||el.closest('[data-platform]')?.dataset.platform;
+  if(name==='ad-detail')return adDetail(platform,el.dataset.account,el.dataset.entity);
+  if(name==='ad-accounts')return adAccounts(platform);
+  if(name==='dialog-close')return $('tracking-dialog').close();
   if(platform&&['ad-level','ad-sort','ad-drill','ad-clear'].includes(name)){
    const view=campaignView(platform);
    if(name==='ad-sort'){
@@ -496,8 +593,9 @@
    }else if(name==='ad-drill'){
     view.account=el.dataset.account;
     view.parent=el.dataset.entity;
-    view.level=view.level==='campaign'?'group':'ad';
-    state.search='';state.status='';
+    view.level=el.dataset.level==='campaign'?'group':'ad';
+    state.search='';
+    $('tracking-dialog').close();
    }else{
     view.parent='';view.account='';
     if(name==='ad-level')view.level=el.dataset.level;
@@ -509,6 +607,9 @@
    try{
     await api('/ad-status',{provider:el.dataset.provider,account_id:el.dataset.account,entity_id:el.dataset.entity,status:el.dataset.status,revision:Number(el.dataset.revision)});
     toast(el.dataset.status==='ACTIVE'?'Veiculação ativada.':'Veiculação pausada.');
+    if(el.closest('.mt-ad-detail')&&$('tracking-dialog').open&&state.tab==='ads'&&state.workspace===w){
+     await adDetail(el.dataset.provider,el.dataset.account,el.dataset.entity);
+    }
     return render();
    }catch(error){
     if(state.tab==='ads'&&state.workspace===w){
@@ -522,9 +623,10 @@
   if(name==='cost-form')return costForm();
   if(name==='token'){const r=await api('/integration/token',{id:el.dataset.id});modal('Credencial privada da API','<p>'+esc(r.notice)+'</p><textarea readonly aria-label="Token privado da API">'+esc(r.token)+'</textarea><p class="small">Endpoint: POST '+esc(pilot?cfg.supabaseUrl+'/functions/v1/tracking-webhook?provider=custom':location.origin+cfg.apiBase+'/orders')+' · Authorization: Bearer TOKEN</p>');return;}
   if(name==='sync'||name==='revoke'){await api('/integration/sync',{id:el.dataset.id,fail:name==='revoke'});toast('Integração atualizada.');return render();}
-  if(name==='disconnect'){await api('/integration/disconnect',{id:el.dataset.id});toast('Credencial revogada; histórico preservado.');return render();}
+  if(name==='disconnect'){await api('/integration/disconnect',{id:el.dataset.id});toast('Credencial revogada; histórico preservado.');if(el.closest('.mt-checkout-detail'))$('tracking-dialog').close();return render();}
   if(name==='retry'){await api('/retry',{id:el.dataset.id});toast('Reenvio auditado colocado na fila.');return render();}
   if(name==='export'){
+   if(state.tab!=='orders'||!setup?.checkout_ready)return;
    if(window.MagemindTrackingBackend){
     const data=await api('/export',null,{search:state.search,status:state.status,provider:state.provider,channel:state.channel,payment:state.payment});
     const cell=v=>'"'+String(/^[\s]*[=+@-]/.test(String(v??''))?"'"+v:v??'').replaceAll('"','""')+'"';
@@ -535,7 +637,7 @@
   }
  }
  document.addEventListener('click',async e=>{
-  if(!e.target.closest('.mt-root'))return;
+  if(!e.target.closest('.mt-root,.mobile-tracking-action'))return;
   const tab=e.target.closest('[data-tab]');if(tab){state.tab=tab.dataset.tab;state.page=1;return render();}
   const target=e.target.closest('[data-action]');if(!target)return;
   if(!await ready())return;
@@ -545,6 +647,16 @@
   const form=e.target.closest('.mt-root [data-form]');if(!form)return;e.preventDefault();const btn=form.querySelector('button[type=submit],button.primary');btn.disabled=true;
   try{
    const data=Object.fromEntries(new FormData(form)),type=form.dataset.form;
+   if(type==='ad-accounts'){
+    if(form.dataset.workspace!==state.workspace||state.tab!=='ads')return $('tracking-dialog').close();
+    const view=campaignView(data.provider);
+    view.accountIds=new FormData(form).getAll('accounts');
+    if(view.accountIds.length&&!view.accountIds.includes(view.account)){view.parent='';view.account='';}
+    $('tracking-dialog').close();
+    await render();
+    $('ad-accounts-'+data.provider)?.focus();
+    return;
+   }
    if(await connections.submit(type,form))return;
    if(type==='connect-real'){
     const r=await window.MagemindTrackingBackend.edge({action:'connect_real',workspace:state.workspace,...data});form.reset();$('tracking-dialog').close();await render();
@@ -608,13 +720,7 @@
  $('tracking-refresh').addEventListener('click',refreshData);
  function applyFilters(){
   clearTimeout(filterTimer);filterTimer=0;
-  const nextAccount=$('filter-account_id')?.value;
-  if(state.tab==='ads'&&nextAccount&&nextAccount!==state.account_id){
-   const provider=nextAccount.split(':',1)[0];
-   const view=campaignView(provider);
-   if(view.account&&nextAccount!==provider+':'+view.account){view.parent='';view.account='';}
-  }
-  for(const name of ['status','provider','channel','payment','account_id']){
+  for(const name of ['status','provider','channel','payment']){
    const field=$('filter-'+name);if(field)state[name]=field.value;
   }
   state.search=$('tracking-search')?.value.trim()||'';state.page=1;
@@ -662,13 +768,14 @@
   finishCostFlow();
  });
  $('tracking-dialog').addEventListener('close',()=>{
-  if(!$('tracking-dialog').open){$('dialog-content').replaceChildren();costFlow=null;}
+  if(!$('tracking-dialog').open){adDetailRequest++;$('dialog-content').replaceChildren();costFlow=null;}
  });
  document.addEventListener('change',event=>{
   if(event.target.matches('.mt-compact-filters select[id^="filter-"]')){applyClientFilters();return;}
-  if(!event.target.matches('.mt-ad-mobile-sort select'))return;
+  if(!event.target.matches('.mt-ad-mobile-sort select,.mt-ad-delivery select'))return;
   const view=campaignView(event.target.closest('[data-platform]').dataset.platform);
-  [view.sort,view.direction]=event.target.value.split(':');
+  if(event.target.closest('.mt-ad-delivery'))view.delivery=event.target.value;
+  else [view.sort,view.direction]=event.target.value.split(':');
   void render();
  });
  document.addEventListener('magemind:session-ready',async()=>{

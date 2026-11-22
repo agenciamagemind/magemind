@@ -46,6 +46,9 @@
   let generation = 0;
   let accentRevision = 0;
   let paletteBusy = false;
+  let whatsappHidden = false;
+  let whatsappBusy = false;
+  let whatsappRevision = 0;
   let refreshTimer;
 
   const editor = document.createElement('dialog');
@@ -55,6 +58,39 @@
   document.body.append(editor);
   const storage = () => supa.storage.from(bucket);
   const panel = () => document.getElementById('settings-panel-appearance');
+
+  function setWhatsAppHidden(hidden) {
+    whatsappHidden = hidden;
+    app.toggleAttribute('data-hide-whatsapp', hidden);
+    window.MagemindSupport?.sync();
+  }
+
+  async function updateWhatsApp(switcher) {
+    const id = userId, current = generation;
+    if (!id || whatsappBusy || paletteBusy) { switcher.checked = whatsappHidden; return; }
+    const previous = whatsappHidden;
+    const hidden = switcher.checked;
+    whatsappRevision++;
+    whatsappBusy = true;
+    switcher.disabled = true;
+    setWhatsAppHidden(hidden);
+    try {
+      const {error} = await supa.from('dashboard_appearance').upsert({user_id: id, hide_whatsapp: hidden}, {defaultToNull: false});
+      if (error) throw error;
+    } catch {
+      if (generation === current) {
+        setWhatsAppHidden(previous);
+        switcher.checked = previous;
+        message('Não foi possível salvar a preferência do WhatsApp.', true);
+      }
+    } finally {
+      whatsappBusy = false;
+      if (generation === current) {
+        const field = panel()?.querySelector('[data-hide-whatsapp-switch]');
+        if (field) { field.disabled = false; field.checked = whatsappHidden; }
+      }
+    }
+  }
 
   function setAccent(value) {
     accent = Object.hasOwn(palette, value) ? value : 'lime';
@@ -135,12 +171,14 @@
     userId = id;
     const current = generation;
     const initialAccent = accentRevision;
+    const initialWhatsapp = whatsappRevision;
     const [color, images] = await Promise.all([
-      supa.from('dashboard_appearance').select('accent').eq('user_id', id).maybeSingle(),
+      supa.from('dashboard_appearance').select('accent,hide_whatsapp').eq('user_id', id).maybeSingle(),
       supa.from('dashboard_backgrounds').select('*').eq('user_id', id)
     ]);
     if (current !== generation) return;
     if (color.data && initialAccent === accentRevision) setAccent(color.data.accent);
+    if (color.data && initialWhatsapp === whatsappRevision) setWhatsAppHidden(color.data.hide_whatsapp === true);
     for (const row of images.data || []) backgrounds.set(row.section, row);
     await refreshUrls();
     if (current !== generation) return;
@@ -157,6 +195,7 @@
     if (editor.open) editor.close();
     releaseDraft();
     setAccent('lime');
+    setWhatsAppHidden(false);
     applyBackground();
   }
 
@@ -182,6 +221,10 @@
             </div>
           </details>
         </section>
+        <section class="mm-appearance-card mm-whatsapp-card">
+          <div class="mm-appearance-copy"><h2><label for="appearance-hide-whatsapp">Ocultar WhatsApp</label></h2><p>Oculta o botão flutuante de suporte no computador e no celular.</p></div>
+          <input type="checkbox" id="appearance-hide-whatsapp" class="mm-appearance-switch" role="switch" data-hide-whatsapp-switch ${whatsappHidden?'checked':''} ${whatsappBusy?'disabled':''}>
+        </section>
         <section class="mm-appearance-card mm-background-card">
           <div class="mm-appearance-copy"><h2>Imagens de fundo</h2><p>Escolha um fundo para cada área do painel.</p></div>
           <ul>${available.map(([key, {name}]) => `
@@ -200,7 +243,7 @@
 
   async function chooseAccent(key) {
     const id = userId;
-    if (!id || paletteBusy || !Object.hasOwn(palette, key)) return;
+    if (!id || paletteBusy || whatsappBusy || !Object.hasOwn(palette, key)) return;
     const old = accent;
     const current = generation;
     accentRevision++;
@@ -209,7 +252,7 @@
     render();
     panel()?.querySelector('summary')?.focus();
     try {
-      const {error} = await supa.from('dashboard_appearance').upsert({user_id: id, accent: key});
+      const {error} = await supa.from('dashboard_appearance').upsert({user_id: id, accent: key}, {defaultToNull: false});
       if (error) throw error;
     } catch {
       if (current === generation) {
@@ -565,6 +608,9 @@
     }
     const picker = panel()?.querySelector('.mm-color-control[open]');
     if (picker && !picker.contains(event.target)) picker.open = false;
+  });
+  document.addEventListener('change', event => {
+    if (event.target.matches('[data-hide-whatsapp-switch]')) void updateWhatsApp(event.target);
   });
   document.addEventListener('keydown', event => {
     const picker = event.target.closest?.('.mm-color-control[open]');

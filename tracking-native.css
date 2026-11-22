@@ -257,9 +257,63 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-root .quiet.mt-fee-danger:hover { background: #622c2c; color: #fff; }
 
 .mt-ad-mobile-sort { display: none; }
+.mt-order-cards,.mt-checkout-compact { display: none; }
+.mt-ad-controls { display: flex; align-items: stretch; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.mt-ad-controls .quiet,.mt-ad-controls .mm-filter-toggle { padding-inline: 10px; }
+.mt-ad-delivery label,.mt-ad-mobile-sort label { margin: 0; }
+.mt-ad-account-options { display: grid; gap: 6px; max-height: 55dvh; overflow-y: auto; }
+.mt-root .mt-ad-account-options label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px; border-radius: 10px; background: var(--bg3); }
+.mt-root .mt-ad-account-options input { width: 18px; height: 18px; min-height: 0; flex: none; }
+.mt-ad-detail { display: grid; gap: 12px; }
+.mt-ad-detail-lead,.mt-ad-detail-card > header { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.mt-ad-detail-lead small { display: block; color: var(--text3); overflow-wrap: anywhere; }
+.mt-ad-detail-card { display: grid; gap: 8px; padding: 13px; min-width: 0; border: 1px solid var(--border2); border-radius: 16px; background: #ffffff07; }
+.mt-root .mt-ad-detail-card :is(h3,p),.mt-root .mt-ad-parent { margin: 0; }
+.mt-ad-detail-card header small { color: var(--text3); font-size: 10px; text-align: end; }
+.mt-ad-detail-card > :is(a,button) { justify-self: start; border-radius: 999px; }
+.mt-ad-detail-metrics { margin: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.mt-ad-detail-metrics > div { padding: 8px; border-radius: 10px; background: var(--bg2); }
+.mt-ad-detail-metrics dt { color: var(--text3); font-size: 10px; }
+.mt-ad-detail-metrics dd { color: var(--text); font-size: 14px; margin: 1px 0 0; overflow-wrap: anywhere; font-weight: 600; }
+.mt-ad-detail-children { display: grid; gap: 5px; list-style: none; padding: 0; margin: 0; }
+.mt-ad-detail-children li { border-top: 1px solid var(--border); padding: 7px 0; }
+.mt-ad-detail-children button,.mt-ad-parent button { text-align: start; white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.mt-ad-detail-children small { display: block; margin-top: 3px; color: var(--text3); }
+.mt-integration-soon { display: inline-flex; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--border2); color: var(--text2); background: var(--bg3); font-size: 11px; }
+.mt-sales-origin { display: grid; gap: 10px; }
+.mt-sales-origin .actions { flex-wrap: wrap; }
+#tracking-dialog:has(.mt-order-detail,.mt-ad-detail) { overflow-x: hidden; overscroll-behavior: contain; }
+#tracking-dialog:has(.mt-order-detail,.mt-ad-detail) :is(#dialog-title,small,dd,p) { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+.mt-order-detail .detail-grid > div { min-width: 0; }
 .mt-root .mt-ad-table-scroll { scrollbar-color: var(--bg5) transparent; }
 .mt-root .mt-ad-table .status-switch[aria-checked="true"] span::after { background: var(--accent-ink); }
 @media (max-width: 900px) {
+  .mt-ad-controls { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,.8fr) minmax(0,1fr); width: 100%; }
+  .mt-ad-controls .quiet,.mt-ad-controls .mm-filter-toggle { font-size: 10px; min-width: 0; padding-inline: 7px; gap: 4px; white-space: nowrap; }
+  .mt-ad-controls .mm-filter-toggle .mm-chevron { margin-left: 1px; }
+  .mt-root .mt-ad-table tfoot { padding: 9px; }
+  .mt-root .mt-ad-table tfoot tr { border-radius: 14px; border: 1px solid var(--border); background: #1116; }
+  #pg-orders .table-scroll:has(> table) { display: none; }
+  .mt-order-cards { display: grid; gap: 7px; list-style: none; margin: 0; padding: 0; }
+  .mt-root .mt-order-card {
+    display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: start; gap: 5px 8px; width: 100%; min-height: 78px;
+    padding: 10px; border: 1px solid var(--border2); border-radius: 14px; background: #111a; color: var(--text); text-align: start; font-family: inherit;
+  }
+  .mt-order-card-main,.mt-order-card-value { display: grid; gap: 2px; min-width: 0; }
+  .mt-order-card-main strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mt-order-card-main small,.mt-order-card-meta { color: var(--text3); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mt-order-card-value { justify-items: end; white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .mt-order-card-value .pill { border-radius: 999px; }
+  .mt-order-card-meta { grid-row: 2; grid-column: 1 / 3; }
+  .mt-order-card svg { grid-column: 3; grid-row: 1 / 3; align-self: center; color: var(--text3); }
+  .mt-order-detail .detail-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .mt-order-detail .table-scroll { overflow-x: hidden; }
+  .mt-root .mt-order-detail table,.mt-root .mt-order-detail td,.mt-root .mt-order-detail th { white-space: normal; min-width: 0; overflow-wrap: anywhere; }
+  .mt-order-detail .timeline li { min-width: 0; overflow-wrap: anywhere; }
+  .mt-root #integration-checkouts .cards-grid { align-items: start; }
+  #integration-checkouts .mt-checkout-full { display: none; }
+  #integration-checkouts .mt-checkout-compact { display: flex; align-items: end; margin-top: 10px; }
+  #integration-checkouts .mt-checkout-compact button { min-height: 38px; }
   .mt-root .mt-ad-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
   .mt-root .mt-ad-filters label { min-width: 0; }
   .mt-root .mt-ad-filters .search { grid-column: 1 / -1; min-width: 0; }

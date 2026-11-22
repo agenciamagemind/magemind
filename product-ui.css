@@ -10,7 +10,7 @@
 #support-message p{margin:0;color:var(--text);font-size:12px;line-height:1.7}
 #support-message-close{position:absolute;right:6px;top:6px;width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--text3);font-size:20px;line-height:1;font-family:inherit;cursor:pointer}
 #support-message-close:hover{background:var(--bg3);color:var(--text)}
-@media(max-width:900px){#support-whatsapp{right:max(16px,env(safe-area-inset-right));bottom:calc(var(--mobile-nav-h) + var(--safe-bottom) + 16px)}body:has(#pg-solutions.page.active .solution-custom-cta) #support-whatsapp{bottom:calc(var(--mobile-nav-h) + var(--safe-bottom) + 96px)}}
+@media(max-width:900px){#support-whatsapp{right:max(16px,env(safe-area-inset-right));bottom:calc(var(--mobile-nav-h) + var(--safe-bottom) + 16px)}}
 @media(prefers-reduced-motion:reduce){#support-whatsapp-link{transition:none}#support-whatsapp-link:hover{transform:none}}
 .main .topbar{background:var(--bg);border-bottom:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 /* Scroll the whole workspace, including the upper bar, as one page. */

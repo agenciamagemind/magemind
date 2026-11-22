@@ -79,7 +79,17 @@
  }
  function init(){
   viewport();const sidebar=document.querySelector('.sidebar'),nav=document.getElementById('sb-nav'),main=document.querySelector('#app .main');if(!sidebar||!nav||!main)return;
-  const header=document.createElement('div');header.className='mobile-more-head';header.innerHTML='<button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';header.querySelector('button').addEventListener('click',()=>window.closeMobileMenu());sidebar.insertBefore(header,nav);
+  const header=document.createElement('header');header.className='mobile-more-head';
+  header.innerHTML='<div class="mobile-more-profile"><span class="av" id="mobile-more-avatar"><span class="profile-avatar-default" aria-hidden="true"></span></span><div><strong id="mobile-more-name"></strong><button type="button" class="mobile-more-profile-link">Meu perfil <span aria-hidden="true">›</span></button></div><button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><button id="mobile-more-plan" type="button" hidden><span><small></small><strong></strong></span><span aria-hidden="true">›</span></button>';
+  const profile=()=>{window.closeMobileMenu();goTo('settings');selectSettingsTab('profile');};
+  header.querySelector('.mobile-more-profile-link').addEventListener('click',profile);
+  header.querySelector('.mobile-more-close').addEventListener('click',()=>window.closeMobileMenu());
+  header.querySelector('#mobile-more-plan').addEventListener('click',event=>{
+   if(event.currentTarget.dataset.hasPlan==='true')profile();
+   else{window.closeMobileMenu();goTo('solutions');}
+  });
+  sidebar.insertBefore(header,nav);
+  if(typeof DB!=='undefined'&&DB.me)updateSidebarUser();
   const indicator=document.createElement('div');indicator.id='mobile-pull-indicator';indicator.className='mobile-pull-indicator';indicator.hidden=true;indicator.setAttribute('role','status');indicator.setAttribute('aria-live','polite');indicator.innerHTML='<span class="mobile-pull-icon" aria-hidden="true"></span><span id="mobile-pull-label">Puxe para atualizar</span>';main.insertBefore(indicator,main.querySelector('.content'));
   main.addEventListener('touchstart',start,{passive:true});main.addEventListener('touchmove',move,{passive:false});main.addEventListener('touchend',end,{passive:true});main.addEventListener('touchcancel',()=>{if(!refreshing)resetPull();},{passive:true});
   main.addEventListener('scroll',()=>{if(gesture?.edge==='top'&&main.scrollTop>1)resetPull();},{passive:true});
