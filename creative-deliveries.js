@@ -93,7 +93,7 @@
  }
  function init(){
   section=document.createElement('section');section.id='det-deliveries';section.className='detail-section detail-section-card creative-delivery-section';section.hidden=true;$('det-comments-section').before(section);
-  const link=document.createElement('a');link.id='my-creatives-link';link.className='btn btn-ghost btn-sm my-creatives-link';link.hidden=true;link.target='_blank';link.rel='noopener noreferrer';$('pg-demands').querySelector('.demand-view-controls').prepend(link);
+  const link=document.createElement('a');link.id='my-creatives-link';link.className='btn btn-ghost btn-sm my-creatives-link';link.hidden=true;link.target='_blank';link.rel='noopener noreferrer';$('demand-create').after(link);
   const note=document.createElement('div');note.id='my-creatives-access-note';note.hidden=true;$('pg-demands').querySelector('.ph').after(note);
   document.addEventListener('click',async e=>{const button=e.target.closest('[data-creative-retry]');if(!button||!isClient())return;const version=epoch;button.disabled=true;try{const result=await api({action:'check_my_access'});if(version!==epoch)return;await folder();if(activeDemand===currentDemandId&&currentDemandId)await open(currentDemandId);toast(result.needs_google_account?'O Google ainda não reconheceu esse e-mail. Confira a vinculação e tente novamente em instantes.':'Acesso à pasta liberado.',result.needs_google_account?'err':'ok');}catch(error){if(version===epoch)toast(error.message,'err');}finally{if(button.isConnected)button.disabled=false;}});
   const card=document.createElement('div');card.id='drive-settings-card';card.className='settings-card';card.hidden=true;

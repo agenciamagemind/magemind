@@ -24,8 +24,8 @@
 
 .creative-picker-head>div{display:flex;gap:3px}.creative-file-option input{appearance:none;border:1px solid var(--border2);border-radius:5px;background:var(--bg3);display:grid;place-items:center;cursor:inherit}.creative-file-option input:checked{background:var(--violet);border-color:var(--violet2)}.creative-file-option input:checked:after{content:'✓';font-size:11px;color:white;line-height:1}.creative-file-option input:focus-visible{outline:2px solid var(--violet2);outline-offset:2px}
 @media(max-width:900px){
- #app #pg-demands .demand-view-controls:has(.my-creatives-link:not([hidden])){flex-wrap:nowrap;gap:8px}
- #app #pg-demands .demand-view-controls .my-creatives-link{flex:0 0 auto;min-height:38px;padding:7px 9px!important;font-size:11px;border-radius:10px}
+ #app #pg-demands .demand-client-actions:has(.my-creatives-link:not([hidden])){flex-wrap:nowrap;gap:8px}
+ #app #pg-demands .demand-client-actions .my-creatives-link{min-height:40px;padding:9px 10px;font-size:11px;border-radius:999px}
  #app #pg-demands .demand-view-toggle{flex:1 1 auto;min-width:0;justify-content:center}
  #app #pg-demands .demand-view-toggle .btn{flex:1 1 auto;min-width:0;min-height:30px;padding:5px 7px!important;font-size:11px;white-space:nowrap}
  #modal-detail .creative-delivery-section .detail-section-head{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}

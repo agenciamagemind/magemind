@@ -63,6 +63,7 @@ body:not(.app-ready){background:#101010}
     filter:saturate(.9);
   }
   .auth-stage::after{position:fixed;background:linear-gradient(180deg,transparent 70%,#1118)}
+  .auth-stage.register-mode{gap:clamp(27px,7vw,36px)}
   .auth-card,.auth-stage.register-mode .auth-card{padding:clamp(18px,6vw,31px);width:100%;max-width:444px}
   .auth-logo,.auth-stage.register-mode .auth-logo{margin-bottom:18px}
   .auth-logo img{width:36px;height:36px}
@@ -87,3 +88,10 @@ body:not(.app-ready){background:#101010}
 .auth-card .app-legal-links{gap:5px 12px;margin-top:14px;font-size:10px}
 .auth-card .app-legal-links a{color:#a5a5a5}
 .auth-card .app-legal-links a:is(:hover,:focus-visible){color:var(--text)}
+@media(max-width:900px){
+  .auth-card .app-legal-links{
+    flex-wrap:nowrap;gap:clamp(5px,1.6vw,11px);margin-inline:-7px;
+    font-size:clamp(8px,2.5vw,10px);white-space:nowrap;
+  }
+  .auth-card .app-legal-links a{padding-block:4px}
+}

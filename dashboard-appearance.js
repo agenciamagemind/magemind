@@ -105,7 +105,7 @@
 
   function backgroundFor(section) {
     if (!Object.hasOwn(sections, section)) return null;
-    return backgrounds.get(section) || {...presetImage(sections[section].preset), shade: 'medium', ...defaultCrop};
+    return backgrounds.get(section) || {...presetImage(sections[section].preset), shade: 'strong', ...defaultCrop};
   }
 
   function cropFor(info, device) {
@@ -119,6 +119,9 @@
     element.hidden = !info?.url;
     if (!info?.url) {
       element.style.removeProperty('--background-image');
+      element.style.removeProperty('--background-size');
+      element.style.removeProperty('--background-position');
+      delete element.dataset.shade;
       return;
     }
     const crop = cropFor(info, device);

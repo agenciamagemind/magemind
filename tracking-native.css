@@ -259,8 +259,13 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-ad-mobile-sort { display: none; }
 .mt-order-cards,.mt-checkout-compact { display: none; }
 .mt-ad-controls { display: flex; align-items: stretch; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.mt-ad-controls .quiet,.mt-ad-controls .mm-filter-toggle { padding-inline: 10px; }
+.mt-ad-controls .mm-filter-toggle { padding-inline: 10px; }
 .mt-ad-delivery label,.mt-ad-mobile-sort label { margin: 0; }
+.mt-cost-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.mt-root .mt-cost-toolbar p { margin: 0; }
+.mt-cost-toolbar-actions { display: flex; align-items: stretch; gap: 7px; }
+.mt-root .mt-cost-toolbar-actions button { min-height: 40px; border-radius: 999px; white-space: normal; }
+.mt-cost-cards { display: none; }
 .mt-ad-account-options { display: grid; gap: 6px; max-height: 55dvh; overflow-y: auto; }
 .mt-root .mt-ad-account-options label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px; border-radius: 10px; background: var(--bg3); }
 .mt-root .mt-ad-account-options input { width: 18px; height: 18px; min-height: 0; flex: none; }
@@ -288,9 +293,34 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-root .mt-ad-table-scroll { scrollbar-color: var(--bg5) transparent; }
 .mt-root .mt-ad-table .status-switch[aria-checked="true"] span::after { background: var(--accent-ink); }
 @media (max-width: 900px) {
-  .mt-ad-controls { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,.8fr) minmax(0,1fr); width: 100%; }
-  .mt-ad-controls .quiet,.mt-ad-controls .mm-filter-toggle { font-size: 10px; min-width: 0; padding-inline: 7px; gap: 4px; white-space: nowrap; }
+  .mt-root .mt-platform-tools .mt-manager-tabs,.mt-ad-controls {
+    display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; width: 100%;
+  }
+  .mt-root .mt-platform-tools .mt-manager-tabs button { min-width: 0; }
+  .mt-ad-controls { padding-inline: 4px; }
+  .mt-ad-controls .mm-filter-toggle {
+    width: 100%; min-width: 0; height: 40px; min-height: 40px; padding-inline: 6px; gap: 4px;
+    border-radius: 999px; font-size: 10px; white-space: nowrap;
+    display: grid; grid-template-columns: 7px minmax(0,1fr) 7px; align-items: center;
+  }
+  .mt-ad-controls .mm-filter-toggle > span { grid-column: 2; text-align: center; }
   .mt-ad-controls .mm-filter-toggle .mm-chevron { margin-left: 1px; }
+  .mt-root .panel-body:has(> .mt-cost-cards) { padding: 9px; }
+  .mt-cost-cards { display: grid; gap: 7px; list-style: none; margin: 0; padding: 0; }
+  .mt-cost-cards + .table-scroll { display: none; }
+  .mt-cost-card {
+    display: grid; gap: 4px; padding: 9px 10px; min-width: 0;
+    border: 1px solid var(--border2); border-radius: 14px; background: #ffffff04;
+  }
+  .mt-cost-card-main,.mt-cost-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .mt-cost-card-main > strong,.mt-cost-card-value,.mt-cost-card-foot small { overflow-wrap: anywhere; }
+  .mt-cost-card-main strong,.mt-cost-card-value { font-size: 12px; line-height: 1.35; }
+  .mt-cost-card-value { color: var(--text2); }
+  .mt-cost-card-main .pill { border-radius: 999px; flex: none; }
+  .mt-cost-card-foot > div:first-child { min-width: 0; }
+  .mt-cost-card-foot small { display: block; color: var(--text3); font-size: 10px; line-height: 1.35; }
+  .mt-root .mt-cost-card-foot .actions { flex: none; gap: 4px; }
+  .mt-root .mt-cost-card-foot button { min-height: 36px; padding: 5px 7px; font-size: 10px; border-radius: 999px; }
   .mt-root .mt-ad-table tfoot { padding: 9px; }
   .mt-root .mt-ad-table tfoot tr { border-radius: 14px; border: 1px solid var(--border); background: #1116; }
   #pg-orders .table-scroll:has(> table) { display: none; }

@@ -354,7 +354,9 @@
     Object.entries(adLevels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
    const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
    const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordenar resultados</span>',sortOptions,sort+':'+direction)+'</div>';
-   const filters='<div class="mt-ad-controls">'+mobileSort+button('Contas'+(selected.length?' · '+selected.length:''),'ad-accounts','id="ad-accounts-'+p+'" aria-haspopup="dialog"')+
+   const accountsButton='<button type="button" class="btn btn-ghost mm-filter-toggle" id="ad-accounts-'+p+'" data-action="ad-accounts" aria-haspopup="dialog">'+
+    '<span>Contas'+(selected.length?' · '+selected.length:'')+'</span><i class="mm-chevron" aria-hidden="true"></i></button>';
+   const filters='<div class="mt-ad-controls">'+mobileSort+accountsButton+
     '<div class="mt-ad-delivery">'+select('ad-delivery-'+p,'<span class="sr-only">Veiculação</span>',[['','Veiculação'],['ACTIVE','Ativa'],['PAUSED','Pausada']],view.delivery)+'</div></div>';
    const breadcrumb=parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'';
    return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'">'+
@@ -417,10 +419,23 @@
   return brand.integrationSections(card)+panel('Origem das vendas','<div class="mt-sales-origin"><p>UTMs identificam o anúncio que originou cada pedido. O script próprio permite acompanhar também as visitas e etapas do funil.</p><div class="actions">'+button('Script e UTMs','sites')+button('Selecionar produtos','products')+'</div></div>');
  }
  async function costs(){
-  costRules=await api('/costs');const rows=costRules.filter(r=>costHistory||!r.archived_at);
+  costRules=await api('/costs');
   const labels={product:'Custo do produto',tax:'Imposto',fee:'Taxa de pagamento',expense:'Custo adicional'};
   const calculation=r=>r.fee_schedule?fees.description(r,money):r.calculation==='percentage'?Number(r.rate_bps)/100+'% sobre vendas aprovadas':r.calculation==='fixed_per_item'?money(r.amount_minor,r.currency)+' por unidade':r.calculation==='fixed_per_sale'?money(r.amount_minor,r.currency)+' por venda':r.calculation==='fixed_once'?money(r.amount_minor,r.currency)+' · despesa registrada':(r.amount_minor!=null?money(r.amount_minor,r.currency):'')+(r.rate_bps?' + '+Number(r.rate_bps)/100+'%':'');
-  return '<div class="panel-head"><p class="small">As alterações valem para as próximas aprovações. Os custos das vendas anteriores ficam preservados.</p>'+button('Adicionar custo','cost-form','',true)+'</div><div class="actions mt-cost-tabs">'+button(costHistory?'Mostrar apenas ativos':'Ver histórico','cost-history','aria-pressed="'+costHistory+'"')+'</div>'+panel(costHistory?'Histórico de custos':'Custos ativos',rows.length?table(['Custo','Tipo','Cálculo','Aplicado a','Status',''],rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(labels[r.category])+'</td><td>'+esc(calculation(r))+'</td><td>'+esc(r.product_id||'Todos os produtos')+'<small>'+esc(r.provider?brand.name(r.provider):'Todos os checkouts')+' · '+esc(r.currency)+'</small></td><td>'+pill(r.archived_at?'Encerrado':'Ativo')+'</td><td>'+(r.archived_at?'<small>Histórico preservado</small>':'<div class="actions">'+button('Editar','cost-edit','data-id="'+esc(r.id)+'"')+button('Remover','cost-remove','data-id="'+esc(r.id)+'"')+'</div>')+'</td></tr>')):'<p>Adicione o custo do produto, impostos e outras taxas para acompanhar seu lucro.</p>');
+  const rows=costRules.filter(r=>costHistory||!r.archived_at).map(r=>{
+   const data='data-id="'+esc(r.id)+'"';
+   return {name:esc(r.name),type:esc(labels[r.category]),value:esc(calculation(r)),scope:esc(r.product_id||'Todos os produtos'),
+    checkout:esc((r.provider?brand.name(r.provider):'Todos os checkouts')+' · '+r.currency),
+    status:pill(r.archived_at?'Encerrado':'Ativo'),
+    actions:r.archived_at?'<small>Histórico preservado</small>':'<div class="actions">'+button('Editar','cost-edit',data)+button('Remover','cost-remove',data)+'</div>'};
+  });
+  const cards='<ul class="mt-cost-cards">'+rows.map(r=>'<li class="mt-cost-card"><div class="mt-cost-card-main"><strong>'+r.name+'</strong>'+r.status+'</div>'+
+   '<div class="mt-cost-card-value">'+r.value+'</div><div class="mt-cost-card-foot"><div><small>'+r.type+' · '+r.checkout+'</small><small>'+r.scope+'</small></div>'+r.actions+'</div></li>').join('')+'</ul>';
+  const desktop=table(['Custo','Tipo','Cálculo','Aplicado a','Status',''],rows.map(r=>'<tr><td>'+r.name+'</td><td>'+r.type+'</td><td>'+r.value+
+   '</td><td>'+r.scope+'<small>'+r.checkout+'</small></td><td>'+r.status+'</td><td>'+r.actions+'</td></tr>'));
+  return '<div class="mt-cost-toolbar"><p class="small">As alterações valem para as próximas aprovações. Os custos das vendas anteriores ficam preservados.</p>'+
+   '<div class="mt-cost-toolbar-actions">'+button('Adicionar custo','cost-form','',true)+button(costHistory?'Mostrar apenas ativos':'Ver histórico','cost-history','aria-pressed="'+costHistory+'"')+'</div></div>'+
+   panel(costHistory?'Histórico de custos':'Custos ativos',rows.length?cards+desktop:'<p>Adicione um custo para acompanhar seu lucro.</p>');
  }
 
  async function settings(){

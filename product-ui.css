@@ -88,14 +88,16 @@
  .solution-carousel-arrow{display:none}
  .solution-section-carousel .solution-section-head{flex-wrap:nowrap;align-items:flex-start}
  .solution-section-carousel .solution-section-controls{align-self:flex-start}
- .solution-section-carousel .solution-carousel{display:flex;gap:10px;padding-right:31px}
+ #pg-solutions .solutions-scroll{--solution-gutter:16px;padding-inline:var(--solution-gutter)}
+ body:has(#support-whatsapp:not([hidden])) #pg-solutions .solutions-scroll:has(.solution-custom-cta:not([hidden])){padding-bottom:76px}
+ #pg-solutions .solution-section-carousel .solution-carousel{
+  display:flex;gap:10px;width:calc(100% + 2 * var(--solution-gutter));max-width:none;
+  margin-inline:calc(-1 * var(--solution-gutter));padding-inline:var(--solution-gutter);scroll-padding-inline:var(--solution-gutter);
+ }
  .solution-section-carousel .solution-card{flex-basis:min(288px,calc(100% - 48px));min-width:0}
- .solution-section-carousel:has(.solution-card:only-child) .solution-carousel{padding-right:0}
  .solution-section-carousel:has(.solution-card:only-child) .solution-card{flex-basis:100%}
- .solution-custom-cta{flex-direction:row;align-items:center;gap:10px;bottom:calc(8px + var(--safe-bottom));padding:9px 10px}
- .solution-custom-cta .btn{width:auto;max-width:49%;min-height:36px;white-space:normal;text-align:center;line-height:1.3}
+ .solution-custom-cta .btn{white-space:normal;text-align:center;line-height:1.3}
 }
-@media(max-width:380px){.solution-custom-cta span{display:none}.solution-custom-cta strong{font-size:11px}.solution-custom-cta .btn{font-size:9px}}
 @media(max-width:370px){
  .client-preview-fields{grid-template-columns:minmax(0,1fr);gap:16px}
 }

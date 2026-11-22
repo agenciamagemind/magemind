@@ -80,13 +80,14 @@
  function init(){
   viewport();const sidebar=document.querySelector('.sidebar'),nav=document.getElementById('sb-nav'),main=document.querySelector('#app .main');if(!sidebar||!nav||!main)return;
   const header=document.createElement('header');header.className='mobile-more-head';
-  header.innerHTML='<div class="mobile-more-profile"><span class="av" id="mobile-more-avatar"><span class="profile-avatar-default" aria-hidden="true"></span></span><div><strong id="mobile-more-name"></strong><button type="button" class="mobile-more-profile-link">Meu perfil <span aria-hidden="true">›</span></button></div><button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><button id="mobile-more-plan" type="button" hidden><span><small></small><strong></strong></span><span aria-hidden="true">›</span></button>';
+  header.innerHTML='<div class="mobile-more-profile"><span class="av" id="mobile-more-avatar"><span class="profile-avatar-default" aria-hidden="true"></span></span><div><strong id="mobile-more-name"></strong><button type="button" class="mobile-more-profile-link">Meu perfil <span aria-hidden="true">›</span></button></div><button type="button" class="mobile-more-close" aria-label="Fechar mais opções"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><button id="mobile-more-plan" type="button" hidden><span><small>Seu plano</small><strong></strong></span><span aria-hidden="true">›</span></button><section id="mobile-more-empty-plan" hidden aria-labelledby="mobile-more-empty-title"><strong id="mobile-more-empty-title">Nenhum plano definido</strong><p>Explore os pacotes, planos e serviços disponíveis.</p><button class="btn btn-primary btn-sm" type="button">Conhecer soluções</button></section>';
   const profile=()=>{window.closeMobileMenu();goTo('settings');selectSettingsTab('profile');};
   header.querySelector('.mobile-more-profile-link').addEventListener('click',profile);
   header.querySelector('.mobile-more-close').addEventListener('click',()=>window.closeMobileMenu());
-  header.querySelector('#mobile-more-plan').addEventListener('click',event=>{
-   if(event.currentTarget.dataset.hasPlan==='true')profile();
-   else{window.closeMobileMenu();goTo('solutions');}
+  header.querySelector('#mobile-more-plan').addEventListener('click',profile);
+  header.querySelector('#mobile-more-empty-plan button').addEventListener('click',()=>{
+   window.closeMobileMenu();
+   goTo('solutions');
   });
   sidebar.insertBefore(header,nav);
   if(typeof DB!=='undefined'&&DB.me)updateSidebarUser();

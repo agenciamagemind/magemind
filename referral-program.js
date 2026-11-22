@@ -106,22 +106,16 @@
  }
  function syncHelp(){
   const button=document.getElementById('referral-rules-help');if(!button)return;
-  const slot=document.getElementById('referral-mobile-help-slot');
-  const target=slot&&matchMedia('(max-width:900px)').matches&&!slot.parentElement.hidden?slot:document.getElementById('notif-wrapper');
-  if(target&&button.parentElement!==target)target.prepend(button);
   button.hidden=!visible()||!DB.me;button.disabled=!data?.rules||owner!==DB.me?.id;
   if(button.hidden||button.disabled)closeRules();
  }
  function renderRules(){document.getElementById('referral-rules-content').innerHTML=`<div class="rf-root">${rules()}</div>`;}
  function closeRules(){const dialog=document.getElementById('referral-rules-dialog');if(dialog?.open)dialog.close();}
  function initHelp(){
-  const wrapper=document.getElementById('notif-wrapper');if(!wrapper||document.getElementById('referral-rules-help'))return;
+  const bell=document.getElementById('btn-notif');if(!bell||document.getElementById('referral-rules-help'))return;
   const button=document.createElement('button');button.id='referral-rules-help';button.type='button';button.className='btn btn-ghost btn-icon';button.hidden=true;button.disabled=true;button.title='Regras do programa';button.setAttribute('aria-label','Regras do programa');button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','referral-rules-dialog');
   button.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.6-2.5 1.8-2.5 3.5M12 16.5h.01"/></svg>';
-  wrapper.prepend(button);
-  const slot=document.createElement('div');slot.id='referral-mobile-help-slot';page().querySelector('.ph').append(slot);
-  const mobile=matchMedia('(max-width:900px)');
-  mobile.addEventListener('change',syncHelp);
+  bell.after(button);
   const dialog=document.createElement('dialog');dialog.id='referral-rules-dialog';dialog.setAttribute('aria-labelledby','referral-rules-title');dialog.innerHTML='<div class="rf-dialog-head"><div><h2 id="referral-rules-title">Regras do programa</h2><p>Indique &amp; Ganhe Magemind</p></div><button type="button" class="btn btn-ghost btn-icon" aria-label="Fechar regras">×</button></div><div id="referral-rules-content" class="rf-dialog-body"></div>';
   document.body.append(dialog);
   button.addEventListener('click',()=>{if(!visible()||!data?.rules||owner!==DB.me?.id)return;closeNotifPanel();renderRules();window.openAccessibleDialog(dialog);});
