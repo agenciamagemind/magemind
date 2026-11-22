@@ -72,7 +72,12 @@
 .mm-filter-popover .mt-period-option > span:first-child{overflow-wrap:anywhere}
 .mm-filter-popover .mt-period-option[hidden]{display:none}
 .mm-filter-popover .mt-period-option:disabled{opacity:.45;cursor:default}
-:is(.filters,.mt-admin-filters,.mt-ad-mobile-sort,[data-form=cost]) label > .mm-filter-toggle{width:100%}
+.mm-filter-popover:has(>.mm-filter-actions):not([hidden]){display:flex;flex-direction:column;overflow:hidden}
+.mm-filter-options{min-height:0;overflow:auto;overscroll-behavior:contain}
+.mm-filter-actions{display:flex;flex:none;justify-content:flex-end;gap:8px;padding:8px 5px 2px;border-top:1px solid var(--border);margin-top:4px}
+.mm-filter-actions .btn{min-height:36px;border-radius:999px;font-size:11px}
+.mm-filter-actions .btn-primary,.mm-filter-actions .btn-primary:hover{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+:is(.filters,.mt-admin-filters,.mt-ad-controls,[data-form=cost]) label > .mm-filter-toggle{width:100%}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
  .mm-filter-toggle{--mm-glass-fill:rgb(18 18 18 / 60%);-webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%)}
 }
@@ -93,6 +98,7 @@
 .app-metric-tooltip{position:fixed;z-index:900;width:max-content;max-width:min(300px,calc(100vw - 24px));padding:12px 14px;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px #0006;font-size:12px;line-height:1.65;pointer-events:none}
 @media(min-width:901px){.mt-root .md-info{cursor:help}}
 @media(max-width:900px){
+ .mm-filter-actions .btn{min-height:44px}
  #tracking-toolbar{gap:8px;margin:10px 0 16px;flex-wrap:wrap}
  #tracking-toolbar .mt-period-control{flex:1 1 150px;min-width:0}
  #tracking-toolbar #tracking-period-toggle{width:100%;min-width:0;max-width:none}

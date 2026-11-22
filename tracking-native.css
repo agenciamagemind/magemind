@@ -261,16 +261,17 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-ad-mobile-sort { display: none; }
 .mt-order-cards,.mt-checkout-compact { display: none; }
 .mt-ad-controls { display: flex; align-items: stretch; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.mt-ad-controls .mm-filter-toggle { padding-inline: 10px; }
-.mt-ad-delivery label,.mt-ad-mobile-sort label { margin: 0; }
+.mt-ad-controls .mm-filter-toggle { justify-content: center; gap: 5px; padding-inline: 10px; }
+.mt-ad-controls .mm-filter-toggle .mm-chevron { margin-left: 0; }
+.mt-ad-controls label { margin: 0; }
+@media (min-width: 901px) {
+  .mt-root .mt-ad-filters.mt-compact-filters { min-height: calc(var(--filter-h) + 20px); }
+}
 .mt-cost-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .mt-root .mt-cost-toolbar p { margin: 0; }
 .mt-cost-toolbar-actions { display: flex; align-items: stretch; gap: 7px; }
 .mt-root .mt-cost-toolbar-actions button { min-height: 40px; border-radius: 999px; white-space: normal; }
 .mt-cost-cards { display: none; }
-.mt-ad-account-options { display: grid; gap: 6px; max-height: 55dvh; overflow-y: auto; }
-.mt-root .mt-ad-account-options label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px; border-radius: 10px; background: var(--bg3); }
-.mt-root .mt-ad-account-options input { width: 18px; height: 18px; min-height: 0; flex: none; }
 .mt-ad-detail { display: grid; gap: 12px; }
 .mt-ad-detail-lead,.mt-ad-detail-card > header { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .mt-ad-detail-lead small { display: block; color: var(--text3); overflow-wrap: anywhere; }
@@ -301,12 +302,9 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
   .mt-root .mt-platform-tools .mt-manager-tabs button { min-width: 0; }
   .mt-ad-controls { padding-inline: 4px; }
   .mt-ad-controls .mm-filter-toggle {
-    width: 100%; min-width: 0; height: 40px; min-height: 40px; padding-inline: 6px; gap: 4px;
-    border-radius: 999px; font-size: 10px; white-space: nowrap;
-    display: grid; grid-template-columns: 7px minmax(0,1fr) 7px; align-items: center;
+    width: 100%; min-width: 0; height: 40px; min-height: 40px; padding-inline: 3px;
+    border-radius: 999px; font-size: clamp(9px, 2.75vw, 10px); white-space: nowrap;
   }
-  .mt-ad-controls .mm-filter-toggle > span { grid-column: 2; text-align: center; }
-  .mt-ad-controls .mm-filter-toggle .mm-chevron { margin-left: 1px; }
   .mt-root .panel-body:has(> .mt-cost-cards) { padding: 9px; }
   .mt-cost-cards { display: grid; gap: 7px; list-style: none; margin: 0; padding: 0; }
   .mt-cost-cards + .table-scroll { display: none; }

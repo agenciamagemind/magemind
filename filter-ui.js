@@ -13,7 +13,7 @@
   });
  }
  document.addEventListener('click',e=>{const toggle=e.target.closest('[data-filter-disclosure]');if(!toggle)return;const bar=toggle.closest('.filters'),open=bar.classList.toggle('app-filter-expanded');bar.classList.toggle('app-filter-collapsed',!open);toggle.setAttribute('aria-expanded',String(open));});
- function optionPicker(anchor,id,label,choices,selected,choose,{period=false}={}){
+ function optionPicker(anchor,id,label,choices,selected,choose,{period=false,multiple=false,triggerText}={}){
   const trigger=document.createElement('button');
   trigger.type='button';
   trigger.id=anchor.id?anchor.id+'-trigger':id+'-trigger';
@@ -36,32 +36,57 @@
   const popup=bindAnchoredPopover(panel,trigger);
   if(!popup.native)fallbackPickers.set(anchor,popup);
   function sync(){
-   const index=selected(),items=choices(),text=items[index]?.text||items[0]?.text||'Selecione';
-   trigger.querySelector('span').textContent=text;
-   trigger.setAttribute('aria-label',label+' · '+text);
+   const selection=selected(),items=choices(),text=items[multiple?0:selection]?.text||items[0]?.text||'Selecione';
+   const display=triggerText?.(selection)||text;
+   trigger.querySelector('span').textContent=display;
+   const accessibleText=multiple&&selection.length?display:label===text?label:label+' · '+text;
+   trigger.setAttribute('aria-label',accessibleText);
    trigger.disabled=anchor.disabled||!items.some(item=>!item.disabled&&!item.hidden);
+  }
+  function commit(selection){
+   popup.close(true);
+   choose(selection);
+   sync();
   }
   function open(){
    sync();
    if(trigger.disabled)return;
-   const index=selected();
-   const options=choices().map((choice,i)=>{
+   const selection=selected(),items=choices();
+   const all=multiple?items.findIndex(choice=>choice.all):-1;
+   const pending=new Set(multiple?selection:[selection]);
+   const isSelected=i=>i===all?pending.size===0:pending.has(i);
+   const options=items.map((choice,i)=>{
     const button=document.createElement('button');
     button.type='button';
     button.className='mt-period-option';
     button.disabled=Boolean(choice.disabled);
     button.hidden=Boolean(choice.hidden);
-    button.setAttribute('aria-pressed',String(i===index));
+    button.setAttribute('aria-pressed',String(isSelected(i)));
     const text=document.createElement('span'),check=document.createElement('span');
     text.textContent=choice.text;
     check.textContent='✓';check.className='mt-period-check';check.setAttribute('aria-hidden','true');
     button.append(text,check);
-    button.addEventListener('click',()=>{popup.close(true);choose(i);sync();});
+    button.addEventListener('click',()=>{
+     if(!multiple)return commit(i);
+     if(i===all)pending.clear();
+     else if(!pending.delete(i))pending.add(i);
+     options.forEach((option,index)=>option.setAttribute('aria-pressed',String(isSelected(index))));
+    });
     return button;
    });
-   panel.replaceChildren(heading,...options);
+   if(multiple){
+    const list=document.createElement('div'),actions=document.createElement('div');
+    list.className='mm-filter-options';
+    list.append(...options);
+    actions.className='mm-filter-actions';
+    actions.innerHTML='<button type="button" class="btn btn-ghost">Cancelar</button><button type="button" class="btn btn-primary">Aplicar</button>';
+    actions.firstElementChild.addEventListener('click',()=>popup.close(true));
+    actions.lastElementChild.addEventListener('click',()=>commit(pending));
+    panel.replaceChildren(heading,list,actions);
+   }else panel.replaceChildren(heading,...options);
    popup.open();
-   (options[index]&&!options[index].disabled&&!options[index].hidden?options[index]:options.find(button=>!button.disabled&&!button.hidden))?.focus();
+   const available=options.filter(button=>!button.disabled&&!button.hidden);
+   (available.find(button=>button.getAttribute('aria-pressed')==='true')||available[0])?.focus();
   }
   trigger.addEventListener('click',()=>popup.isOpen()?popup.close(true):open());
   trigger.addEventListener('keydown',event=>{
@@ -70,7 +95,7 @@
   });
   panel.addEventListener('keydown',event=>{
    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
-   const options=[...panel.querySelectorAll('button:not(:disabled):not([hidden])')];
+   const options=[...panel.querySelectorAll('.mt-period-option:not(:disabled):not([hidden])')];
    if(!options.length)return;
    event.preventDefault();
    const index=options.indexOf(document.activeElement),step=event.key==='ArrowUp'?-1:1;
@@ -80,7 +105,7 @@
   return sync;
  }
  const fallbackPickers=new Map();
- const nativeFilters='#tracking-dialog [data-form=cost] select, .mt-root .filters select, .mt-admin-filters select, .mt-ad-mobile-sort select, .mt-ad-delivery select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
+ const nativeFilters='#tracking-dialog [data-form=cost] select, .mt-root .filters select, .mt-admin-filters select, .mt-ad-controls select, #client-sort, #firewall-outcome, #rf-state, .partner-toolbar select, #pg-withdrawals select[aria-label], #pg-docs select[aria-label]';
  let selectId=0;
  function labelFor(select){
   const label=select.labels?.[0]?.cloneNode(true);
@@ -88,15 +113,22 @@
   return select.getAttribute('aria-label')||label?.textContent.trim()||'Filtro';
  }
  function selectPicker(select,period=false,label=labelFor(select)){
-  if(select.classList.contains('mm-native-filter')||select.multiple||select.size>1)return;
+  const multiple=select.multiple&&select.hasAttribute('data-multi-filter');
+  if(select.classList.contains('mm-native-filter')||(!multiple&&(select.multiple||select.size>1)))return;
   const id=(select.id||'mm-filter-'+ ++selectId)+'-popover';
   const sync=optionPicker(select,id,label,
-   ()=>[...select.options].map(option=>({text:option.label,hidden:option.hidden||option.closest('optgroup')?.hidden,disabled:option.disabled||option.closest('optgroup')?.disabled})),
-   ()=>select.selectedIndex,i=>{
-    if(select.selectedIndex===i)return;
-    select.selectedIndex=i;
+   ()=>[...select.options].map(option=>({text:option.label,all:multiple&&!option.value,hidden:option.hidden||option.closest('optgroup')?.hidden,disabled:option.disabled||option.closest('optgroup')?.disabled})),
+   ()=>multiple?[...select.selectedOptions].filter(option=>option.value).map(option=>option.index):select.selectedIndex,selection=>{
+    if(multiple){
+     const changed=[...select.options].filter(option=>option.selected!==(option.value?selection.has(option.index):!selection.size));
+     if(!changed.length)return;
+     for(const option of changed)option.selected=!option.selected;
+    }else{
+     if(select.selectedIndex===selection)return;
+     select.selectedIndex=selection;
+    }
     select.dispatchEvent(new Event('change',{bubbles:true}));
-   },{period});
+   },{period,multiple,triggerText:selection=>multiple?label+(selection.length?' · '+selection.length:''):select.value===''?select.dataset.emptyLabel:null});
   select.classList.add('mm-native-filter');
   select.hidden=true;
   select.addEventListener('change',sync);
