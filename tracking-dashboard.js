@@ -26,7 +26,7 @@
   demands:['Resumo de demandas','Demandas','demands','Situação atual das demandas da sua conta. Não depende do filtro financeiro de datas.'],
   demand_list:['Demandas recentes','Demandas','demand_list','Últimas demandas da sua operação e suas situações atuais.']
  };
- let ctx=null,data=null,saved={},draft=null,drafts={},editing=false,device=null,search='',saving=false,drag=null,dragFrame=0,gridObserver=null,sessionKey=null;
+ let ctx=null,data=null,saved={},draft=null,drafts={},editing=false,device=null,saving=false,drag=null,dragFrame=0,gridObserver=null,sessionKey=null;
  const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const currentDevice=()=>matchMedia('(max-width:900px)').matches?'mobile':'desktop';
  const cols=()=>device==='mobile'?4:12;
@@ -57,16 +57,15 @@
   mobile:[
    ['profit',0,0,4,1],
    ['net',0,1,2,1],['spend',2,1,2,1],
-   ['approved',0,2,2,1],['roas',2,2,2,1],
-   ['demands',0,3,4,3],
-   ['pending',0,6,2,1],
-   ['product_cost',0,7,2,1],['fees',2,7,2,1],
-   ['refunds',0,8,2,1],['tax',2,8,2,1],
-   ['chargebacks',0,9,2,1],['margin',2,9,2,1],
-   ['roi',0,10,2,1],['expenses',2,10,2,1],
-   ['payments',0,11,4,3],
-   ['products',0,14,4,3],
-   ['revenue',0,17,4,3]
+   ['approved',0,2,2,1],['pending',2,2,2,1],
+   ['roas',0,3,2,1],['roi',2,3,2,1],
+   ['revenue',0,4,4,2],['margin',0,6,4,1],['demands',0,7,4,2],
+   ['chargebacks',0,9,2,1],['chargeback_rate',2,9,2,1],
+   ['refunds',0,10,2,1],['refund_rate',2,10,2,1],
+   ['payments',0,11,4,2],
+   ['tax',0,13,2,1],['expenses',2,13,2,1],
+   ['fees',0,14,2,1],['product_cost',2,14,2,1],
+   ['approval',0,15,4,2],['products',0,17,4,2]
   ],
  };
  function defaults(){return defaultTiles[device].map(([id,x,y,w,h])=>({id,x,y,w,h}));}
@@ -139,13 +138,29 @@
    (editing?'<button type="button" class="md-resize" data-dashboard-resize="'+item.id+'" title="Arraste para redimensionar" aria-label="Redimensionar '+title+'">'+svg('resize')+'</button>':'')+'</article>';
  }
  function library(){
-  return '<aside class="md-library" aria-label="Blocos disponíveis"><h3>Adicionar blocos</h3><label class="md-search-label">Buscar métricas<input id="md-search" type="search" placeholder="Nome do bloco" value="'+esc(search)+'"></label><div id="md-library-list">'+libraryRows()+'</div></aside>';
+  const groups=['Financeiro','Vendas','Gráficos','Demandas'].map(group=>{
+   const rows=Object.entries(catalog).filter(([,item])=>item[1]===group).map(([id,[label]])=>{
+    const added=draft.some(item=>item.id===id);
+    return b('<span>'+label+'</span><span aria-hidden="true">'+(added?'✓':'+')+'</span>','add',
+     'data-id="'+id+'" '+(added?'disabled':'')+' aria-label="Adicionar '+label+'"');
+   });
+   return '<section><h4>'+group+'</h4>'+rows.join('')+'</section>';
+  });
+  return '<aside class="md-library" aria-labelledby="md-library-heading"><h3 id="md-library-heading">Adicionar blocos</h3>'+groups.join('')+'</aside>';
  }
- function libraryRows(){return ['Financeiro','Vendas','Gráficos','Demandas'].map(group=>{const rows=Object.entries(catalog).filter(([id,c])=>c[1]===group&&c[0].toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')));return rows.length?'<section><h4>'+group+'</h4>'+rows.map(([id,c])=>{const added=draft.some(r=>r.id===id);return b('<span>'+c[0]+'</span><span aria-hidden="true">'+(added?'✓':'+')+'</span>','add','data-id="'+id+'" '+(added?'disabled':'')+' aria-label="Adicionar '+c[0]+'"');}).join('')+'</section>':'';}).join('');}
+ function editorToolbar(){
+  const devices=['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device',
+   'data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('');
+  const save=b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''));
+  return '<div class="md-toolbar"><div class="md-editor-intro"><h2>Personalizar Dashboard</h2>'+
+   '<p>Mova e redimensione os blocos. Salve para aplicar as mudanças.</p></div>'+
+   '<div class="md-device" role="group" aria-label="Layout do dispositivo">'+devices+'</div>'+
+   '<div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+save+'</div></div>';
+ }
  function html(){
   if(!data)return '';
   return '<div class="md-dashboard '+(editing?'md-editing':'')+' '+(device==='mobile'?'md-mobile-layout':'')+'"'+(editing?' data-no-pull':'')+'>'+
-   (editing?'<div class="md-toolbar">'+'<div><strong>Personalizar Dashboard</strong><p>Arraste os blocos e os cantos para ajustar. As mudanças só entram ao salvar.</p></div><div class="md-device" role="group" aria-label="Layout do dispositivo">'+['desktop','mobile'].map(d=>b(d==='desktop'?'Computador':'Celular','device','data-device="'+d+'" aria-pressed="'+(device===d)+'"')).join('')+'</div><div class="md-editor-actions">'+b('Restaurar padrão','reset')+b('Cancelar','cancel')+b(saving?'Salvando…':'Salvar','save','class="primary" '+(saving?'disabled':''))+'</div>'+'</div>':'')+
+   (editing?editorToolbar():'')+
    '<div class="md-workspace">'+(editing?library():'')+'<div class="md-grid" id="md-grid" style="--md-cols:'+cols()+';--md-rows:'+Math.max(1,...layout().map(r=>r.y+r.h))+'">'+layout().map(tile).join('')+'</div></div></div>';
  }
  function paint(focusId){const root=$('md-dashboard-root');if(!root)return;root.innerHTML=html();observe();if(focusId)root.querySelector(focusId)?.focus({preventScroll:true});}
@@ -225,7 +240,7 @@
  async function readDevice(d,force=false,passive=false){if(saved[d]&&!force)return;const key=sessionKey,record=await ctx.api('/dashboard-layout',null,{device:d});if(key!==sessionKey||passive&&editing)return;saved[d]={revision:record.revision||0,layout:record.layout?normalize(record.layout):null};}
  async function action(name,el){
   if(saving)return;
-  if(name==='edit'){draft=clone(layout());drafts={};editing=true;search='';paint('[data-dashboard-action=cancel]');return;}
+  if(name==='edit'){draft=clone(layout());drafts={};editing=true;paint('[data-dashboard-action=cancel]');return;}
   if(name==='cancel'){editing=false;draft=null;drafts={};device=currentDevice();await readDevice(device,true);paint('[data-dashboard-action=edit]');return;}
   if(name==='save'){
    saving=true;paint();const key=sessionKey;
@@ -248,7 +263,6 @@
   if(name==='explain-profit'){ctx.modal('Como o lucro é calculado','<p>Receita líquida − anúncios − custos de produto − impostos − taxas adicionais − despesas.</p><p>Taxas que o checkout já descontou da receita líquida são mostradas para consulta e não são cobradas novamente.</p><p>Quando uma venda antiga não tinha custos registrados, usamos a primeira configuração disponível após sua aprovação. A estimativa aparece identificada e não altera os pedidos nem os lançamentos originais.</p><div class="md-profit-formula"><strong>Receita líquida</strong><span>'+esc(ctx.money(data.net_minor))+'</span><strong>Anúncios</strong><span>− '+esc(ctx.money(data.spend_minor))+'</span><strong>Custos e despesas adicionais</strong><span>− '+esc(ctx.money(data.costs_minor==null?null:Number(data.costs_minor)+Number(data.expense_minor||0)))+'</span><strong>Lucro estimado</strong><span>'+esc(ctx.money(data.profit_minor))+'</span></div>'+b('Fechar','close-info'));}
  }
  document.addEventListener('click',e=>{const el=e.target.closest('[data-dashboard-action]');if(!el)return;action(el.dataset.dashboardAction,el).catch(err=>ctx.toast(err.message));});
- document.addEventListener('input',e=>{if(e.target.id==='md-search'){search=e.target.value;$('md-library-list').innerHTML=libraryRows();}});
  document.addEventListener('pointerdown',e=>{
   const handle=e.target.closest('[data-dashboard-drag],[data-dashboard-resize]');if(!editing||saving||!handle||e.button!==0)return;
   const id=handle.dataset.dashboardDrag||handle.dataset.dashboardResize,grid=$('md-grid'),tile=handle.closest('[data-widget]'),r=draft.find(r=>r.id===id),style=getComputedStyle(grid),gap=parseFloat(style.gap)||12;
