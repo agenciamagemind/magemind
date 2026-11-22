@@ -38,7 +38,7 @@
   const hint=sources.some(s=>!s.synced_at)?'Autorize a Cartpanda para importar fotos, preços e produtos sem pedidos.':
    'Os produtos de integrações sem catálogo são identificados pelos pedidos recebidos.';
   return '<div class="mt-catalog-toolbar"><label class="mt-catalog-search">'+search+'<input id="tracking-search" type="search" maxlength="120" value="'+esc(query)+
-   '" placeholder="Pesquisar produto, SKU ou ID" aria-label="Pesquisar produtos"></label>'+
+   '" placeholder="Buscar produto" aria-label="Pesquisar produtos"></label>'+
    (canWrite?button(sync+'<span>'+(syncing?'Sincronizando…':'Sincronizar produtos')+'</span>','catalog-sync',(syncing?'disabled':''),true): '')+'</div>'+
    '<div class="mt-catalog-meta"><span>'+result.total+' '+(result.total===1?'produto':'produtos')+'</span>'+
    (sources.length&&canWrite?button('Catálogo Cartpanda','catalog-sources'):'')+'</div>'+
