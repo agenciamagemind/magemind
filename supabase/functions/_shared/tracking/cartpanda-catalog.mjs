@@ -1,6 +1,7 @@
+import { localizedMinor, SCALES } from './contracts.mjs';
+
 const base = 'https://accounts.cartpanda.com';
 const ids = /^[1-9]\d{0,15}$/;
-const currencyScale = { BRL: 2, USD: 2, EUR: 2, JPY: 0, KWD: 3 };
 export class CatalogError extends Error {}
 
 export function cartpandaCredentials(input) {
@@ -26,13 +27,18 @@ async function request(credentials, path, options = {}) {
   return response.json().catch(() => { throw new CatalogError('A Cartpanda retornou um catálogo em formato inesperado.'); });
 }
 
-function amount(value, currency) {
-  if (value == null || value === '') return null;
-  const text = String(value);
-  const decimal = text.includes(',') ? text.replaceAll('.', '').replace(',', '.') : text;
-  if (!/^\d+(\.\d+)?$/.test(decimal)) return null;
-  const result = Math.round(Number(decimal) * 10 ** currencyScale[currency]);
-  return Number.isSafeInteger(result) ? result : null;
+function amount(productValue, variantValue, currency) {
+  const text = String(productValue ?? '').trim();
+  // Cartpanda returns integer minor units on the product and decimal prices on its default variant.
+  if (/^\d+$/.test(text) && Number.isSafeInteger(Number(text))) return Number(text);
+  const scale = SCALES[currency];
+  if (scale == null) return null;
+  for (const value of [variantValue, productValue]) {
+    if (value == null || value === '') continue;
+    try { return localizedMinor(value, scale); }
+    catch { /* Try the remaining price field when one is unavailable or malformed. */ }
+  }
+  return null;
 }
 
 export function cartpandaProduct(product, currency) {
@@ -53,8 +59,8 @@ export function cartpandaProduct(product, currency) {
   return {
     product_id, name, image_url,
     sku: String(primary.sku || product.sku || '').slice(0, 200),
-    price_minor: amount(product.price ?? primary.price, currency),
-    compare_minor: amount(product.compare_at_price ?? primary.compare_at_price, currency),
+    price_minor: amount(product.price, primary.price, currency),
+    compare_minor: amount(product.compare_at_price, primary.compare_at_price, currency),
     has_variants: variants.some(row => row.id !== primary.id),
     version: typeof product.updated_at === 'string' ? product.updated_at.slice(0, 80) : null
   };
@@ -106,7 +112,7 @@ export async function updateCartpandaProduct(credentials, current, input, curren
       if (!(key in input)) continue;
       const value = input[key];
       if (!Number.isSafeInteger(value) || value < 0) throw new CatalogError('Informe um preço válido.');
-      patch[field] = value / 10 ** currencyScale[currency];
+      patch[field] = value / 10 ** SCALES[currency];
     }
     const price = input.price_minor ?? current.price_minor;
     const compare = input.compare_minor ?? current.compare_minor;

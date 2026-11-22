@@ -14,6 +14,12 @@ export function minor(value,scale=2) {
  if(result>BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Money exceeds supported safe integer range');
  return Number(result);
 }
+export function localizedMinor(value,scale=2) {
+ const text=String(value).trim();
+ if(/^\d{1,3}(?:\.\d{3})+,\d+$/.test(text))return minor(text.replaceAll('.','').replace(',','.'),scale);
+ if(/^\d{1,3}(?:,\d{3})+\.\d+$/.test(text))return minor(text.replaceAll(',',''),scale);
+ return minor(text.replace(',','.'),scale);
+}
 export const timestamp=value=>{
  if(value==null) return null;
  const d=new Date(value); if(!Number.isFinite(+d)) throw new Error('Invalid timestamp');
