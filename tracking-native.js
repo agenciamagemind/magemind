@@ -351,7 +351,7 @@
    const tabs='<div class="mt-level-tabs mt-manager-tabs" role="group" aria-label="Nível dos anúncios · '+brand.name(p)+'">'+
     Object.entries(adLevels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
    const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
-   const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordenar resultados</span>',sortOptions,sort+':'+direction)+'</div>';
+   const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordem</span>',sortOptions,sort+':'+direction,'data-trigger-label="Ordem"')+'</div>';
    const accountOptions=[['','Todas'],...accounts.map(item=>[item.account_id,item.name||item.account_id])];
    const accountFilter='<div class="mt-ad-accounts">'+select('ad-accounts-'+p,'<span class="sr-only">Contas</span>',accountOptions,selected.length?selected:'','multiple data-multi-filter')+'</div>';
    const filters='<div class="mt-ad-controls">'+mobileSort+accountFilter+

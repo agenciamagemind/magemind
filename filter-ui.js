@@ -116,6 +116,10 @@
   const multiple=select.multiple&&select.hasAttribute('data-multi-filter');
   if(select.classList.contains('mm-native-filter')||(!multiple&&(select.multiple||select.size>1)))return;
   const id=(select.id||'mm-filter-'+ ++selectId)+'-popover';
+  function triggerText(selection){
+   if(multiple)return label+(selection.length?' · '+selection.length:'');
+   return select.dataset.triggerLabel||(select.value===''?select.dataset.emptyLabel:null);
+  }
   const sync=optionPicker(select,id,label,
    ()=>[...select.options].map(option=>({text:option.label,all:multiple&&!option.value,hidden:option.hidden||option.closest('optgroup')?.hidden,disabled:option.disabled||option.closest('optgroup')?.disabled})),
    ()=>multiple?[...select.selectedOptions].filter(option=>option.value).map(option=>option.index):select.selectedIndex,selection=>{
@@ -128,7 +132,7 @@
      select.selectedIndex=selection;
     }
     select.dispatchEvent(new Event('change',{bubbles:true}));
-   },{period,multiple,triggerText:selection=>multiple?label+(selection.length?' · '+selection.length:''):select.value===''?select.dataset.emptyLabel:null});
+   },{period,multiple,triggerText});
   select.classList.add('mm-native-filter');
   select.hidden=true;
   select.addEventListener('change',sync);
