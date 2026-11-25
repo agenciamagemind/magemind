@@ -12,7 +12,6 @@ async function syncMetaAccount(db:any,integration:any,date:Date){
   rpc(db,'tracking_publish_meta_sync',{i,g,claim,stats,entities,failure,retry_seconds});
  try{
   const {secrets}=await credential(db,i);
-  if(secrets.token_expires_at&&secrets.token_expires_at<=Date.now())throw new Error('token_revoked');
   const config={...secrets,version:secrets.version||env('TRACKING_META_VERSION')||'v25.0'};
   const {data:account,error}=await db.from('tracking_ad_accounts').select('*')
    .eq('workspace_id',integration.workspace_id).eq('provider','meta').eq('account_id',integration.account_id).eq('selected',true).maybeSingle();

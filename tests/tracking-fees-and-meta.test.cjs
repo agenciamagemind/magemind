@@ -74,3 +74,44 @@ test('Meta responses distinguish invalid authorization, account permissions and 
   assert.equal(recovery.searchParams.get('auth_type'), 'rerequest');
   assert.equal(recovery.searchParams.get('scope'), 'ads_read,ads_management');
 });
+
+test('Meta token exchange uses only the lifetime reported for the exchanged token', async () => {
+  const {exchangeOAuth} = await adapters;
+  const config = {version: 'v25.0', clientId: '1', clientSecret: 'test', redirectUri: 'https://example.test/callback'};
+  for (const lifetime of [undefined, 0, 86400 * 60]) {
+    const now = Date.now();
+    const result = await exchangeOAuth('meta', config, 'fixture-code', async (_url, options) => {
+      if (options.body.has('code')) return Response.json({access_token: 'short', expires_in: 3600});
+      assert.equal(options.body.get('grant_type'), 'fb_exchange_token');
+      assert.equal(options.body.get('fb_exchange_token'), 'short');
+      return Response.json({access_token: 'long', expires_in: lifetime});
+    });
+    assert.equal(result.access_token, 'long');
+    if (lifetime) {
+      assert.ok(result.token_expires_at >= now + lifetime * 1000);
+      assert.ok(result.token_expires_at <= Date.now() + lifetime * 1000);
+    } else assert.equal(result.token_expires_at, null);
+  }
+});
+
+test('Meta connection checks cover spend and accept valid accounts with no activity', async () => {
+  const {verifyMetaRead, metaFailure} = await adapters;
+  const connection = {version: 'v25.0', access_token: 'fixture-token', token_expires_at: Date.now() - 1000};
+  const calls = [];
+  await verifyMetaRead(connection, 'act_1', async url => {
+    calls.push(url.pathname);
+    return Response.json({data: []});
+  });
+  assert.deepEqual(calls.sort(), ['/v25.0/act_1/campaigns', '/v25.0/act_1/insights']);
+  for (const [http, code, expected] of [
+    [403, 10, 'meta_read_denied'],
+    [403, 190, 'token_revoked'],
+    [400, 102, 'token_revoked'],
+    [403, null, 'sync_failed'],
+    [500, null, 'sync_failed']
+  ]) {
+    const fetcher = async url => url.pathname.endsWith('/insights') ?
+      Response.json({error: {code}}, {status: http}) : Response.json({data: []});
+    await assert.rejects(verifyMetaRead(connection, 'act_1', fetcher), error => metaFailure(error) === expected);
+  }
+});

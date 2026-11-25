@@ -145,7 +145,6 @@ Deno.serve(async(req)=>{
    let secrets,profile,accounts;
    try{
     secrets=metaSecrets((await credential(db,integration.id)).secrets);
-    if(secrets.token_expires_at&&secrets.token_expires_at<=Date.now())throw new Error('token_revoked');
     profile=await metaProfile(secrets);
     accounts=await listAccounts('meta',secrets);
     const account=accounts.find((a:any)=>a.account_id===integration.account_id);
@@ -185,7 +184,6 @@ Deno.serve(async(req)=>{
    try{
     const {row,secrets}=await credential(db,i);
     if(row.integration.connection_generation!==g)throw new MetaError('ad_status_conflict');
-    if(secrets.token_expires_at&&secrets.token_expires_at<=Date.now())throw new Error('token_revoked');
     if(secrets.allowManagement===false)throw new MetaError('meta_manage_denied');
     await setMetaStatus(metaSecrets(secrets),e,input.status);
    }catch(error){

@@ -13,7 +13,7 @@ export async function providerFetch(url,options={},fetcher=fetch) {
   const err=new Error(limited?'rate_limit':[401,403].includes(response.status)||code===190?'token_revoked':'provider_http_'+response.status);
   const token=String(options.headers?.Authorization||'').replace(/^Bearer /,'');
   err.providerDetail=String(failure.error?.message||'').replaceAll(token||'__no_token__','[redacted]').replace(/access_token=[^\s&]+/gi,'access_token=[redacted]').slice(0,240);
-  err.providerCode=code;err.providerSubcode=Number(failure.error?.error_subcode||0);err.retryAfter=Number(response.headers.get('retry-after')||60);throw err;
+  err.providerCode=code;err.providerSubcode=Number(failure.error?.error_subcode||0);err.providerStatus=response.status;err.retryAfter=Number(response.headers.get('retry-after')||60);throw err;
  }
  return response.json();
 }
@@ -46,10 +46,11 @@ export async function metaEntities(c,account,fetcher=fetch){
 }
 export function metaFailure(error, operation = 'read'){
  const code=Number(error?.providerCode),detail=String(error?.providerDetail||'');
- if(code===200&&/API access blocked/i.test(detail)||code===190&&Number(error?.providerSubcode)===459)return 'meta_confirmation_required';
+ const invalidSession=code===102||code===190;
+ if(code===200&&/API access blocked/i.test(detail)||invalidSession&&Number(error?.providerSubcode)===459)return 'meta_confirmation_required';
  if(code===10||code===200)return operation==='write'?'meta_manage_denied':'meta_read_denied';
- if(error?.message==='token_revoked'||error?.message==='Credential revoked'||code===190)return 'token_revoked';
  if(error?.message==='rate_limit')return 'rate_limit';
+ if(invalidSession||error?.message==='Credential revoked'||error?.message==='token_revoked'&&error?.providerStatus!==403)return 'token_revoked';
  return operation==='write'?'meta_update_unconfirmed':'sync_failed';
 }
 function metaRead(c,path,params,fetcher){
@@ -81,7 +82,11 @@ export function metaAccountManagement(profile,account){
 }
 export async function verifyMetaRead(c,id,fetcher=fetch){
  if(!/^act_\d+$/.test(id))throw new Error('Meta account unavailable');
- await metaRead(c,id+'/campaigns',{fields:'id',limit:'1'},fetcher);
+ const [campaigns,insights]=await Promise.all([
+  metaRead(c,id+'/campaigns',{fields:'id',limit:'1'},fetcher),
+  metaRead(c,id+'/insights',{fields:'spend',date_preset:'last_7d',limit:'1'},fetcher)
+ ]);
+ if(!Array.isArray(campaigns.data)||!Array.isArray(insights.data))throw new Error('Invalid Meta report');
 }
 export async function setMetaStatus(c,entity,status,fetcher=fetch){
  if(!/^\d+$/.test(entity)||!['ACTIVE','PAUSED'].includes(status)||!/^v\d+\.\d+$/.test(c.version))throw new Error('Estado de anúncio inválido');
@@ -124,7 +129,10 @@ export async function exchangeOAuth(provider,c,code,fetcher=fetch) {
  const post=params=>providerFetch('https://graph.facebook.com/'+c.version+'/oauth/access_token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params)},fetcher);
  const first=await post(args);if(!first.access_token)throw new Error('token_revoked');
  const long=await post({grant_type:'fb_exchange_token',client_id:c.clientId,client_secret:c.clientSecret,fb_exchange_token:first.access_token});
- if(!long.access_token)throw new Error('token_revoked');return {...long,token_expires_at:Date.now()+Number(long.expires_in||first.expires_in||3600)*1000};
+ if(!long.access_token)throw new Error('token_revoked');
+ // Only the lifetime of the exchanged token applies. Some Meta grants omit it.
+ const seconds=Number(long.expires_in);
+ return {...long,token_expires_at:Number.isSafeInteger(seconds)&&seconds>0?Date.now()+seconds*1000:null};
 }
 export async function refreshGoogle(c,fetcher=fetch) {
  return providerFetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:c.clientId,client_secret:c.clientSecret,refresh_token:c.refresh_token,grant_type:'refresh_token'})},fetcher);
