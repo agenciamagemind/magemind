@@ -84,11 +84,23 @@
  const number=v=>Number(v||0).toLocaleString('pt-BR');
  function metric(id){
   const count=data.counts||{},platforms=['meta','google','tiktok'].filter(p=>(data.ad_platforms||[]).includes(p)).map(ctx.brand.name).join(' e ');
-  const values={net:[data.net_minor,'Recebido pelo checkout'],spend:[data.spend_minor,platforms||'Contas selecionadas'],profit:[data.profit_minor,data.estimated_orders?'Inclui custos históricos estimados':'Após custos, impostos e anúncios'],gross:[data.gross_minor,'Aprovações no período'],pending:[count.pending_minor,number(count.pending)+' pedidos aguardando'],product_cost:[data.product_minor,'Custos das vendas aprovadas'],refunds:[data.refunds_minor,number(count.refunded)+' pedidos reembolsados'],tax:[data.tax_minor,'Impostos sobre as vendas'],chargebacks:[data.chargebacks_minor,number(count.chargebacks)+' pedidos com chargeback'],fees:[data.fees_minor,data.native_fees_minor?'Inclui taxas já descontadas no líquido':'Taxas adicionais das vendas'],expenses:[data.extra_minor,'Despesas da operação']};
+  const rates=data.ad_exchange_rates||[];
+  const spendNote=rates.some(rate=>rate.stale)?'Última cotação disponível':rates.length?'Convertido em reais':platforms||'Contas selecionadas';
+  const values={net:[data.net_minor,'Recebido pelo checkout'],spend:[data.spend_minor,spendNote],profit:[data.profit_minor,data.estimated_orders?'Inclui custos históricos estimados':'Após custos, impostos e anúncios'],gross:[data.gross_minor,'Aprovações no período'],pending:[count.pending_minor,number(count.pending)+' pedidos aguardando'],product_cost:[data.product_minor,'Custos das vendas aprovadas'],refunds:[data.refunds_minor,number(count.refunded)+' pedidos reembolsados'],tax:[data.tax_minor,'Impostos sobre as vendas'],chargebacks:[data.chargebacks_minor,number(count.chargebacks)+' pedidos com chargeback'],fees:[data.fees_minor,data.native_fees_minor?'Inclui taxas já descontadas no líquido':'Taxas adicionais das vendas'],expenses:[data.extra_minor,'Despesas da operação']};
   let value,note='';if(values[id]){value=ctx.money(values[id][0]);note=values[id][1];}else if(id==='roas'){value=data.roas==null?'—':Number(data.roas).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'×';note='Receita líquida ÷ anúncios';}else if(id==='margin'||id==='roi'){value=pct(data[id]);note=id==='margin'?'Lucro sobre receita líquida':'Retorno sobre o investimento';}else if(id==='approved'){value=number(count.approved);note='Pedidos aprovados no período';}else{value=pct(ratio(count[id==='refund_rate'?'refunded':'chargebacks'],count.approved));note='Sobre as aprovações do período';}
   const missing=id==='spend'?!ctx.setup.ads_ready:!ctx.setup.checkout_ready;
   if(missing)return '<div class="md-value md-missing">—</div><small>Conecte '+(id==='spend'?'seus anúncios':'seu checkout')+' para acompanhar</small>';
+  if(data.ad_exchange_incomplete&&['spend','profit','roas','roi','margin'].includes(id))return '<div class="md-value md-missing">—</div><small>Aguardando cotação</small>';
   return '<div class="md-value '+(id==='profit'?(Number(data.profit_minor)<0?'md-negative':'md-positive'):id==='net'?'md-positive':'')+'">'+esc(value)+'</div><small>'+esc(note)+'</small>';
+ }
+ function spendExchangeDetails(){
+  const rates=data.ad_exchange_rates||[];
+  if(!rates.length)return '';
+  const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:8});
+  const time=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
+  return '<p>Os gastos do período são convertidos pela cotação de referência mais recente consultada na Coinbase. Horário de Brasília.</p><ul>'+
+   rates.map(rate=>'<li>'+esc(rate.rate==null?rate.currency+' · Aguardando cotação':
+    '1 '+rate.currency+' = '+brl.format(rate.rate)+' · '+time.format(new Date(rate.quoted_at)))+'</li>').join('')+'</ul>';
  }
  function ranking(rows,kind){
   if(!rows?.length)return '<div class="md-empty">Nenhuma venda no período</div>';
@@ -256,7 +268,7 @@
   if(name==='info'){
    const id=el.dataset.id,[title,,kind,info]=catalog[id];
    const details=['payments','ranking','approval','demand_list'].includes(kind)?'<div class="md-widget-detail">'+body(id,true)+'</div>':'';
-   ctx.modal(title,'<p>'+esc(info)+'</p>'+details);
+   ctx.modal(title,'<p>'+esc(info)+'</p>'+details+(id==='spend'?spendExchangeDetails():''));
    return;
   }
   if(name==='close-info'){$('tracking-dialog').close();return;}

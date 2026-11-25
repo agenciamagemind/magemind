@@ -3,6 +3,7 @@ import {syncMeta,syncGoogle,refreshGoogle,checkoutAdapters,capiPayload,providerF
 import {normalizeKiwify,normalizeHotmartHistory,reconciliationIdentity,sha256,constantEqual} from '../_shared/tracking/contracts.mjs';
 import webpush from 'npm:web-push@3.6.7';
 import {notificationPush} from '../_shared/tracking/notifications.mjs';
+import {fetchAdExchangeRates} from '../_shared/tracking/ad-exchange-rates.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data;};
 async function syncMetaAccount(db:any,integration:any,date:Date){
  const i=integration.id,g=integration.connection_generation;
@@ -33,7 +34,15 @@ async function syncMetaAccount(db:any,integration:any,date:Date){
 Deno.serve(async(req)=>{
  try{
   guard();if(req.method!=='POST')return json(req,{error:'Unauthorized worker'},401);
-  const db=service();await checkDatabase(db);if(!env('TRACKING_WORKER_SECRET')||!await constantEqual(req.headers.get('authorization'),'Bearer '+env('TRACKING_WORKER_SECRET')))return json(req,{error:'Unauthorized worker'},401);const jobs=await rpc(db,'tracking_claim_jobs',{p_limit:30});let processed=0;
+  const db=service();await checkDatabase(db);if(!env('TRACKING_WORKER_SECRET')||!await constantEqual(req.headers.get('authorization'),'Bearer '+env('TRACKING_WORKER_SECRET')))return json(req,{error:'Unauthorized worker'},401);
+  const refreshExchangeRates=env('TRACKING_ALLOW_EXTERNAL_READS')==='true'
+   ?fetchAdExchangeRates().then(rates=>rpc(db,'tracking_save_ad_exchange_rates',{p:rates}))
+    .catch(error=>{
+     const providerCode=/^ad_exchange_(?:http_\d{3}|empty)$/.test(error?.message)?error.message:null;
+     console.error('tracking-worker: exchange rates unavailable',providerCode||error?.code||error?.name||'failure');
+    })
+   :null;
+  const jobs=await rpc(db,'tracking_claim_jobs',{p_limit:30});let processed=0;
   for(const job of jobs){
    try{await rpc(db,'tracking_process_receipt',{r:job.receipt_id});processed++;}
    catch(error){await rpc(db,'tracking_fail_job',{j:job.id,code:'normalization_or_transition_failed'});}
@@ -127,6 +136,7 @@ Deno.serve(async(req)=>{
     }
    }
   }
+  await refreshExchangeRates;
   await rpc(db,'tracking_prune');
   return json(req,{processed,outbox:outbox.length,environment:env('TRACKING_ENVIRONMENT')});
  }catch(error){console.error('tracking-worker:',error?.code||'failure');return json(req,{error:'Worker failed'},500);}

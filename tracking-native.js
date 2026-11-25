@@ -140,7 +140,7 @@
   })().finally(()=>sessionReady=null);return sessionReady;
  }
  function syncInputs(){state.currency='BRL';if(state.preset!=='custom')Object.assign(state,periods.range(state.preset,Date.now(),workspace()?.timezone||'America/Sao_Paulo'));for(const k of ['from','to','currency'])$('tracking-'+k).value=state[k];$('tracking-period-label').textContent=periods.presets.find(p=>p.id===state.preset)?.label||'Período personalizado';$('tracking-period-dates').textContent=state.from===state.to?dateLabel(state.from):dateLabel(state.from)+' — '+dateLabel(state.to);}
- let renderedScope='',pendingData=false,syncFingerprint='';
+ let renderedScope='',pendingData=false,syncFingerprint='',dashboardQuoteRefreshAt=0;
  function markPending(){pendingData=true;const label=$('tracking-sync-status');if(label&&['overview','ads','orders'].includes(state.tab)){label.textContent='Novos dados disponíveis · clique em Atualizar';label.classList.remove('is-stale');}}
  function restoreTrackingToolbar(){
   const toolbar=$('tracking-toolbar'),content=$('tracking-content'),refresh=$('tracking-refresh');
@@ -204,8 +204,15 @@
  }
  async function syncStatus(version){
   const label=$('tracking-sync-status');if(!label)return;
+  if(version!==requestVersion)return;
   if(!['overview','ads','orders'].includes(state.tab)){label.textContent='';return;}
   if(observer()){if(pendingData)markPending();else label.textContent='';return;}
+  if(state.tab==='overview'&&dashboardQuoteRefreshAt&&Date.now()>=dashboardQuoteRefreshAt&&!document.hidden&&
+     !$('tracking-dialog').open&&!periodPopover.isOpen()&&!window.MagemindDashboard.isEditing()&&
+     !document.activeElement?.closest('input,select,textarea,[contenteditable=true],#md-dashboard-root button')){
+   dashboardQuoteRefreshAt=Date.now()+60000;
+   void render({quiet:true});return;
+  }
   const rows=(await api('/integrations')).filter(i=>i.connected&&['meta','google','tiktok'].includes(i.provider)&&!i.account_id.startsWith('oauth:'));
   if(version!==requestVersion)return;
   const fingerprint=JSON.stringify(rows.map(i=>[i.id,i.last_sync_at,i.error_code,i.management_access]).sort());
@@ -240,6 +247,7 @@
  async function overview(){
   const uid=user.user_id,w=state.workspace,[data,series]=await Promise.all([api('/dashboard'),api('/revenue-series')]);data.revenue_series=series;
   if(user?.user_id!==uid||state.workspace!==w||window.MagemindDashboard.isEditing())return '';
+  dashboardQuoteRefreshAt=data.ad_exchange_rates?.length?Date.now()+60000:0;
   return tutorialHTML()+await window.MagemindDashboard.render({data,demands:DB.demands,setup,userId:uid,workspace:w});
  }
  function chartHTML(rows){
