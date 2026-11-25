@@ -91,13 +91,39 @@ export function normalizePerfectPay(p,c){
   customer:customer(p.code,p.customer?.full_name,p.customer?.email,[p.customer?.phone_area_code,p.customer?.phone_number].filter(Boolean).join('')),
   items:[{external_product_id:String(p.product?.code||''),name:String(p.product?.name||'Produto'),quantity:Number(p.quantity||p.plan?.quantity||1),amount_minor:gross}],tracking:p.metadata||{},payment_method:type,installments:p.installments,renewal:Number(p.payment_type_enum)===4,money_components:{...times.money_components,net_includes_gateway:true}});
 }
+const cartpandaOrder = payload => payload.order || payload.data?.order || payload;
+
+function confirmedCartpandaAppmaxPayment(order) {
+ const payment = order.payment;
+ const transactionId = String(order.payment_gateway_id ?? '');
+ return ['0','false'].includes(String(order.test).toLowerCase())
+  && order.shop?.cartxpayments_mode === 'production'
+  && order.source_name === 'checkout'
+  && order.payment_gateway === 'appmax' && payment?.gateway === 'appmax'
+  && /^[1-9][0-9]*$/.test(transactionId) && String(payment.appmax_payment_id) === transactionId
+  && String(payment.order_id) === String(order.id)
+  && (Number(payment.status_id) === 3 || Number(order.status_id) === 5 || Number(order.chargeback_received) === 1);
+}
+
+export function isSyntheticWebhook(provider, payload) {
+ const flagged = value => ['1','true'].includes(String(value).toLowerCase());
+ const order = provider === 'cartpanda' ? cartpandaOrder(payload) : payload.order;
+ if ([payload.is_test, payload.test, order?.is_test, order?.test].some(flagged)) return true;
+ if (provider !== 'cartpanda') return false;
+ if ([order.shop?.cartxpayments_mode, order.payment?.mode].some(mode => /^(sandbox|test)$/i.test(mode ?? ''))
+  || flagged(order.payment?.is_test) || flagged(order.payment?.test)) return true;
+ // Cartpanda can set its legacy test flag on an independently recorded Appmax payment.
+ return [payload.is_cartx_test, order.is_cartx_test].some(flagged) && !confirmedCartpandaAppmaxPayment(order);
+}
+
 export function normalizeCartpanda(payload,c){
- const p=payload.order||payload.data?.order||payload,cur=currency(p.currency),gross=asMinor(p.unformatted_total_price)??decimal(p.total_price,cur);
+ const p=cartpandaOrder(payload),cur=currency(p.currency),gross=asMinor(p.unformatted_total_price)??decimal(p.total_price,cur);
  const label=String(p.status_id||'').toLowerCase().replaceAll('_',' ');
  if(Number(p.status_id)===6||label==='partial refund'||p.financial_status==='partially_refunded')throw new Error('Partial refund requires cumulative refund amount');
  const status=Number(p.chargeback_received)===1?'chargeback':Number(p.status_id)===5||label==='refund'||p.financial_status==='refunded'?'refunded':Number(p.payment_status)===3||p.financial_status==='paid'?'paid':Number(p.payment_status)===4||label==='canceled'||p.cancelled_at?'cancelled':'pending';
  if(!Array.isArray(p.line_items)||!p.line_items.length)throw new Error('Cartpanda line items required');
- const times=chronology(p,c,p.created_at,p.paid_at||p.approved_at||(['paid','refunded','chargeback'].includes(status)?p.processed_at:null),p.updated_at,status);
+ const paymentApproved = status === 'paid' && confirmedCartpandaAppmaxPayment(p) ? p.payment.updated_at : null;
+ const times=chronology(p,c,p.created_at,p.paid_at||p.approved_at||paymentApproved||(['paid','refunded','chargeback'].includes(status)?p.processed_at:null),p.updated_at,status);
  const weights=p.line_items.map(i=>{try{return decimal(i.price,cur)*Number(i.quantity);}catch{return 0;}}),total=weights.reduce((n,v)=>n+v,0),fallback=total===0,denominator=fallback?p.line_items.reduce((n,i)=>n+Number(i.quantity),0):total;
  if(denominator<=0)throw new Error('Invalid Cartpanda item quantities');
  let remaining=gross;
@@ -109,7 +135,7 @@ export function normalizeCartpanda(payload,c){
  let tracking={};try{tracking=Object.fromEntries(new URL(p.landing_site).searchParams);}catch{}
  for(const a of Array.isArray(p.note_attributes)?p.note_attributes:[])if(a?.name&&a.value!=null)tracking[a.name]=a.value;
  return validateOrder({...base(c,p.id,status,cur,gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,
-  customer:customer(p.customer?.id||p.customer_id||p.id,p.customer?.full_name||[p.customer?.first_name,p.customer?.last_name].filter(Boolean).join(' '),p.customer?.email||p.email,p.customer?.phone||p.phone,Boolean(p.customer?.id||p.customer_id)),items,tracking,payment_method:p.payment_type,installments:p.installments??p.payment?.installments??p.payment_details?.installments,money_components:{...times.money_components,net_includes_gateway:false,manual_fees:c.manual_fees===true,item_amounts_allocated:true}});
+  customer:customer(p.customer?.id||p.customer_id||p.id,p.customer?.full_name||[p.customer?.first_name,p.customer?.last_name].filter(Boolean).join(' '),p.customer?.email||p.email,p.customer?.phone||p.phone,Boolean(p.customer?.id||p.customer_id)),items,tracking,payment_method:p.payment_type,installments:p.installments??p.no_of_installments??p.payment?.installments??p.payment_details?.installments,money_components:{...times.money_components,net_includes_gateway:false,manual_fees:c.manual_fees===true,item_amounts_allocated:true}});
 }
 function allocatedItems(rows,gross,read){
  if(!Array.isArray(rows)||!rows.length||rows.length>100)throw new Error('Order items required');
@@ -164,7 +190,7 @@ export function normalizeAppmax(p,c){
  const buyer=r.customer;return validateOrder({...base(c,r.order_id,status,'BRL',gross),...times,recipient_revenue_minor:net,refunded_amount_minor:refund,recipient_refunded_minor:refund?net:null,customer:customer(buyer?.id||r.order_id,buyer?.name,buyer?.email,buyer?.phone,Boolean(buyer?.id)),items,tracking:r.utm||{},payment_method:r.payment_info?.pix||p.event==='order_paid_by_pix'?'PIX':r.payment_info?.boleto?'BOLETO':r.payment_info?.credit_card?'CREDIT_CARD':'OTHER',installments:r.payment_info?.credit_card?.installments,money_components:{...times.money_components,manual_fees:nativeNet==null&&c.manual_fees===true,net_includes_gateway:nativeNet!=null,item_amounts_allocated:true}});
 }
 export async function normalizeWebhook(provider,payload,context){
- if([payload.is_test,payload.test,payload.order?.test,payload.is_cartx_test,payload.order?.is_cartx_test].some(x=>['1','true'].includes(String(x).toLowerCase())))throw new Error('Synthetic events are unavailable');
+ if(isSyntheticWebhook(provider,payload))throw new Error('Synthetic events are unavailable');
  const c={recipientSource:'PRODUCER',timezone:'America/Sao_Paulo',...context,eventId:provider+':'+await sha256(canonicalJSON(payload)),isTest:false};
  if(provider==='hotmart')return String(payload.event||'').startsWith('PURCHASE_')?normalizeHotmart(payload,c):null;
  if(provider==='kiwify')return normalizeKiwifyWebhook(payload,c);

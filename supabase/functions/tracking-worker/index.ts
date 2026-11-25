@@ -4,6 +4,7 @@ import {normalizeKiwify,normalizeHotmartHistory,reconciliationIdentity,sha256,co
 import webpush from 'npm:web-push@3.6.7';
 import {notificationPush} from '../_shared/tracking/notifications.mjs';
 import {fetchAdExchangeRates} from '../_shared/tracking/ad-exchange-rates.mjs';
+import {cartpandaOrders,cartpandaOrderSnapshot} from '../_shared/tracking/cartpanda-orders.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data;};
 async function syncMetaAccount(db:any,integration:any,date:Date){
  const i=integration.id,g=integration.connection_generation;
@@ -31,6 +32,57 @@ async function syncMetaAccount(db:any,integration:any,date:Date){
   await publish([],[],code,delay+Math.floor(Math.random()*5));
  }
 }
+async function reconcileCartpanda(db:any, integration:any, secrets:any, date:Date){
+ const cursor=integration.sync_cursor?.cartpanda_orders;
+ const previous=integration.last_sync_at ? Date.parse(integration.last_sync_at) : NaN;
+ if(!cursor && Number.isFinite(previous) && +date-previous < 10*60_000)return;
+ const {data:catalog,error}=await db.from('tracking_catalog_snapshots').select('cipher')
+  .eq('integration_id',integration.id).eq('workspace_id',integration.workspace_id).maybeSingle();
+ if(error)throw error;
+ if(!catalog?.cipher)return;
+
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'});
+ const since=Number.isFinite(previous)?Math.max(+date-89*86400000,previous-2*86400000):+date-7*86400000;
+ const window=cursor||{from:day.format(since),to:day.format(+date+86400000),page:1,offset:0,hadInvalidOrder:false};
+ const {rows,hasNextPage}=await cartpandaOrders(await decrypt(catalog.cipher),window);
+ const batch=rows.slice(window.offset,window.offset+20);
+ const idList=batch.map(order=>String(order?.id??'')).filter(id=>/^[1-9][0-9]*$/.test(id));
+ const existing=new Map<string,number>();
+ if(idList.length){
+  const {data,error}=await db.from('tracking_orders').select('external_id,last_occurred_at')
+   .eq('workspace_id',integration.workspace_id).eq('provider','cartpanda').eq('account_id',integration.account_id)
+   .in('external_id',idList);
+  if(error)throw error;
+  for(const order of data)existing.set(order.external_id,Date.parse(order.last_occurred_at));
+ }
+ let hadInvalidOrder=window.hadInvalidOrder;
+ for(const order of batch){
+  let event;
+  try{event=await cartpandaOrderSnapshot(order,{manual_fees:secrets.manual_fees===true});}
+  catch{
+   hadInvalidOrder=true;
+   console.warn('tracking-cartpanda: order snapshot rejected',integration.id);
+   continue;
+  }
+  if(!event)continue;
+  const lastEvent=existing.get(event.order_id);
+  if(lastEvent!=null&&Date.parse(event.occurred_at)<=lastEvent)continue;
+  await rpc(db,'tracking_ingest',{i:integration.id,e:event,h:event.reconciliation_hash,p_historical:true});
+ }
+ const nextOffset=window.offset+batch.length;
+ const next=nextOffset<rows.length?{...window,offset:nextOffset,hadInvalidOrder}:
+  hasNextPage?{...window,page:window.page+1,offset:0,hadInvalidOrder}:null;
+ const {cartpanda_orders:_,...otherCursor}=integration.sync_cursor||{};
+ const {error:saveError}=await db.from('tracking_integrations').update({
+  sync_cursor:next?{...otherCursor,cartpanda_orders:next}:otherCursor,
+  ...(next?{}:{last_sync_at:date.toISOString()}),error_count:0,retry_after_at:null
+ }).eq('id',integration.id).eq('connected',true);
+ if(saveError)throw saveError;
+ if(hadInvalidOrder&&!next)await rpc(db,'tracking_internal_status',{i:integration.id,p_code:'payload_incomplete'});
+ else if(!next&&!hadInvalidOrder&&/^(?:provider_http_\d+|sync_failed|rate_limit)$/.test(integration.error_code||'')){
+  await db.from('tracking_integrations').update({error_code:null}).eq('id',integration.id).eq('error_code',integration.error_code);
+ }
+}
 Deno.serve(async(req)=>{
  try{
   guard();if(req.method!=='POST')return json(req,{error:'Unauthorized worker'},401);
@@ -45,7 +97,13 @@ Deno.serve(async(req)=>{
   const jobs=await rpc(db,'tracking_claim_jobs',{p_limit:30});let processed=0;
   for(const job of jobs){
    try{await rpc(db,'tracking_process_receipt',{r:job.receipt_id});processed++;}
-   catch(error){await rpc(db,'tracking_fail_job',{j:job.id,code:'normalization_or_transition_failed'});}
+   catch(error){
+    await rpc(db,'tracking_fail_job',{j:job.id,code:'normalization_or_transition_failed'});
+    if(job.attempts>=8){
+     try{await rpc(db,'tracking_internal_status',{i:job.integration_id,p_code:'payload_incomplete'});}
+     catch{console.error('tracking-worker: exhausted order retries',job.integration_id);}
+    }
+   }
   }
   const outbox=await rpc(db,'tracking_internal_outbox');
   for(const d of outbox){
@@ -97,6 +155,8 @@ Deno.serve(async(req)=>{
       await rpc(db,'tracking_internal_ad_snapshot',{i:i.id,p:rows});
       await rpc(db,'tracking_internal_status',{i:i.id,p_code:null});
       await db.from('tracking_integrations').update({error_count:0,retry_after_at:null}).eq('id',i.id);
+     }else if(i.provider==='cartpanda'){
+      await reconcileCartpanda(db,i,secrets,date);
      }else if(i.provider==='kiwify'&&!secrets.webhook_only){
       const cursor=i.sync_cursor||{},page=Number(cursor.page||1),offset=Number(cursor.offset||0);
       const response=await checkoutAdapters.kiwify.listOrdersForReconciliation(secrets,cursor.from||from,cursor.to||to,page);

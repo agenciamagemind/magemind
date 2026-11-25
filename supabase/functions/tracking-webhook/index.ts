@@ -4,6 +4,8 @@ import {normalizeCustom,normalizeHotmart,normalizeKiwify,bridgeClick,constantEqu
 import {checkoutProviders} from '../_shared/tracking/connectors.mjs';
 import {normalizeWebhook,verifyWebhook,canonicalJSON} from '../_shared/tracking/webhooks.mjs';
 Deno.serve(async(req)=>{
+ let source:{db:any,id:string,provider:string}|undefined;
+ let persisting=false;
  try{
   guard();
   if(req.method==='OPTIONS'&&new URL(req.url).searchParams.get('provider')==='collector'){
@@ -27,7 +29,7 @@ Deno.serve(async(req)=>{
   let id=url.searchParams.get('integration'),event;
   if(provider==='custom'){
    const bearer=req.headers.get('authorization')?.replace(/^Bearer /,'');if(!bearer)return json(req,{error:'Credential required'},401);
-   const {data,error}=await db.rpc('tracking_resolve_api_credential',{h:await sha256(bearer)});if(error||!data)return json(req,{error:'Invalid credential'},401);id=data.id;event=normalizeCustom(payload);
+   const {data,error}=await db.rpc('tracking_resolve_api_credential',{h:await sha256(bearer)});if(error||!data)return json(req,{error:'Invalid credential'},401);id=data.id;source={db,id:data.id,provider};event=normalizeCustom(payload);
   }else{
    if(!id||!checkoutProviders.includes(provider||''))return json(req,{error:'Invalid integration'},400);
    const {row,secrets}=await credential(db,id);if(row.integration.provider!==provider)return json(req,{error:'Provider mismatch'},403);
@@ -41,16 +43,31 @@ Deno.serve(async(req)=>{
      const report={received:true,at:new Date().toISOString(),financial_event_recorded:false,validation,dates,fields:keys(payload),commissions:keys(payload.Commissions),product:keys(payload.Product),tracking:keys(payload.TrackingParameters),provider_headers:Array.from(req.headers.keys()).filter(k=>/kiwify/i.test(k))};
      await db.from('tracking_integrations').update({sync_cursor:{webhook_verification:report}}).eq('id',id);return json(req,report,200);
     }
+    source={db,id,provider};
+    persisting=true;
     const hash=await sha256(canonicalJSON(payload)),clock=await db.rpc('tracking_webhook_clock',{i:id,h:hash});if(clock.error)throw clock.error;
-    try{event=await normalizeWebhook(provider,payload,{...secrets,receivedAt:clock.data});}catch(error){if(error?.message==='Synthetic events are unavailable')return json(req,{accepted:true,processing:'ignored_test'},200);await db.from('tracking_integrations').update({error_code:'payload_incomplete'}).eq('id',id);throw error;}
-    if(!event)return json(req,{accepted:true,processing:'ignored'},200);
+    persisting=false;
+    try{event=await normalizeWebhook(provider,payload,{...secrets,receivedAt:clock.data});}
+    catch(error){
+     if(error?.message!=='Synthetic events are unavailable')throw error;
+     console.info('tracking-webhook ignored test event:',provider,id);
+     return json(req,{accepted:true,processing:'ignored_test'},200);
+    }
+    if(!event){
+     console.info('tracking-webhook ignored non-financial event:',provider,id);
+     return json(req,{accepted:true,processing:'ignored'},200);
+    }
    }else if(provider==='hotmart'){
     if(!await checkoutAdapters.hotmart.verifyRequest(req,secrets))return json(req,{error:'Invalid Hottok'},401);
+    source={db,id,provider};
     event=normalizeHotmart(payload,{...secrets,isTest:false});
    }else{
     allowReads();if(!await constantEqual(url.searchParams.get('ingress_key'),secrets.ingressToken)&&!await checkoutAdapters.custom.verifyRequest(req,{token:secrets.ingressToken}))return json(req,{error:'Ingress credential required'},401);
     const orderId=String(payload.order_id||payload.id||'');if(!orderId||orderId.length>200)throw new Error('Order ID required');
+    source={db,id,provider};
+    persisting=true;
     const verified=await checkoutAdapters.kiwify.fetchOrder(orderId,secrets);
+    persisting=false;
     if(String(verified.id)!==orderId)throw new Error('Authoritative order mismatch');
     // Origin and monetary changes come exclusively from the authenticated API response.
     const eventId='kiwify:'+orderId+':'+String(verified.updated_at)+':'+String(verified.status);
@@ -62,12 +79,23 @@ Deno.serve(async(req)=>{
   // Persist the complete delivery atomically before acknowledging it. The
   // existing durable jobs retry processing if this worker is interrupted.
   const batch=await Promise.all(events.map(async e=>({event:e,hash:await sha256(JSON.stringify(e))})));
+  persisting=true;
   const ingested=await db.rpc('tracking_ingest_batch',{i:id,events:batch});if(ingested.error)throw ingested.error;
   const receipts=ingested.data;
   const process=async()=>{for(const r of receipts){const result=await db.rpc('tracking_process_receipt',{r});if(result.error)console.error('tracking-webhook processing queued:',result.error.code||'retry');}};
   const background=(globalThis as any).EdgeRuntime;
   if(background?.waitUntil)background.waitUntil(process().catch(()=>console.error('tracking-webhook processing queued')));else await process();
-  await db.from('tracking_integrations').update({error_code:null}).eq('id',id).eq('error_code','payload_incomplete');
+  await db.from('tracking_integrations').update({error_code:null}).eq('id',id).in('error_code',['payload_incomplete','sync_failed']);
   return json(req,{receipt_id:receipts[0],...(receipts.length>1?{receipt_ids:receipts}:{}),processing:'queued'},202);
- }catch(error){console.error('tracking-webhook rejected:',error?.code||'validation');return json(req,{error:'Event rejected; validate authentication and connector diagnostics'},400);}
+ }catch(error){
+  const code=persisting?'sync_failed':'payload_incomplete';
+  console.error('tracking-webhook rejected:',source?.provider||'request',source?.id||'',persisting?'retryable':error?.code||'validation');
+  if(source){
+   try{
+    const problem=await source.db.rpc('tracking_internal_status',{i:source.id,p_code:code});
+    if(problem.error)console.error('tracking-webhook incident unavailable:',problem.error.code||'failure');
+   }catch{console.error('tracking-webhook incident unavailable');}
+  }
+  return json(req,{error:persisting?'Temporary order processing failure':'Event rejected; validate authentication and connector diagnostics'},persisting?503:400);
+ }
 });
