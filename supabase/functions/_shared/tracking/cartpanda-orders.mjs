@@ -2,6 +2,14 @@ import { cartpandaCredentials } from './cartpanda-catalog.mjs';
 import { reconciliationIdentity } from './contracts.mjs';
 import { isSyntheticWebhook, normalizeCartpanda } from './webhooks.mjs';
 
+export function cartpandaSyncDue(integration, date) {
+  const retryAfter = Date.parse(integration.retry_after_at);
+  if (Number.isFinite(retryAfter)) return +date >= retryAfter;
+  if (integration.error_code === 'sync_requested' || integration.sync_cursor?.cartpanda_orders) return true;
+  const previous = Date.parse(integration.last_sync_at);
+  return !Number.isFinite(previous) || +date - previous >= (integration.sync_interval_seconds ?? 600) * 1000;
+}
+
 export async function cartpandaOrders(credentials, { from, to, page }, fetcher = fetch) {
   const { slug, token } = cartpandaCredentials(credentials);
   const url = new URL('https://accounts.cartpanda.com/api/' + slug + '/orders');

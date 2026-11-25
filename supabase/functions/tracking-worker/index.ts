@@ -4,7 +4,7 @@ import {normalizeKiwify,normalizeHotmartHistory,reconciliationIdentity,sha256,co
 import webpush from 'npm:web-push@3.6.7';
 import {notificationPush} from '../_shared/tracking/notifications.mjs';
 import {fetchAdExchangeRates} from '../_shared/tracking/ad-exchange-rates.mjs';
-import {cartpandaOrders,cartpandaOrderSnapshot} from '../_shared/tracking/cartpanda-orders.mjs';
+import {cartpandaOrders,cartpandaOrderSnapshot,cartpandaSyncDue} from '../_shared/tracking/cartpanda-orders.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data;};
 async function syncMetaAccount(db:any,integration:any,date:Date){
  const i=integration.id,g=integration.connection_generation;
@@ -35,11 +35,13 @@ async function syncMetaAccount(db:any,integration:any,date:Date){
 async function reconcileCartpanda(db:any, integration:any, secrets:any, date:Date){
  const cursor=integration.sync_cursor?.cartpanda_orders;
  const previous=integration.last_sync_at ? Date.parse(integration.last_sync_at) : NaN;
- if(!cursor && Number.isFinite(previous) && +date-previous < 10*60_000)return;
  const {data:catalog,error}=await db.from('tracking_catalog_snapshots').select('cipher')
   .eq('integration_id',integration.id).eq('workspace_id',integration.workspace_id).maybeSingle();
  if(error)throw error;
- if(!catalog?.cipher)return;
+ if(!catalog?.cipher){
+  if(integration.error_code==='sync_requested')await rpc(db,'tracking_internal_status',{i:integration.id,p_code:'payload_incomplete'});
+  return;
+ }
 
  const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'});
  const since=Number.isFinite(previous)?Math.max(+date-89*86400000,previous-2*86400000):+date-7*86400000;
@@ -47,13 +49,13 @@ async function reconcileCartpanda(db:any, integration:any, secrets:any, date:Dat
  const {rows,hasNextPage}=await cartpandaOrders(await decrypt(catalog.cipher),window);
  const batch=rows.slice(window.offset,window.offset+20);
  const idList=batch.map(order=>String(order?.id??'')).filter(id=>/^[1-9][0-9]*$/.test(id));
- const existing=new Map<string,number>();
+ const existing=new Map<string,{at:number,status:string}>();
  if(idList.length){
-  const {data,error}=await db.from('tracking_orders').select('external_id,last_occurred_at')
+  const {data,error}=await db.from('tracking_orders').select('external_id,last_occurred_at,status')
    .eq('workspace_id',integration.workspace_id).eq('provider','cartpanda').eq('account_id',integration.account_id)
    .in('external_id',idList);
   if(error)throw error;
-  for(const order of data)existing.set(order.external_id,Date.parse(order.last_occurred_at));
+  for(const order of data)existing.set(order.external_id,{at:Date.parse(order.last_occurred_at),status:order.status});
  }
  let hadInvalidOrder=window.hadInvalidOrder;
  for(const order of batch){
@@ -66,21 +68,30 @@ async function reconcileCartpanda(db:any, integration:any, secrets:any, date:Dat
   }
   if(!event)continue;
   const lastEvent=existing.get(event.order_id);
-  if(lastEvent!=null&&Date.parse(event.occurred_at)<=lastEvent)continue;
-  await rpc(db,'tracking_ingest',{i:integration.id,e:event,h:event.reconciliation_hash,p_historical:true});
+  const eventTime=Date.parse(event.occurred_at);
+  if(lastEvent&&(eventTime<lastEvent.at||(eventTime===lastEvent.at&&event.status===lastEvent.status)))continue;
+  const receipt=await rpc(db,'tracking_ingest',{i:integration.id,e:event,h:event.reconciliation_hash,p_historical:true});
+  try{await rpc(db,'tracking_process_receipt',{r:receipt});}
+  catch{console.warn('tracking-cartpanda: receipt queued for retry',integration.id);}
  }
  const nextOffset=window.offset+batch.length;
  const next=nextOffset<rows.length?{...window,offset:nextOffset,hadInvalidOrder}:
   hasNextPage?{...window,page:window.page+1,offset:0,hadInvalidOrder}:null;
  const {cartpanda_orders:_,...otherCursor}=integration.sync_cursor||{};
- const {error:saveError}=await db.from('tracking_integrations').update({
+ let save=db.from('tracking_integrations').update({
   sync_cursor:next?{...otherCursor,cartpanda_orders:next}:otherCursor,
   ...(next?{}:{last_sync_at:date.toISOString()}),error_count:0,retry_after_at:null
- }).eq('id',integration.id).eq('connected',true);
+ }).eq('id',integration.id).eq('connected',true).eq('connection_generation',integration.connection_generation)
+  .eq('sync_cursor',JSON.stringify(integration.sync_cursor||{}));
+ save=integration.last_sync_at?save.eq('last_sync_at',integration.last_sync_at):save.is('last_sync_at',null);
+ const {data:saved,error:saveError}=await save.select('id').maybeSingle();
  if(saveError)throw saveError;
- if(hadInvalidOrder&&!next)await rpc(db,'tracking_internal_status',{i:integration.id,p_code:'payload_incomplete'});
- else if(!next&&!hadInvalidOrder&&/^(?:provider_http_\d+|sync_failed|rate_limit)$/.test(integration.error_code||'')){
-  await db.from('tracking_integrations').update({error_code:null}).eq('id',integration.id).eq('error_code',integration.error_code);
+ if(!saved||next)return;
+ if(hadInvalidOrder)await rpc(db,'tracking_internal_status',{i:integration.id,p_code:'payload_incomplete'});
+ else if(/^(?:provider_http_\d+|sync_failed|rate_limit|sync_requested|payload_incomplete)$/.test(integration.error_code||'')){
+  const {error}=await db.from('tracking_integrations').update({error_code:null}).eq('id',integration.id)
+   .eq('connection_generation',integration.connection_generation).eq('error_code',integration.error_code);
+  if(error)throw error;
  }
 }
 Deno.serve(async(req)=>{
@@ -141,6 +152,7 @@ Deno.serve(async(req)=>{
      continue;
     }
     if(i.retry_after_at&&new Date(i.retry_after_at)>date)continue;
+    if(i.provider==='cartpanda'&&!cartpandaSyncDue(i,date))continue;
     if(i.last_sync_at&&+date-new Date(i.last_sync_at).getTime()<45000&&!i.error_code)continue;
     try{
      const {secrets}=await credential(db,i.id);

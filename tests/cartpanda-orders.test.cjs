@@ -54,6 +54,37 @@ test('Cartpanda recovery is stable across scans and skips confirmed synthetic or
   assert.equal(await cartpandaOrderSnapshot(cartpandaOrder({ test: 1 }), context), null);
 });
 
+test('a paid Cartpanda webhook with incomplete payment evidence requests API confirmation', async () => {
+  const { cartpandaWebhookNeedsConfirmation, normalizeWebhook } = await webhooks;
+  const { cartpandaOrderSnapshot } = await orders;
+  const apiOrder = cartpandaOrder({ total_price: '636,22', unformatted_total_price: 63622 });
+  const incompleteDelivery = { data: { order: { ...apiOrder, payment: undefined } } };
+  assert.equal(cartpandaWebhookNeedsConfirmation(incompleteDelivery), true);
+  await assert.rejects(normalizeWebhook('cartpanda', incompleteDelivery, context), /Synthetic events/);
+
+  const verified = await cartpandaOrderSnapshot(apiOrder, context);
+  assert.equal(verified.status, 'paid');
+  assert.equal(verified.gross_amount_minor, 63622);
+  assert.equal(verified.is_test, false);
+  assert.equal(cartpandaWebhookNeedsConfirmation({ order: apiOrder }), false);
+  assert.equal(cartpandaWebhookNeedsConfirmation({ test: 1, ...incompleteDelivery }), false);
+  assert.equal(cartpandaWebhookNeedsConfirmation({ order: { ...apiOrder, test: 1, payment: undefined } }), false);
+  assert.equal(cartpandaWebhookNeedsConfirmation({ order: { ...apiOrder, shop: { cartxpayments_mode: 'sandbox' }, payment: undefined } }), false);
+  assert.equal(cartpandaWebhookNeedsConfirmation({ order: { ...apiOrder, id: '', payment: undefined } }), false);
+});
+
+test('Cartpanda can confirm a webhook before the periodic scan while respecting provider retries', async () => {
+  const { cartpandaSyncDue } = await orders;
+  const integration = { last_sync_at: '2026-11-25T17:03:00Z', sync_interval_seconds: 600 };
+  const nextWorkerTick = new Date('2026-11-25T17:07:00Z');
+  assert.equal(cartpandaSyncDue(integration, nextWorkerTick), false);
+  assert.equal(cartpandaSyncDue({ ...integration, error_code: 'sync_requested' }, nextWorkerTick), true);
+  assert.equal(cartpandaSyncDue(integration, new Date('2026-11-25T17:13:00Z')), true);
+  assert.equal(cartpandaSyncDue({ ...integration, sync_cursor: { cartpanda_orders: { page: 2 } } }, nextWorkerTick), true);
+  assert.equal(cartpandaSyncDue({ ...integration, error_code: 'sync_requested', retry_after_at: '2026-11-25T17:08:00Z' }, nextWorkerTick), false);
+  assert.equal(cartpandaSyncDue({ ...integration, error_code: 'rate_limit', retry_after_at: '2026-11-25T17:06:59Z' }, nextWorkerTick), true);
+});
+
 test('Cartpanda recovery reads the requested page from the documented orders endpoint', async () => {
   const { cartpandaOrders } = await orders;
   const window = { from: '2026-10-01', to: '2026-10-03', page: 2 };

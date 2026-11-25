@@ -2,7 +2,7 @@ import {service,checkDatabase,guard,json,body,credential,sha256,allowReads} from
 import {checkoutAdapters} from '../_shared/tracking/adapters.mjs';
 import {normalizeCustom,normalizeHotmart,normalizeKiwify,bridgeClick,constantEqual} from '../_shared/tracking/contracts.mjs';
 import {checkoutProviders} from '../_shared/tracking/connectors.mjs';
-import {normalizeWebhook,verifyWebhook,canonicalJSON} from '../_shared/tracking/webhooks.mjs';
+import {normalizeWebhook,verifyWebhook,canonicalJSON,cartpandaWebhookNeedsConfirmation} from '../_shared/tracking/webhooks.mjs';
 Deno.serve(async(req)=>{
  let source:{db:any,id:string,provider:string}|undefined;
  let persisting=false;
@@ -44,6 +44,20 @@ Deno.serve(async(req)=>{
      await db.from('tracking_integrations').update({sync_cursor:{webhook_verification:report}}).eq('id',id);return json(req,report,200);
     }
     source={db,id,provider};
+    if(provider==='cartpanda'&&cartpandaWebhookNeedsConfirmation(payload)){
+     allowReads();
+     persisting=true;
+     const integration=row.integration;
+     const {data:catalog,error:catalogError}=await db.from('tracking_catalog_snapshots')
+      .select('integration_id').eq('workspace_id',integration.workspace_id).eq('integration_id',id).maybeSingle();
+     if(catalogError)throw catalogError;
+     if(!catalog){persisting=false;throw new Error('Cartpanda order API credentials required');}
+     const {data:scheduled,error:scheduleError}=await db.from('tracking_integrations').update({error_code:'sync_requested'})
+      .eq('id',id).eq('connected',true).eq('connection_generation',integration.connection_generation).select('id').maybeSingle();
+     if(scheduleError||!scheduled)throw scheduleError||new Error('Cartpanda connection changed');
+     console.info('tracking-webhook queued Cartpanda payment confirmation:',id);
+     return json(req,{accepted:true,processing:'confirmation_queued'},202);
+    }
     persisting=true;
     const hash=await sha256(canonicalJSON(payload)),clock=await db.rpc('tracking_webhook_clock',{i:id,h:hash});if(clock.error)throw clock.error;
     persisting=false;

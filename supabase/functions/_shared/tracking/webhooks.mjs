@@ -105,15 +105,26 @@ function confirmedCartpandaAppmaxPayment(order) {
   && (Number(payment.status_id) === 3 || Number(order.status_id) === 5 || Number(order.chargeback_received) === 1);
 }
 
-export function isSyntheticWebhook(provider, payload) {
+function webhookTestStatus(provider, payload) {
  const flagged = value => ['1','true'].includes(String(value).toLowerCase());
  const order = provider === 'cartpanda' ? cartpandaOrder(payload) : payload.order;
- if ([payload.is_test, payload.test, order?.is_test, order?.test].some(flagged)) return true;
- if (provider !== 'cartpanda') return false;
+ if ([payload.is_test, payload.test, order?.is_test, order?.test].some(flagged)) return 'test';
+ if (provider !== 'cartpanda') return 'live';
  if ([order.shop?.cartxpayments_mode, order.payment?.mode].some(mode => /^(sandbox|test)$/i.test(mode ?? ''))
-  || flagged(order.payment?.is_test) || flagged(order.payment?.test)) return true;
- // Cartpanda can set its legacy test flag on an independently recorded Appmax payment.
- return [payload.is_cartx_test, order.is_cartx_test].some(flagged) && !confirmedCartpandaAppmaxPayment(order);
+  || flagged(order.payment?.is_test) || flagged(order.payment?.test)) return 'test';
+ // The legacy flag also appears on real Appmax checkouts. Some webhooks omit
+ // the payment data the authenticated orders API provides for verification.
+ if ([payload.is_cartx_test, order.is_cartx_test].some(flagged) && !confirmedCartpandaAppmaxPayment(order)) return 'unverified';
+ return 'live';
+}
+
+export function isSyntheticWebhook(provider, payload) {
+ return webhookTestStatus(provider, payload) !== 'live';
+}
+
+export function cartpandaWebhookNeedsConfirmation(payload) {
+ return webhookTestStatus('cartpanda', payload) === 'unverified' &&
+  /^[1-9][0-9]*$/.test(String(cartpandaOrder(payload).id ?? ''));
 }
 
 export function normalizeCartpanda(payload,c){
