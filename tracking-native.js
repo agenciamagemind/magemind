@@ -271,8 +271,16 @@
    return '<button type="button" class="status-switch" role="switch" aria-label="'+(active?'Desativar ':'Ativar ')+esc(r.name)+'" aria-checked="'+active+'" data-action="ad-status" data-provider="'+esc(r.provider)+'" data-account="'+esc(r.account_id)+'" data-entity="'+esc(r.entity_id)+'" data-status="'+(active?'PAUSED':'ACTIVE')+'" data-revision="'+r.revision+'" '+(disabled?'disabled ':'')+(title?' title="'+esc(title)+'"':'')+'><span aria-hidden="true"></span>'+label+'</button>';
  }
   const number=n=>n==null?'—':Number(n).toLocaleString('pt-BR');
+  const adCurrency=row=>row.account_currency||state.currency;
+  const adMoneyMetric=key=>key==='spend_minor'||key==='cpa';
   const adValue=(r,k)=>k==='cpa'?(r.checkout_purchases&&r.spend_minor!=null?r.spend_minor/r.checkout_purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
-  const adFormat=(r,k)=>['spend_minor','cpa'].includes(k)?(adValue(r,k)==null?'—':money(Math.round(adValue(r,k)))):k==='ctr'?(adValue(r,k)==null?'—':adValue(r,k).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%'):number(adValue(r,k));
+  function adFormat(row,key){
+   const value=adValue(row,key);
+   if(value==null)return '—';
+   if(adMoneyMetric(key))return money(Math.round(value),adCurrency(row));
+   if(key==='ctr')return value.toLocaleString('pt-BR',{maximumFractionDigits:2})+'%';
+   return number(value);
+  }
  function adDetailButton(row){
   return button(esc(row.name)+'<span aria-hidden="true"> ›</span>','ad-detail',
    'data-provider="'+esc(row.provider)+'" data-account="'+esc(row.account_id)+'" data-entity="'+esc(row.entity_id)+'"');
@@ -336,6 +344,7 @@
    const compare=(a,b)=>{
     const x=adValue(a,sort),y=adValue(b,sort);
     if(x==null||y==null)return x==null?(y==null?0:1):-1;
+    if(adMoneyMetric(sort)&&adCurrency(a)!==adCurrency(b))return adCurrency(a).localeCompare(adCurrency(b));
     return (typeof x==='string'?x.localeCompare(y,'pt-BR'):Number(x)-Number(y))*(direction==='asc'?1:-1)||a.name.localeCompare(b.name,'pt-BR');
    };
    const accounts=connected.filter(item=>item.provider===p);
@@ -345,9 +354,24 @@
     &&(!view.delivery||(view.delivery==='ACTIVE'?r.effective_active:!r.effective_active))
     &&(!parent||(r.parent_id===parent.entity_id&&r.account_id===parent.account_id))).sort(compare);
    const countLabel=entries.length===1?singular:plural;
-   const totals={};for(const k of ['spend_minor','checkout_purchases','impressions','clicks'])totals[k]=entries.every(r=>r[k]==null)?null:entries.reduce((n,r)=>n+Number(r[k]??0),0);
+   const totals={};
+   for(const key of ['checkout_purchases','impressions','clicks'])totals[key]=entries.every(row=>row[key]==null)?null:entries.reduce((sum,row)=>sum+Number(row[key]??0),0);
+   const totalsByCurrency=new Map();
+   for(const row of entries){
+    const currency=adCurrency(row);
+    if(!totalsByCurrency.has(currency))totalsByCurrency.set(currency,{account_currency:currency,spend_minor:null,checkout_purchases:0});
+    const subtotal=totalsByCurrency.get(currency);
+    if(row.spend_minor!=null)subtotal.spend_minor=(subtotal.spend_minor??0)+Number(row.spend_minor);
+    subtotal.checkout_purchases+=Number(row.checkout_purchases??0);
+   }
+   const currencyTotals=[...totalsByCurrency.values()].sort((a,b)=>adCurrency(a).localeCompare(adCurrency(b)));
+   const formatTotal=key=>{
+    if(!adMoneyMetric(key))return esc(adFormat(totals,key));
+    return currencyTotals.filter(row=>adValue(row,key)!=null)
+     .map(row=>'<span class="mt-ad-money-total">'+esc(adFormat(row,key))+'</span>').join('')||'—';
+   };
    const account=r=>opts.accounts.find(a=>a.provider===r.provider&&a.account_id===r.account_id)?.name||r.account_id;
-   const metricCells=r=>cols.slice(1).map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+esc(adFormat(r,key))+'</td>').join('');
+   const metricCells=format=>adMetrics.map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+format(key)+'</td>').join('');
    const tabs='<div class="mt-level-tabs mt-manager-tabs" role="group" aria-label="Nível dos anúncios · '+brand.name(p)+'">'+
     Object.entries(adLevels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
    const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
@@ -367,9 +391,9 @@
     '</tr></thead><tbody role="rowgroup">'+entries.map(r=>'<tr role="row" class="mt-ad-row"><td role="cell" class="mt-ad-state">'+adToggle(r,connected.find(i=>i.provider===r.provider&&i.account_id===r.account_id))+
       (r.status==='ACTIVE'&&!r.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td>'+
       '<td role="cell" class="mt-ad-name">'+adDetailButton(r)+
-      '<small>'+esc(account(r))+'</small></td>'+metricCells(r)+'</tr>').join('')+
+      '<small>'+esc(account(r))+'</small></td>'+metricCells(key=>esc(adFormat(r,key)))+'</tr>').join('')+
     '</tbody><tfoot role="rowgroup"><tr role="row"><td role="cell"></td><th scope="row" title="Soma das linhas filtradas. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+
-      metricCells(totals)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
+      metricCells(formatTotal)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
   }).join('');
   const compact=!observer();
   return '<div class="filters mt-ad-filters'+(compact?' mt-compact-filters':'')+'">'+(compact?'<span data-tracking-toolbar></span>':'')+

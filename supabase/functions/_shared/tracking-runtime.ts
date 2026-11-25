@@ -43,7 +43,9 @@ export async function decrypt(value:string){
  const out=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(a)},key,bytes(b));return JSON.parse(new TextDecoder().decode(out));
 }
 export async function credential(db:any,id:string){
- const {data,error}=await db.rpc('tracking_internal_credential',{i:id});if(error||!data||data.revoked_at)throw new Error('Credential revoked');
+ const {data,error}=await db.rpc('tracking_internal_credential',{i:id});
+ if(error)throw error;
+ if(!data||data.revoked_at)throw new Error('Credential revoked');
  let secrets=data.cipher?await decrypt(data.cipher):{};
  if(data.integration.provider==='kiwify'&&secrets.client_secret&&(!secrets.token_expires_at||secrets.token_expires_at<Date.now()+60000)){secrets=await refreshKiwify(secrets);const saved=await db.rpc('tracking_internal_save_credential',{i:id,p_cipher:await encrypt(secrets),p_hash:null});if(saved.error)throw saved.error;}
  return {row:data,secrets};

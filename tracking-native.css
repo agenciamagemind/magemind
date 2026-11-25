@@ -116,6 +116,7 @@ body.tracking-pilot .overlay.open .modal,body.tracking-pilot .overlay.open .moda
 .mt-root .mt-ad-table small{display:block;color:var(--text3);font-size:10px;margin-top:5px;max-width:300px;overflow-wrap:anywhere;white-space:normal}
 .mt-root .mt-ad-table .status-switch{font-size:11px;white-space:nowrap}
 .mt-root .mt-ad-table tfoot td,.mt-root .mt-ad-table tfoot th{background:var(--bg3);font-weight:600;border-bottom:0;position:sticky;bottom:0;z-index:1}
+.mt-ad-money-total{display:block}
 .mt-root .mt-ad-breadcrumb{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:12px;color:var(--text2)}
 .mt-root .mt-ad-breadcrumb>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mt-root .mt-ad-breadcrumb button{flex-shrink:0;font-size:11px}

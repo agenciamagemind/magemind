@@ -35,7 +35,7 @@
     return rows.map(x=>({...x,...members.find(m=>m.workspace_id===x.id)}));
    }
    if(['/summary','/list/orders','/order','/list/customers','/customer','/list/ads','/ad-options','/funnel','/diagnostics','/settings','/notifications','/export'].includes(route))return rpc('tracking_report',{w,p});
-   if(route==='/ad-management')return rpc('tracking_ad_management',{w,f:state.from,t:state.to,cur:state.currency});
+   if(route==='/ad-management')return rpc('tracking_ad_management',{w,f:state.from,t:state.to,cur:state.currency,native_amounts:true});
    if(route==='/ad-status'){if(cfg.mode==='supabase-pilot'&&!state.simulation_only){const rows=checked(await client.from('tracking_integrations').select('id').eq('workspace_id',w).eq('provider',data.provider).eq('account_id',data.account_id).eq('connected',true).single());return edge({action:'ad_status',workspace:w,integration:rows.id,entity_id:data.entity_id,status:data.status,revision:data.revision});}return rpc('tracking_set_ad_status',{w,provider_name:data.provider,account:data.account_id,entity:data.entity_id,target_status:data.status,expected_revision:data.revision});}
    if(route==='/onboarding')return rpc('tracking_onboarding_status',{w});
    if(route==='/revenue-series')return rpc('tracking_revenue_series',{w,f:state.from,t:state.to});
