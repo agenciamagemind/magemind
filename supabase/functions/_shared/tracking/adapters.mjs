@@ -53,7 +53,7 @@ export function metaFailure(error, operation = 'read'){
  if(invalidSession||error?.message==='Credential revoked'||error?.message==='token_revoked'&&error?.providerStatus!==403)return 'token_revoked';
  return operation==='write'?'meta_update_unconfirmed':'sync_failed';
 }
-function metaRead(c,path,params,fetcher){
+export function metaRead(c,path,params,fetcher){
  if(!/^v\d+\.\d+$/.test(c.version)||!c.access_token)throw new Error('token_revoked');
  return providerFetch('https://graph.facebook.com/'+c.version+'/'+path+'?'+new URLSearchParams(params),
   {headers:{Authorization:'Bearer '+c.access_token}},fetcher);
@@ -150,12 +150,37 @@ export async function listAccounts(provider,c,fetcher=fetch) {
  }while(after);
  return accounts;
 }
+const aggregatePurchaseTypes=['omni_purchase','purchase','web_app_in_store_purchase','web_in_store_purchase'];
+const purchaseSources=['offsite_conversion.fb_pixel_purchase','onsite_conversion.purchase','app_custom_event.fb_mobile_purchase','offline_conversion.purchase'];
+export const metaAttribution={use_unified_attribution_setting:'true',action_report_time:'impression'};
+
+export function metaPurchaseAmount(actions){
+ const values=new Map();
+ for(const action of Array.isArray(actions)?actions:[]){
+  const n=Number(action?.value);
+  if(action?.value!=null&&Number.isFinite(n))values.set(action.action_type,n);
+ }
+ const aggregate=aggregatePurchaseTypes.find(type=>values.has(type));
+ if(aggregate)return values.get(aggregate);
+ const sources=purchaseSources.filter(type=>values.has(type));
+ return sources.length?sources.reduce((total,type)=>total+values.get(type),0):null;
+}
+
 export async function syncMeta(c,account,from,to,fetcher=fetch) {
  const rows=[];let after;
  do{
-  const qs=new URLSearchParams({fields:'account_id,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,clicks,actions,action_values,date_start',level:'ad',time_increment:'1',time_range:JSON.stringify({since:from,until:to}),limit:'100',action_attribution_windows:JSON.stringify(['7d_click','1d_view'])});if(after)qs.set('after',after);
-  const r=await providerFetch('https://graph.facebook.com/'+c.version+'/'+account.account_id+'/insights?'+qs,{headers:{Authorization:'Bearer '+c.access_token}},fetcher);
-  rows.push(...(r.data||[]).map(x=>({entity_id:x.ad_id,campaign_id:x.campaign_id,campaign_name:x.campaign_name,group_id:x.adset_id,group_name:x.adset_name,name:x.ad_name,date:x.date_start,granularity:'ad',currency:account.currency,amount_scale:SCALES[account.currency],spend_minor:minor(x.spend,SCALES[account.currency]),impressions:Number(x.impressions||0),clicks:Number(x.clicks||0),network_purchases:Number(x.actions?.find(a=>a.action_type==='offsite_conversion.fb_pixel_purchase')?.value||0),network_purchase_value_minor:x.action_values?.find(a=>a.action_type==='offsite_conversion.fb_pixel_purchase')?minor(x.action_values.find(a=>a.action_type==='offsite_conversion.fb_pixel_purchase').value,SCALES[account.currency]):null})));
+  const params={fields:'account_id,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,clicks,actions,action_values,date_start',
+   level:'ad',time_increment:'1',time_range:JSON.stringify({since:from,until:to}),limit:'100',...metaAttribution,...(after?{after}:{})};
+  const r=await metaRead(c,account.account_id+'/insights',params,fetcher);
+  const amountScale=SCALES[account.currency];
+  rows.push(...(r.data||[]).map(x=>{
+   const purchaseValue=metaPurchaseAmount(x.action_values);
+   return {entity_id:x.ad_id,campaign_id:x.campaign_id,campaign_name:x.campaign_name,group_id:x.adset_id,group_name:x.adset_name,
+    name:x.ad_name,date:x.date_start,granularity:'ad',currency:account.currency,amount_scale:amountScale,
+    spend_minor:minor(x.spend,amountScale),impressions:Number(x.impressions||0),clicks:Number(x.clicks||0),
+    network_purchases:metaPurchaseAmount(x.actions)??0,
+    network_purchase_value_minor:purchaseValue==null?null:Math.round(purchaseValue*10**amountScale)};
+  }));
   after=r.paging?.next?r.paging.cursors?.after:null;
  }while(after);return rows;
 }

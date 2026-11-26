@@ -3,6 +3,7 @@ import {service,userClient,checkDatabase,guard,json,body,credential,encrypt,decr
 import {oauthStart,exchangeOAuth,listAccounts,setMetaStatus,metaFailure,metaProfile,metaAccountManagement,verifyMetaRead} from '../_shared/tracking/adapters.mjs';
 import {connector,validateWebhookSetup,webhookEndpoint} from '../_shared/tracking/connectors.mjs';
 import {metaConfig,sessionId} from '../_shared/tracking-oauth.ts';
+import {metaColumnReport,metaColumnRequest} from '../_shared/tracking/meta-column-report.mjs';
 const rpc=async(db:any,name:string,args:any={})=>{const r=await db.rpc(name,args);if(r.error)throw r.error;return r.data;};
 const supported=(a:any)=>/^act_\d+$/.test(a.account_id)&&['BRL','USD','EUR','JPY','KWD'].includes(a.currency)&&!!a.timezone_name;
 const authorizationCodes=new Set(['token_revoked','meta_confirmation_required','meta_read_denied','provider_http_400_200','provider_http_400_10']);
@@ -58,7 +59,26 @@ Deno.serve(async(req)=>{
    const secret=String(input.client_secret||'').trim();if(secret&&!/^[a-f0-9]{32}$/i.test(secret))throw new Error('Informe o segredo válido do aplicativo da Meta');
    await rpc(client,'tracking_platform_save',{p:{app_id:String(input.app_id||''),config_id:String(input.config_id||''),api_version:'v25.0',allow_management:input.allow_management===true},c:secret?await encrypt({clientSecret:secret}):null});return json(req,{saved:true});
   }
-  const w=String(input.workspace||'');await requireMember(client,w,user.id,true);
+  const w=String(input.workspace||'');
+  if(input.action==='meta_column_report'){
+   allowReads();
+   const request=metaColumnRequest(input);
+   const [account,integration]=await Promise.all([
+    client.from('tracking_ad_accounts').select('account_id').eq('workspace_id',w).eq('provider','meta').eq('account_id',request.accountId).eq('selected',true).maybeSingle(),
+    client.from('tracking_integrations').select('id,error_code,retry_after_at,connection_generation').eq('workspace_id',w).eq('provider','meta').eq('account_id',request.accountId).eq('connected',true).neq('mode','simulated').maybeSingle()
+   ]);
+   if(account.error||integration.error||!account.data||!integration.data)throw new Error('Forbidden');
+   const active=integration.data;
+   if(authorizationCodes.has(active.error_code))throw new MetaError(active.error_code.startsWith('provider_http_')?'meta_read_denied':active.error_code);
+   if(isRateLimited(active))throw new MetaError('rate_limit');
+   const limit=await rpc(db,'consume_security_rate_limit',{p_bucket_key:'tracking-meta-columns:'+user.id,p_limit:45,p_window_seconds:60});
+   if(limit?.[0]?.allowed!==true)throw new MetaError('rate_limit');
+   const {row,secrets}=await credential(db,active.id);
+   if(row.integration.workspace_id!==w||row.integration.connection_generation!==active.connection_generation)throw new MetaError('meta_connection_changed');
+   try{return json(req,await metaColumnReport(metaSecrets(secrets),request));}
+   catch(error){throw new MetaError(metaFailure(error));}
+  }
+  await requireMember(client,w,user.id,true);
   if(input.action==='queue_ads_sync'){
    allowReads();const {data:rows,error}=await client.from('tracking_integrations').select('id,provider,error_code,retry_after_at').eq('workspace_id',w).eq('connected',true).in('provider',['meta','google']);if(error)throw error;
    let requested=0;for(const i of rows||[]){

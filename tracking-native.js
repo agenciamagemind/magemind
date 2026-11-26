@@ -12,9 +12,11 @@
  const connections=window.MagemindTrackingConnections;
  const fees=window.MagemindTrackingFees;
  const catalog=window.MagemindTrackingProducts;
+ const campaignColumns=window.MagemindCampaignColumns;
  const checkoutProviders=Object.keys(window.MagemindWebhookConnectors);
  const adProviders=['meta','google','tiktok'];
  const adViews=new Map();
+ const metaReports=new Map();
 
  const statusLabel={pending:'Pendente',paid:'Aprovado',refunded:'Devolvido',chargeback:'Chargeback',refused:'Recusado',cancelled:'Cancelado',disputed:'Em disputa'};
  const scale={BRL:2,USD:2,EUR:2,JPY:0,KWD:3};
@@ -32,6 +34,28 @@
   if(!adViews.has(key))adViews.set(key,{level:'campaign',sort:'spend_minor',direction:'desc',parent:'',account:'',accountIds:[],delivery:''});
   return adViews.get(key);
  }
+ function campaignLayout(view){
+  return view.layout ||= campaignColumns.load(DB.me.id,state.workspace);
+ }
+ async function campaignMetaReports(accounts,level,requested){
+  if(!pilot||!window.MagemindTrackingBackend?.edge)return new Map();
+  const scope=state.workspace, from=state.from, to=state.to;
+  const active=accounts.filter(account=>account.mode!=='simulated');
+  const reports=await Promise.all(active.map(async account=>{
+   const key=JSON.stringify([scope,account.account_id,account.connection_generation,account.last_sync_at,level,from,to,requested]);
+   let cached=metaReports.get(key);
+   if(!cached||Date.now()>=cached.expires){
+    const task=window.MagemindTrackingBackend.edge({action:'meta_column_report',workspace:scope,account_id:account.account_id,level,from,to,...requested})
+     .then(report=>({rows:new Map(report.rows.map(row=>[row.entity_id,row])),conversions:report.conversions||[],error:false}))
+     .catch(()=>({rows:new Map(),conversions:[],error:true}));
+    cached={task,expires:Date.now()+120000};
+    metaReports.set(key,cached);
+    if(metaReports.size>60)metaReports.delete(metaReports.keys().next().value);
+   }
+   return [account.account_id,await cached.task];
+  }));
+  return new Map(reports);
+ }
  let costFlow=null,filterTimer=0,adDetailRequest=0;
  connections.configure({modal,brand,state,render,toast,api,configureFee});
  const workspace=()=>workspaces.find(w=>w.id===state.workspace);
@@ -42,7 +66,7 @@
  const dateLabel=value=>String(value||'').slice(0,10).split('-').reverse().join('/');
  function toast(message,type){window.toast(message,type);}
  function persist(){if(user){const {search,...safe}=state;localStorage.setItem('mm_tracking_state_'+user.user_id,JSON.stringify(safe));}}
- function clear(){clearTimeout(filterTimer);filterTimer=0;adViews.clear();restoreTrackingToolbar();requestVersion++;renderedScope='';pendingData=false;syncFingerprint='';closePeriod();window.MagemindDashboard.clear();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];costFlow=null;welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();notificationScope=null;$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
+ function clear(){clearTimeout(filterTimer);filterTimer=0;adViews.clear();metaReports.clear();restoreTrackingToolbar();requestVersion++;renderedScope='';pendingData=false;syncFingerprint='';closePeriod();window.MagemindDashboard.clear();onboardingExpanded=false;window.MagemindTrackingBackend?.subscribe(null,()=>{});user=null;workspaces=[];setup=null;costRules=[];costProducts=[];costFlow=null;welcomePending=null;state.workspace=null;state.search='';state.preset='week';Object.assign(state,periods.range('week'));notificationIds.clear();notificationScope=null;$('tracking-content').replaceChildren();$('tracking-notifications-mount')?.replaceChildren();$('tracking-module').hidden=true;$('dialog-content').replaceChildren();$('tracking-dialog').close();}
  async function api(route,data,params={}){
   if(window.MagemindTrackingBackend)return window.MagemindTrackingBackend.call(route,data,params,state);
   const u=new URL(cfg.apiBase+route,location.origin);
@@ -59,7 +83,7 @@
   const dialog=$('tracking-dialog');
   $('dialog-title').textContent=title;
   $('dialog-content').innerHTML=html;
-  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker,.mt-order-detail,.mt-ad-detail,[data-form=cost]')));
+  dialog.classList.toggle('mm-glass',Boolean(dialog.querySelector('.mt-connections-panel,.mt-payment-fee,.mt-account-picker,.mt-order-detail,.mt-ad-detail,.mt-column-editor,[data-form=cost]')));
   dialog.scrollTop=0;
   if(dialog.open)window.focusDialogSurface(dialog);
   else window.openAccessibleDialog(dialog);
@@ -176,7 +200,7 @@
  }
  async function render(options={}){
   if(state.tab==='overview'&&window.MagemindDashboard.isEditing())return;
-  if(options.quiet&&(document.hidden||$('tracking-dialog').open||periodPopover.isOpen()||document.activeElement?.closest('input,select,textarea,[contenteditable=true],.mm-filter-popover')))return;
+  if(options.quiet&&(document.hidden||$('tracking-dialog').open||periodPopover.isOpen()||document.querySelector('.mt-column-resize.is-resizing')||document.activeElement?.closest('input,select,textarea,[contenteditable=true],.mm-filter-popover')))return;
   const version=++requestVersion;if(!await ready()||version!==requestVersion)return;syncInputs();persist();
   const nativePage=routes[state.tab],activePage=document.querySelector('.page.active')?.id;
   const subtitles=observer()?{campaigns:'Resultados e campanhas das operações dos clientes',orders:'Pedidos de todos os clientes e responsáveis',integrations:'Cobertura e situação das conexões dos clientes'}:{campaigns:'Desempenho e otimização dos seus anúncios',orders:'Vendas, pagamentos e informações dos compradores',integrations:'Contas de anúncios, checkouts e origem das vendas'};
@@ -239,6 +263,7 @@
  let refreshingAds=false;
  async function refreshData(options={}){
   if(refreshingAds||window.MagemindDashboard.isEditing())return;
+  if(state.tab==='ads')metaReports.clear();
   refreshingAds=true;$('tracking-refresh').setAttribute('aria-busy','true');$('tracking-refresh').disabled=true;
   try{if(await ready()&&!observer()&&['overview','ads'].includes(state.tab)&&state.workspace&&window.MagemindTrackingBackend?.edge)await window.MagemindTrackingBackend.edge({action:'queue_ads_sync',workspace:state.workspace});await render();}
   catch(e){if(options.propagate)throw e;toast(e.message);}finally{refreshingAds=false;$('tracking-refresh').removeAttribute('aria-busy');$('tracking-refresh').disabled=false;}
@@ -266,6 +291,7 @@
 
  const adLevels={campaign:['Campanhas','Campanha'],group:['Conjuntos / grupos','Conjunto / grupo'],ad:['Anúncios','Anúncio']};
  const adMetrics=[['spend_minor','Valor gasto'],['checkout_purchases','Vendas'],['cpa','CPA'],['impressions','Impressões'],['clicks','Cliques'],['ctr','CTR']];
+ const metricsFor=provider=>provider==='meta'?adMetrics.map(([key,label])=>key==='checkout_purchases'?['network_purchases','Vendas (Meta)']:[key,label]):adMetrics;
  function adToggle(r,account){
    const canManage=!observer()&&['owner','admin'].includes(workspace()?.role);
    const health=window.MagemindIntegrationHealth.integrationHealth(account);
@@ -281,7 +307,10 @@
   const number=n=>n==null?'—':Number(n).toLocaleString('pt-BR');
   const adCurrency=row=>row.account_currency||state.currency;
   const adMoneyMetric=key=>key==='spend_minor'||key==='cpa';
-  const adValue=(r,k)=>k==='cpa'?(r.checkout_purchases&&r.spend_minor!=null?r.spend_minor/r.checkout_purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
+  const adValue=(r,k)=>{
+   const purchases=r.provider==='meta'?r.network_purchases:r.checkout_purchases;
+   return k==='cpa'?(purchases&&r.spend_minor!=null?r.spend_minor/purchases:null):k==='ctr'?(r.impressions&&r.clicks!=null?r.clicks/r.impressions*100:null):r[k];
+  };
   function adFormat(row,key){
    const value=adValue(row,key);
    if(value==null)return '—';
@@ -320,7 +349,7 @@
   modal(row.name,'<div class="mt-ad-detail"><div class="mt-ad-detail-lead"><div><strong>'+esc(kind)+'</strong><small>'+esc(brand.name(provider))+' · '+esc(integration?.name||accountId)+'</small></div>'+adToggle(row,integration)+'</div>'+
    (parent?'<p class="mt-ad-parent">'+adDetailButton(parent)+'</p>':'')+
    '<section class="mt-ad-detail-card"><header><h3>Resultados</h3><small>'+esc($('tracking-period-dates').textContent)+'</small></header>'+
-   '<dl class="mt-ad-detail-metrics">'+adMetrics.map(([key,label])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(adFormat(row,key))+'</dd></div>').join('')+'</dl></section>'+
+   '<dl class="mt-ad-detail-metrics">'+metricsFor(provider).map(([key,label])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(adFormat(row,key))+'</dd></div>').join('')+'</dl></section>'+
    (editUrl?'<section class="mt-ad-detail-card"><h3>Configuração</h3><p>'+editingScope[row.level]+'</p><a class="btn btn-ghost" href="'+esc(editUrl)+'" target="_blank" rel="noopener noreferrer">Editar na Meta <span aria-hidden="true">↗</span></a></section>':'')+
    (next?'<section class="mt-ad-detail-card"><header><h3>'+groupTitle+'</h3><small>'+children.length+'</small></header>'+
     (children.length?'<ul class="mt-ad-detail-children">'+children.slice(0,8).map(child=>'<li>'+adDetailButton(child)+'<small>'+esc(adFormat(child,'spend_minor'))+' · '+esc(child.effective_active?'Ativo':'Sem veiculação')+'</small></li>').join('')+'</ul>'+
@@ -336,7 +365,8 @@
    'Conecte sua conta de anúncios','Veja suas campanhas, acompanhe os resultados e gerencie os anúncios por aqui.','setup-ads');
   const query=state.search.toLocaleLowerCase('pt-BR');
   const rows=d.rows.filter(r=>r.connected&&(!query||r.name.toLocaleLowerCase('pt-BR').includes(query)));
-  const groups=adProviders.map(p=>{
+  const entityIndex=new Map(d.rows.map(row=>[[row.provider,row.account_id,row.entity_id].join(':'),row]));
+  const groups=(await Promise.all(adProviders.map(async p=>{
    const heading=platformHeading(p);
    if(!connected.some(i=>i.provider===p)){
     if(observer())return '';
@@ -345,22 +375,52 @@
      '<div class="mt-platform-heading">'+heading+cta+'</div></section>';
    }
    const view=campaignView(p);
-   const {level,sort,direction}=view;
+   const {level}=view;
    const [plural,singular]=adLevels[level];
    const parent=d.rows.find(r=>r.provider===p&&r.entity_id===view.parent&&r.account_id===view.account);
-   const cols=[['name',singular],...adMetrics];
-   const compare=(a,b)=>{
-    const x=adValue(a,sort),y=adValue(b,sort);
-    if(x==null||y==null)return x==null?(y==null?0:1):-1;
-    if(adMoneyMetric(sort)&&adCurrency(a)!==adCurrency(b))return adCurrency(a).localeCompare(adCurrency(b));
-    return (typeof x==='string'?x.localeCompare(y,'pt-BR'):Number(x)-Number(y))*(direction==='asc'?1:-1)||a.name.localeCompare(b.name,'pt-BR');
-   };
    const accounts=connected.filter(item=>item.provider===p);
    const selected=view.accountIds.filter(id=>accounts.some(a=>a.account_id===id));
-   const entries=rows.filter(r=>r.provider===p&&r.level===level
+   const account=r=>opts.accounts.find(a=>a.provider===r.provider&&a.account_id===r.account_id)?.name||r.account_id;
+   let entries=rows.filter(r=>r.provider===p&&r.level===level
     &&(!selected.length||selected.includes(r.account_id))
     &&(!view.delivery||(view.delivery==='ACTIVE'?r.effective_active:!r.effective_active))
-    &&(!parent||(r.parent_id===parent.entity_id&&r.account_id===parent.account_id))).sort(compare);
+    &&(!parent||(r.parent_id===parent.entity_id&&r.account_id===parent.account_id)));
+   const meta=p==='meta'&&campaignColumns;
+   const customized=Boolean(meta&&campaignColumns.desktop.matches);
+   let cols=[['status','Veiculação'],['name',singular],...metricsFor(p)].map(([key,label])=>({key,label}));
+   let layout,reportUnavailable=false;
+   if(meta){
+    layout=campaignLayout(view);
+    const initial=campaignColumns.catalog(singular,[],layout.order);
+    const requested={...campaignColumns.reportFields(customized?campaignColumns.columns(layout,initial):[]),include_conversions:customized};
+    const scopes=accounts.filter(account=>entries.some(row=>row.account_id===account.account_id));
+    const reports=await campaignMetaReports(scopes,level,requested);
+    reportUnavailable=[...reports.values()].some(report=>report.error);
+    entries=entries.map(row=>{
+     const ancestor=entityIndex.get([p,row.account_id,row.parent_id].join(':'));
+     const campaign=row.level==='campaign'?row:row.level==='group'?ancestor:entityIndex.get([p,row.account_id,ancestor?.parent_id].join(':'));
+     const set=row.level==='group'?row:row.level==='ad'?ancestor:null;
+     return {...row,account_name:account(row),campaign_name:campaign?.name,group_name:set?.name,
+      campaign_id:campaign?.entity_id,group_id:set?.entity_id,meta:reports.get(row.account_id)?.rows.get(row.entity_id)};
+    });
+    view.columnRegistry=campaignColumns.catalog(singular,entries,layout.order,[...reports.values()].flatMap(report=>report.conversions||[]));
+    cols=customized?campaignColumns.columns(layout,view.columnRegistry):cols.map(col=>view.columnRegistry.get(col.key)||col);
+   }
+   if((!customized&&view.sort==='status')||!cols.some(column=>column.key===view.sort)){
+    view.sort=cols.some(column=>column.key==='spend_minor')?'spend_minor':'name';
+    view.direction=view.sort==='name'?'asc':'desc';
+   }
+   const {sort,direction}=view;
+   const sortedColumn=cols.find(column=>column.key===sort);
+   const compare=(a,b)=>{
+    const x=meta?campaignColumns.value(a,sortedColumn):adValue(a,sort);
+    const y=meta?campaignColumns.value(b,sortedColumn):adValue(b,sort);
+    if(x==null||y==null)return x==null?(y==null?0:1):-1;
+    if((meta?campaignColumns.usesCurrency(sortedColumn):adMoneyMetric(sort))&&adCurrency(a)!==adCurrency(b))return adCurrency(a).localeCompare(adCurrency(b));
+    const delta=typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'pt-BR',{numeric:true});
+    return delta*(direction==='asc'?1:-1)||a.name.localeCompare(b.name,'pt-BR');
+   };
+   entries.sort(compare);
    const countLabel=entries.length===1?singular:plural;
    const totals={};
    for(const key of ['checkout_purchases','impressions','clicks'])totals[key]=entries.every(row=>row[key]==null)?null:entries.reduce((sum,row)=>sum+Number(row[key]??0),0);
@@ -373,36 +433,53 @@
     subtotal.checkout_purchases+=Number(row.checkout_purchases??0);
    }
    const currencyTotals=[...totalsByCurrency.values()].sort((a,b)=>adCurrency(a).localeCompare(adCurrency(b)));
-   const formatTotal=key=>{
+   const formatTotal=column=>{
+    const key=column.key;
+    if(meta){const totals=campaignColumns.total(entries,column);return totals.map(item=>'<span class="mt-ad-money-total">'+esc(item)+'</span>').join('')||'—';}
     if(!adMoneyMetric(key))return esc(adFormat(totals,key));
     return currencyTotals.filter(row=>adValue(row,key)!=null)
      .map(row=>'<span class="mt-ad-money-total">'+esc(adFormat(row,key))+'</span>').join('')||'—';
    };
-   const account=r=>opts.accounts.find(a=>a.provider===r.provider&&a.account_id===r.account_id)?.name||r.account_id;
-   const metricCells=format=>adMetrics.map(([key,label])=>'<td role="cell" data-label="'+esc(label)+'">'+format(key)+'</td>').join('');
    const tabs='<div class="mt-level-tabs mt-manager-tabs" role="group" aria-label="Nível dos anúncios · '+brand.name(p)+'">'+
     Object.entries(adLevels).map(([key,[label]])=>'<button class="quiet" type="button" id="ad-level-'+p+'-'+key+'" data-action="ad-level" data-level="'+key+'" aria-pressed="'+(level===key)+'">'+label+'</button>').join('')+'</div>';
-   const sortOptions=cols.flatMap(([key,label])=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
+   const sortOptions=cols.filter(column=>column.key!=='status').flatMap(({key,label})=>[[key+':desc',label+' ↓'],[key+':asc',label+' ↑']]);
    const mobileSort='<div class="mt-ad-mobile-sort">'+select('ad-mobile-sort-'+p,'<span class="sr-only">Ordem</span>',sortOptions,sort+':'+direction,'data-trigger-label="Ordem"')+'</div>';
    const accountOptions=[['','Todas'],...accounts.map(item=>[item.account_id,item.name||item.account_id])];
    const accountFilter='<div class="mt-ad-accounts">'+select('ad-accounts-'+p,'<span class="sr-only">Contas</span>',accountOptions,selected.length?selected:'','multiple data-multi-filter')+'</div>';
    const filters='<div class="mt-ad-controls">'+mobileSort+accountFilter+
     '<div class="mt-ad-delivery">'+select('ad-delivery-'+p,'<span class="sr-only">Veiculação</span>',[['','Todas'],['ACTIVE','Ativa'],['PAUSED','Pausada']],view.delivery,'data-empty-label="Veiculação"')+'</div></div>';
+   const columnsButton=customized?'<button type="button" class="quiet mt-columns-button" data-action="ad-columns" aria-haspopup="dialog" aria-label="Personalizar colunas">'+campaignColumns.adjustIcon+'<span>Colunas</span></button>':'';
    const breadcrumb=parent?'<div class="mt-ad-breadcrumb"><span>'+esc(parent.name)+'</span>'+button('Limpar seleção','ad-clear')+'</div>':'';
+   const widths=customized?cols.map(column=>campaignColumns.geometry(layout,column)):[];
+   const tableWidth=widths.reduce((width,size)=>width+size,0);
+   const colgroup=customized?'<colgroup>'+widths.map(size=>'<col style="width:'+size+'px">').join('')+'</colgroup>':'';
+   const header=(column,index)=>{
+    const {key,label}=column;
+    const sortLabel=sort===key?(direction==='asc'?'ascending':'descending'):'none';
+    const control=key==='status'&&!customized?esc(label):'<button type="button" data-action="ad-sort" data-sort="'+esc(key)+'" title="'+esc(column.description||label)+'">'+esc(label)+' <span aria-hidden="true">'+(sort===key?(direction==='asc'?'↑':'↓'):'↕')+'</span></button>';
+    const resizer=customized?'<span role="separator" tabindex="0" aria-orientation="vertical" aria-label="Largura da coluna '+esc(label)+'" aria-valuemin="'+campaignColumns.minWidth+'" aria-valuemax="'+campaignColumns.maxWidth+'" aria-valuenow="'+widths[index]+'" class="mt-column-resize" data-column-resize="'+esc(key)+'" data-column-index="'+index+'"></span>':'';
+    return '<th scope="col" data-ad-column="'+esc(key)+'" aria-sort="'+sortLabel+'">'+control+resizer+'</th>';
+   };
+   const cell=(row,column)=>{
+    const {key,label}=column;
+    if(key==='status')return '<td role="cell" class="mt-ad-state" data-ad-column="status">'+adToggle(row,accounts.find(i=>i.account_id===row.account_id))+
+     (row.status==='ACTIVE'&&!row.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td>';
+    if(key==='name')return '<td role="cell" class="mt-ad-name" data-ad-column="name">'+adDetailButton(row)+'<small>'+esc(account(row))+'</small></td>';
+    const value=meta?campaignColumns.formatted(row,column):{text:adFormat(row,key)};
+    return '<td role="cell" data-ad-column="'+esc(key)+'" data-label="'+esc(label)+'" title="'+esc(value.text+(value.detail?' · '+value.detail:''))+'">'+esc(value.text)+(value.detail?'<small>'+esc(value.detail)+'</small>':'')+'</td>';
+   };
    return '<section class="mt-platform-group mt-platform-'+p+' mt-ad-manager" data-platform="'+p+'">'+
     '<header class="mt-platform-heading">'+heading+'<span class="mt-platform-count">'+entries.length+' '+countLabel.toLowerCase()+'</span></header>'+
-    '<div class="mt-platform-tools">'+tabs+filters+breadcrumb+'</div>'+
+    '<div class="mt-platform-tools">'+tabs+filters+columnsButton+breadcrumb+'</div>'+
+    (reportUnavailable?'<p class="mt-column-report-status" role="status">Usando os dados da última sincronização da Meta.</p>':'')+
     (entries.length?'<div class="mt-ad-table-scroll" tabindex="0" role="region" aria-label="'+plural+' · '+brand.name(p)+'">'+
-    '<table class="mt-ad-table" role="table" data-mobile-table="scroll"><thead role="rowgroup"><tr role="row"><th scope="col">Veiculação</th>'+
-     cols.map(([key,label])=>'<th scope="col" aria-sort="'+(sort===key?(direction==='asc'?'ascending':'descending'):'none')+'">'+
-      '<button type="button" data-action="ad-sort" data-sort="'+key+'">'+label+' <span aria-hidden="true">'+(sort===key?(direction==='asc'?'↑':'↓'):'↕')+'</span></button></th>').join('')+
-    '</tr></thead><tbody role="rowgroup">'+entries.map(r=>'<tr role="row" class="mt-ad-row"><td role="cell" class="mt-ad-state">'+adToggle(r,connected.find(i=>i.provider===r.provider&&i.account_id===r.account_id))+
-      (r.status==='ACTIVE'&&!r.effective_active?'<small>Campanha ou conjunto pausado</small>':'')+'</td>'+
-      '<td role="cell" class="mt-ad-name">'+adDetailButton(r)+
-      '<small>'+esc(account(r))+'</small></td>'+metricCells(key=>esc(adFormat(r,key)))+'</tr>').join('')+
-    '</tbody><tfoot role="rowgroup"><tr role="row"><td role="cell"></td><th scope="row" title="Soma das linhas filtradas. CPA e CTR são calculados sobre os totais.">Total · '+entries.length+'</th>'+
-      metricCells(formatTotal)+'</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
-  }).join('');
+    '<table class="mt-ad-table'+(customized?' mt-ad-custom-columns':'')+'" role="table" data-mobile-table="scroll"'+
+     (customized?' style="width:'+tableWidth+'px;min-width:'+tableWidth+'px"':'')+'>'+colgroup+'<thead role="rowgroup"><tr role="row">'+cols.map(header).join('')+
+    '</tr></thead><tbody role="rowgroup">'+entries.map(row=>'<tr role="row" class="mt-ad-row">'+cols.map(column=>cell(row,column)).join('')+'</tr>').join('')+
+    '</tbody><tfoot role="rowgroup"><tr role="row">'+cols.map(column=>column.key==='name'?'<th scope="row" data-ad-column="name" title="Totais das linhas filtradas, com valores monetários na moeda da conta.">Total · '+entries.length+'</th>':
+     '<td role="cell" data-ad-column="'+esc(column.key)+'" data-label="'+esc(column.label)+'">'+(column.key==='status'?'':formatTotal(column))+'</td>').join('')+
+    '</tr></tfoot></table></div>':'<p class="mt-platform-empty">Nenhum resultado para os filtros selecionados.</p>')+'</section>';
+  }))).join('');
   const compact=!observer();
   return '<div class="filters mt-ad-filters'+(compact?' mt-compact-filters':'')+'">'+(compact?'<span data-tracking-toolbar></span>':'')+
     '<label class="search"><input id="tracking-search" type="search" aria-label="Pesquisar campanha, conjunto ou anúncio" value="'+esc(state.search)+'" placeholder="Pesquisar campanha, conjunto ou anúncio"></label>'+
@@ -590,8 +667,27 @@
   updateCostForm(form);
  });
  function minorInput(value,s){if(!value)return null;const parts=value.replace(',','.').split('.');if(parts.length>2||!/^\d+$/.test(parts[0])||!/^[0-9]*$/.test(parts[1]||'')||(parts[1]||'').length>s)throw new Error('Precisão do valor inválida');const n=Number(BigInt(parts[0])*10n**BigInt(s)+BigInt((parts[1]||'').padEnd(s,'0')||'0'));if(!Number.isSafeInteger(n))throw new Error('Valor acima do limite permitido');return n;}
+ function saveColumnWidth(key,size){
+  const layout=campaignLayout(campaignView('meta'));
+  layout.sizes[key]=size;
+  campaignColumns.save(layout);
+ }
+ document.addEventListener('pointerdown',event=>{
+  const handle=event.target.closest('[data-column-resize]');
+  if(handle)campaignColumns.pointerResize(event,handle,saveColumnWidth);
+ });
+ document.addEventListener('keydown',event=>{
+  const handle=event.target.closest?.('[data-column-resize]');
+  if(handle)campaignColumns.keyboardResize(event,handle,saveColumnWidth);
+ });
+ campaignColumns?.desktop.addEventListener('change',()=>{
+  if(state.tab!=='ads'||!state.workspace)return;
+  const dialog=$('tracking-dialog');
+  if(dialog.open&&dialog.querySelector('.mt-column-editor'))dialog.close();
+  void render();
+ });
  async function action(name,el){
-  if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','ad-detail','dialog-close','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
+  if(observer()){if(name==='meta-platform')return connections.platform();if(name.startsWith('admin-'))return window.MagemindTrackingAdmin.action(name,el);if(!['filter','refresh','prev','next','ad-level','ad-sort','ad-drill','ad-clear','ad-detail','ad-columns','dialog-close','welcome-close'].includes(name))throw new Error('Este painel permite apenas visualizar as operações.');}
   if(name.startsWith('catalog-'))return catalog.action(name,el,catalogContext());
   if(name.startsWith('campaign-')){
    if(!['owner','admin'].includes(workspace()?.role))throw new Error('Somente os responsáveis pela operação podem gerenciar as conexões.');
@@ -649,6 +745,15 @@
   if(name==='customer')return customerDetail(el.dataset.id);
   const platform=el.dataset.provider||el.closest('[data-platform]')?.dataset.platform;
   if(name==='ad-detail')return adDetail(platform,el.dataset.account,el.dataset.entity);
+  if(name==='ad-columns'&&platform==='meta'&&campaignColumns?.desktop.matches){
+   const view=campaignView(platform);
+   if(!view.columnRegistry)return;
+   return campaignColumns.editor(modal,$('tracking-dialog'),view.columnRegistry,campaignLayout(view),layout=>{
+    view.layout=layout;
+    campaignColumns.save(layout);
+    void render();
+   });
+  }
   if(name==='dialog-close')return $('tracking-dialog').close();
   if(platform&&['ad-level','ad-sort','ad-drill','ad-clear'].includes(name)){
    const view=campaignView(platform);
